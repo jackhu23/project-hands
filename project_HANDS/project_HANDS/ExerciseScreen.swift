@@ -9,7 +9,7 @@ import Foundation
 import SwiftUI
 
 struct ExerciseScreen: View {
-    
+
     let completedTargets: Int
     let plannedRepetitions: Int
     let onHome: () -> Void
@@ -17,6 +17,10 @@ struct ExerciseScreen: View {
     let activeTarget: BalloonTarget?
     let onAreaReady: (CGSize) -> Void
     let onTargetReleased: (UUID, CGSize) -> Void
+    let onFinish: () -> Void
+    let isPaused: Bool
+    let onPause: () -> Void
+    let onResume: () -> Void
 
     var body: some View {
 
@@ -51,19 +55,33 @@ struct ExerciseScreen: View {
 
                 Spacer()
 
-                Button(action: onHome) {
-                    Label("Home", systemImage: "house.fill")
-                        .font(.custom("PaytoneOne-Regular", size: 17, relativeTo: .body))
-                        .padding(.horizontal, 12)
-                        .frame(minHeight: 44)
-                }
-                .buttonStyle(.bordered)
-                .accessibilityHint("Ends this demo session and returns to Start Practice.")
+                Button("Finish", action: onFinish)
+                    .font(
+                        .custom(
+                            "PaytoneOne-Regular",
+                            size: 17,
+                            relativeTo: .body
+                        )
+                    )
+                    .frame(minHeight: 44)
+                    .buttonStyle(.bordered)
 
-                Button {
-                } label: {
-                    Image(systemName: "pause.fill")
+                Button(action: onHome) {
+                    Image(systemName: "house.fill")
+                        .font(.system(size: 24))
+                        .foregroundStyle(Color("OliveGreen"))
+                        .frame(width: 48, height: 48)
+                        .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Home")
+                .accessibilityHint("Pauses practice and opens your progress page.")
+
+                Button(action: onPause) {
+                    Image(systemName: "pause.fill").frame(minWidth: 44, minHeight: 44)
+                }
+                .accessibilityLabel("Pause")
+                .disabled(isPaused)
 
                 Button {
                 } label: {
@@ -71,13 +89,46 @@ struct ExerciseScreen: View {
                 }
             }
 
-            
+
             GeometryReader { geometry in
                 ZStack(alignment: .topLeading) {
                     RoundedRectangle(cornerRadius: 28)
                         .fill(Color("WarmCream"))
 
-                    if let target = activeTarget {
+                    if isPaused {
+                        VStack(spacing: 24) {
+                            Text("Paused")
+                                .font(
+                                    .custom(
+                                        "PaytoneOne-Regular",
+                                        size: 28,
+                                        relativeTo: .title
+                                    )
+                                )
+                                .foregroundStyle(Color("ForestSage"))
+
+                            Button("Resume", action: onResume)
+                                .font(
+                                    .custom(
+                                        "PaytoneOne-Regular",
+                                        size: 22,
+                                        relativeTo: .title2
+                                    )
+                                )
+                                .buttonStyle(.borderedProminent)
+                                .controlSize(.large)
+                                .tint(Color("OliveGreen"))
+                        }
+                        .padding(32)
+                        .frame(
+                            width: geometry.size.width,
+                            height: geometry.size.height
+                        )
+                        .background(
+                            Color("Ivory"),
+                            in: RoundedRectangle(cornerRadius: 28)
+                        )
+                    } else if let target = activeTarget {
                         BalloonIllustrationView(
                             isInteractive: true,
                             bodyWidth: CGFloat(target.bodyWidth),
@@ -115,8 +166,8 @@ struct ExerciseScreen: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            
-            
+
+
         }
         .padding(24)
         .background(Color("WarmCream").opacity(0.5))
@@ -130,6 +181,10 @@ struct ExerciseScreen: View {
         onHome: {},
         activeTarget: nil,
         onAreaReady: { _ in },
-        onTargetReleased: { _, _ in }
+        onTargetReleased: { _, _ in },
+        onFinish: {},
+        isPaused: false,
+        onPause: {},
+        onResume: {}
     )
 }

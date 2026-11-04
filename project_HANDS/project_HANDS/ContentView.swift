@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct ContentView: View {
 
@@ -16,38 +17,65 @@ struct ContentView: View {
     @State private var demoPatientId = UUID()
     
     @State private var repetitions = 1
+    @State private var showingSessionHome = false
+    @Environment(\.modelContext)
+    private var modelContext
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         Group {
-            
-
-
             if let session = sessionModel.session {
-                
-                
-                ExerciseScreen(
-                    completedTargets: sessionModel.completedTargets,
-                    plannedRepetitions: session.plannedRepetitions,
-                    onHome: {
-                        sessionModel.returnHome()
-                    },
-                    activeTarget: sessionModel.activeTarget,
-                    onAreaReady: { size in
-                        sessionModel.presentNextTarget(
-                            exerciseWidth: Double(size.width),
-                            exerciseHeight: Double(size.height)
-                        )
-                    },
-                    onTargetReleased: { targetId, size in
-                        sessionModel.completeTarget(
-                            targetId: targetId,
-                            exerciseWidth: Double(size.width),
-                            exerciseHeight: Double(size.height)
-                        )
-                    }
-                )
-
-                .padding(32)
+                if showingSessionHome || session.status == .completed || session.status == .stopped {
+                    BalloonSessionHomeView(
+                        completed: sessionModel.completedTargets,
+                        planned: session.plannedRepetitions,
+                        canResume: session.status == .paused,
+                        onResume: {
+                            sessionModel.resumeSession()
+                            showingSessionHome = false
+                        },
+                        onStartNew: {
+                            if session.status == .paused {
+                                sessionModel.finishSession()
+                            }
+                            sessionModel.returnHome()
+                            showingSessionHome = false
+                        }
+                    )
+                } else {
+                    ExerciseScreen(
+                        completedTargets: sessionModel.completedTargets, plannedRepetitions: session.plannedRepetitions, onHome: {
+                            sessionModel.pauseSession()
+                            showingSessionHome = true
+                        },
+                        activeTarget: sessionModel.activeTarget,
+                        onAreaReady: { size in
+                            sessionModel.presentNextTarget(
+                                exerciseWidth: Double(size.width),
+                                exerciseHeight: Double(size.height)
+                            )
+                        },
+                        onTargetReleased: { targetId, size in
+                            sessionModel.completeTarget(
+                                targetId: targetId,
+                                exerciseWidth: Double(size.width),
+                                exerciseHeight: Double(size.height)
+                            )
+                        },
+                        onFinish: {
+                            sessionModel.pauseSession()
+                            showingSessionHome = true
+                        },
+                        isPaused: session.status == .paused,
+                        onPause: {
+                            sessionModel.pauseSession()
+                        },
+                        onResume: {
+                            sessionModel.resumeSession()
+                        }
+                    )
+                    .padding(32)
+                }
             } else {
                 BalloonSetupView(repetitions: $repetitions) {
                     sessionModel.startSession(
@@ -60,6 +88,11 @@ struct ContentView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color("WarmCream").ignoresSafeArea())
         .tint(Color("OliveGreen"))
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase != .active {
+                sessionModel.pauseSession()
+            }
+        }
     }
 }
 

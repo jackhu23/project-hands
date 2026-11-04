@@ -65,16 +65,23 @@ struct BalloonTouchAttempt: Identifiable, Codable {
     let exclusionReason: String?
 }
 
+
 struct BalloonSession: Identifiable {
+    enum Status: String, Codable {
+        case running
+        case paused
+        case completed
+        case stopped
+    }
+
     let id: UUID
-    
     let patientId: UUID
     let plannedRepetitions: Int
     let startedAt: Date
-    
-    
+
+    var status: Status = .running
+    var endedAt: Date? = nil
+
     var targets: [BalloonTarget] = []
     var touchAttempts: [BalloonTouchAttempt] = []
-    
 }
-
