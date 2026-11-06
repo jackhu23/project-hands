@@ -6,7 +6,7 @@ Read [CONTEXT.md](CONTEXT.md) before writing code, and use its terms (Patient, S
 
 Always run Flutter and Dart through FVM so the pinned SDK in `.fvmrc` is used.
 
-- Setup: `fvm install` then `fvm dart run tool/setup.dart`
+- Setup: `fvm install`, `fvm flutter pub get`, then `fvm dart run tool/setup.dart`
 - Test: `fvm flutter test`
 - Lint: `fvm flutter analyze` (any issue fails)
 - Format: `fvm dart format .` (CI checks with `--output=none --set-exit-if-changed .`)
