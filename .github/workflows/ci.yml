@@ -42,4 +42,5 @@ jobs:
         if: runner.os == 'Windows'
         run: choco install fvm -y --no-progress
       - run: fvm install
+      - run: fvm flutter pub get
       - run: fvm dart run tool/setup.dart
