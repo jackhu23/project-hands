@@ -34,7 +34,8 @@ Future<void> main() async {
   if (active != pinned) {
     _fail(
       'Flutter $active is active, but .fvmrc pins $pinned. '
-      'Run `fvm install` from the repo root, then rerun this script.',
+      'Run `fvm install` and `fvm flutter pub get` from the repo root, '
+      'then rerun this script.',
     );
   }
   stdout.writeln('Setup OK: Flutter $active (pinned in .fvmrc).');

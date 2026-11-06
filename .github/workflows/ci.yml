@@ -5,9 +5,14 @@ on:
   push:
     branches: [main]
 
-# A new push to a PR cancels its stale run; runs on main always finish so every merge is checked.
+permissions:
+  contents: read
+  pull-requests: read # dorny/paths-filter lists the PR's changed files
+
+# A new push to a PR cancels its stale run. Pushes to main get one group per commit,
+# because a shared group would drop queued runs and leave some merges unchecked.
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -22,6 +27,7 @@ jobs:
       - run: flutter test
 
   # Proves the documented setup works from a clean checkout on every developer OS.
+  # FVM is deliberately unpinned: it installs what a new developer would get today.
   setup-script:
     strategy:
       fail-fast: false
