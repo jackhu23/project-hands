@@ -44,3 +44,42 @@ jobs:
       - run: fvm install
       - run: fvm flutter pub get
       - run: fvm dart run tool/setup.dart
+
+  # Decides whether a PR touches anything that can break a platform build.
+  changes:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    outputs:
+      build: ${{ steps.filter.outputs.build }}
+    steps:
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            build:
+              - pubspec.yaml
+              - pubspec.lock
+              - .fvmrc
+              - ios/**
+              - android/**
+              - .github/workflows/**
+              - .github/actions/**
+
+  # Job-level `if` (not a workflow `paths` filter) so skipped builds report as skipped, not pending.
+  build-android:
+    needs: changes
+    if: ${{ !cancelled() && (github.event_name == 'push' || needs.changes.outputs.build == 'true') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/flutter
+      - run: flutter build apk --debug
+
+  build-ios:
+    needs: changes
+    if: ${{ !cancelled() && (github.event_name == 'push' || needs.changes.outputs.build == 'true') }}
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/flutter
+      - run: flutter build ios --no-codesign
