@@ -1,5 +1,5 @@
 // One-command project setup for macOS, Windows and Linux.
-// Usage (from anywhere in the repo): fvm dart run tool/setup.dart
+// Usage (from the repo root): fvm dart run tool/setup.dart
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
