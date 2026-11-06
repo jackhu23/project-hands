@@ -1,5 +1,10 @@
-// One-command project setup for macOS, Windows and Linux.
-// Usage (from the repo root): fvm dart run tool/setup.dart
+// Project setup check for macOS, Windows and Linux.
+// Run from the repo root, after `fvm install`: fvm dart run tool/setup.dart
+//
+// `fvm dart run` needs the pinned SDK and resolves packages before this script
+// starts, so installing Flutter and running pub get happen outside it. This
+// script verifies the result and is the place for future setup steps.
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
@@ -7,24 +12,33 @@ import 'package:path/path.dart' as p;
 Future<void> main() async {
   final repoRoot = p.dirname(p.dirname(p.fromUri(Platform.script)));
 
-  await _run('fvm', ['install'], repoRoot); // installs the version in .fvmrc
-  await _run('fvm', ['flutter', 'pub', 'get'], repoRoot);
+  final fvmrc = await File(p.join(repoRoot, '.fvmrc')).readAsString();
+  final pinned = (jsonDecode(fvmrc) as Map<String, Object?>)['flutter'];
 
-  stdout.writeln('\nSetup complete. Run the app with: fvm flutter run');
+  final result = await Process.run(
+    'fvm',
+    ['flutter', '--version', '--machine'],
+    workingDirectory: repoRoot,
+    runInShell: true, // resolves .bat/.cmd wrappers on Windows
+  );
+  if (result.exitCode != 0) {
+    _fail('"fvm flutter --version" failed:\n${result.stderr}');
+  }
+  final active = (jsonDecode(
+    result.stdout as String,
+  ) as Map<String, Object?>)['frameworkVersion'];
+
+  if (active != pinned) {
+    _fail(
+      'Flutter $active is active, but .fvmrc pins $pinned. '
+      'Run `fvm install` from the repo root, then rerun this script.',
+    );
+  }
+  stdout.writeln('Setup OK: Flutter $active (pinned in .fvmrc).');
+  stdout.writeln('Run the app with: fvm flutter run');
 }
 
-Future<void> _run(String executable, List<String> args, String cwd) async {
-  stdout.writeln('> $executable ${args.join(' ')}');
-  final process = await Process.start(
-    executable,
-    args,
-    workingDirectory: cwd,
-    runInShell: true, // resolves .bat/.cmd wrappers on Windows
-    mode: ProcessStartMode.inheritStdio,
-  );
-  final exitCode = await process.exitCode;
-  if (exitCode != 0) {
-    stderr.writeln('"$executable ${args.join(' ')}" failed (exit $exitCode).');
-    exit(exitCode);
-  }
+Never _fail(String message) {
+  stderr.writeln(message);
+  exit(1);
 }
