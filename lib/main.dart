@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 void main() {
-  runApp(const   HandsApp());
+  runApp(const HandsApp());
 }
 
 class HandsApp extends StatelessWidget {
