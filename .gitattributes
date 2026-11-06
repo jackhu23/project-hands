@@ -1,0 +1,3 @@
+* text=auto eol=lf
+# Windows batch files (e.g. android/gradlew.bat) must stay CRLF to run.
+*.bat text eol=crlf

@@ -1,0 +1,16 @@
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    - build/**
+    - android/**
+    - ios/**
+
+linter:
+  rules:
+    # A forgotten await on "save Session" would silently lose Patient data.
+    - unawaited_futures
+    # Untyped JSON access crashes mid-Exercise instead of failing at compile time.
+    - avoid_dynamic_calls
+    # Uncancelled touch/timer listeners leak and record duplicate Touch Samples.
+    - cancel_subscriptions
