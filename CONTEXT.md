@@ -17,8 +17,8 @@ A kind of rehabilitation task the app offers, such as Balloon Touch or Tracing.
 _Avoid_: Game, activity, task
 
 **Balloon Touch**:
-The Exercise where the Patient touches on-screen targets with a designated finger.
-_Avoid_: Target touch, balloon game
+The Exercise where the Patient touches on-screen targets with a designated finger. A balloon is popped by an Action that both starts and ends on the balloon's body.
+_Avoid_: Target touch, balloon game, balloon pop
 
 **Tracing**:
 The Exercise where the Patient follows an on-screen path with a finger or stylus.
