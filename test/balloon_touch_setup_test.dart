@@ -133,7 +133,9 @@ void main() {
     await tester.pump();
 
     await tester.tap(find.text('Start Now'));
-    await tester.pumpAndSettle();
+    // The balloon pulses forever, so pump past the route transition instead.
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
 
     expect(find.text('Start Now'), findsNothing);
     expect(find.text('0 / 3'), findsOneWidget);

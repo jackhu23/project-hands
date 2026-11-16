@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
@@ -68,6 +70,7 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
   @override
   Widget build(BuildContext context) {
     final run = _session.exerciseRun;
+    final pressed = _pointer != null && _startedOnBody;
     return Scaffold(
       backgroundColor: HandsColors.warmCream,
       body: Listener(
@@ -100,12 +103,15 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
                             Positioned(
                               left: trial.center.dx - side / 2,
                               top: trial.center.dy - side / 2,
-                              child: BalloonIllustration(
-                                key: _balloonKey,
-                                bodyWidth: trial.bodyWidth,
-                                halo: false,
-                                pressed: _pointer != null && _startedOnBody,
-                                label: 'Balloon',
+                              child: _Pulse(
+                                holding: pressed,
+                                child: BalloonIllustration(
+                                  key: _balloonKey,
+                                  bodyWidth: trial.bodyWidth,
+                                  halo: false,
+                                  pressed: pressed,
+                                  label: 'Balloon',
+                                ),
                               ),
                             ),
                           ],
@@ -196,5 +202,82 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
         icon: const Icon(Icons.settings),
       ),
     ],
+  );
+}
+
+/// The demo's pulse: scale `0.98 + 0.05 × (sin(t·π/2) + 1) / 2`, t in seconds.
+/// It holds while [holding] or while the app isn't in the foreground, and
+/// stays at 1.0 with reduce motion on. The popping rule hit-tests through the
+/// transform, so it tests against the drawn (scaled) shape.
+class _Pulse extends StatefulWidget {
+  const _Pulse({required this.holding, required this.child});
+
+  final bool holding;
+  final Widget child;
+
+  @override
+  State<_Pulse> createState() => _PulseState();
+}
+
+class _PulseState extends State<_Pulse> with SingleTickerProviderStateMixin {
+  late final _clock = AnimationController(
+    vsync: this,
+    duration: const Duration(seconds: 4),
+  );
+  late final AppLifecycleListener _lifecycle;
+  late AppLifecycleState? _state = WidgetsBinding.instance.lifecycleState;
+  bool _reduceMotion = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _lifecycle = AppLifecycleListener(
+      onStateChange: (state) {
+        _state = state;
+        _sync();
+      },
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _reduceMotion = MediaQuery.disableAnimationsOf(context);
+    _sync();
+  }
+
+  @override
+  void didUpdateWidget(_Pulse old) {
+    super.didUpdateWidget(old);
+    _sync();
+  }
+
+  void _sync() {
+    final foreground = _state == null || _state == AppLifecycleState.resumed;
+    if (_reduceMotion || widget.holding || !foreground) {
+      _clock.stop();
+    } else if (!_clock.isAnimating) {
+      _clock.repeat();
+    }
+  }
+
+  @override
+  void dispose() {
+    _lifecycle.dispose();
+    _clock.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+    animation: _clock,
+    child: widget.child,
+    builder: (context, child) {
+      final t = _clock.value * 4;
+      final scale = _reduceMotion
+          ? 1.0
+          : 0.98 + 0.05 * (sin(t * pi / 2) + 1) / 2;
+      return Transform.scale(scale: scale, child: child);
+    },
   );
 }
