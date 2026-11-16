@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../theme.dart';
 import 'balloon_illustration.dart';
 import 'exercise_screen.dart';
+import 'session.dart';
 
 const _minBalloons = 1, _maxBalloons = 30;
 
@@ -25,11 +26,16 @@ class _SetupScreenState extends State<SetupScreen> {
     super.dispose();
   }
 
-  void _start() => Navigator.of(context).push(
-    MaterialPageRoute<void>(
-      builder: (_) => ExerciseScreen(balloonCount: _balloonCount.value),
-    ),
-  );
+  void _start() {
+    // Created once here, not in the route builder, which can run again.
+    final session = Session(
+      patientId: temporaryPatientId,
+      balloonCount: _balloonCount.value,
+    );
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => ExerciseScreen(session: session)),
+    );
+  }
 
   // Quirk carried over: the sheet repeats the card's + and − control.
   void _showSettings() => showModalBottomSheet<void>(
