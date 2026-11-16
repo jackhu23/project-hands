@@ -18,7 +18,7 @@ brew install fvm
 brew install cocoapods
 ```
 
-Also install Xcode from the App Store, for the iOS Simulator and iPad builds.
+Also install Xcode from the App Store, for the iOS Simulator and iPad builds. Open it once to finish its first-launch setup and download the iOS platform (Xcode → Settings → Components), then run `sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer`.
 
 **Windows** (needs [Chocolatey](https://chocolatey.org/install), installed from an **admin** PowerShell):
 
@@ -26,7 +26,7 @@ Also install Xcode from the App Store, for the iOS Simulator and iPad builds.
 choco install fvm -y
 ```
 
-Also turn on **Developer Mode** (Settings → System → For developers). FVM and Flutter plugins use symlinks, which fail without it.
+Also turn on **Developer Mode**: search Settings for "Developer Mode" (it is under System → Advanced on Windows 11 24H2 and later, System → For developers before that). FVM and Flutter plugins use symlinks, which fail without it.
 
 **Both:** install [Android Studio](https://developer.android.com/studio) for the Android SDK and emulator. In Device Manager, create a tablet emulator (for example Pixel Tablet).
 
@@ -38,7 +38,7 @@ From the repo root, on any OS:
 2. `fvm flutter pub get` fetches the packages locked in `pubspec.lock`.
 3. `fvm dart run tool/setup.dart` checks the result and prints `Setup OK` or what to fix.
 
-Then accept the Android licenses once: `fvm flutter doctor --android-licenses`.
+Then accept the Android licenses once with `fvm flutter doctor --android-licenses`, and run `fvm flutter doctor` to confirm the Android (and on Mac, Xcode) toolchain is ready.
 
 Always run Flutter through FVM (`fvm flutter ...`, `fvm dart ...`), or point your editor at `.fvm/flutter_sdk`, so you build with the pinned version, not a global one.
 
@@ -63,7 +63,7 @@ fvm flutter test
 GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs on every pull request and every push to `main`.
 
 - **Every pull request:** format, analyze and tests (`checks`), plus the setup script on Linux, macOS and Windows (`setup-script`).
-- **Only when a pull request touches build-sensitive files** (`pubspec.yaml`, `pubspec.lock`, `.fvmrc`, `ios/`, `android/` or the CI files): the Android build (`build-android`) and the iOS build (`build-ios`). Otherwise they show as skipped, which counts as passing.
+- **Only when a pull request touches build-sensitive files**, as decided by the `changes` job (`pubspec.yaml`, `pubspec.lock`, `.fvmrc`, `ios/`, `android/` or the CI files): the Android build (`build-android`) and the iOS build (`build-ios`). Otherwise they show as skipped, which counts as passing.
 - **Every push to `main`:** all of the above, including both builds.
 
 A new push to a pull request cancels its older run.

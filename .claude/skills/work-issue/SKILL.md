@@ -30,7 +30,7 @@ Build issue `$ARGUMENTS` in `jackhu23/project-hands` following [CLAUDE.md](../..
 ## 4. Open the pull request
 
 - Push and run `gh pr create --base main`, filling in the template: `Closes #$ARGUMENTS`, what changed, and the acceptance criteria ticked. Criteria that need hardware or a person (e.g. "runs on the iOS Simulator") stay unticked and go under "Unresolved".
-- Watch CI with `gh pr checks --watch`. If it fails, fix, push, and note the failure for the review notes. If the repo has no CI yet (before #3 lands), say so in the review notes and rely on the local checks.
+- Watch CI with `gh pr checks --watch`. If it fails, fix, push, and note the failure for the review notes.
 
 ## 5. AI review (at most two rounds)
 

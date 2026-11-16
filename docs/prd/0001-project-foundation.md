@@ -33,7 +33,7 @@ Set up the project foundation before any feature work starts:
 12. As a HANDS developer, I want CI to run static analysis on every PR, so that type errors and lint violations are caught before merge.
 13. As a HANDS developer, I want CI to run all unit and widget tests on every PR, so that logic regressions (for example in metric calculations) are caught before merge.
 14. As a HANDS developer, I want CI to run the setup script on Linux, macOS and Windows on every PR, so that a script change that breaks one OS can't merge.
-15. As a HANDS developer, I want the fast checks to finish in about 1â€“2 minutes, so that the many small PRs I open per feature don't slow me down.
+15. As a HANDS developer, I want the fast checks to finish in about 1–2 minutes, so that the many small PRs I open per feature don't slow me down.
 16. As a HANDS developer, I want the iOS and Android builds to run on a PR only when it changes dependencies, platform configuration or the Flutter version, so that ordinary Dart-only PRs stay fast.
 17. As a HANDS developer on Windows, I want CI to build the iOS app whenever I add or upgrade a package, so that I learn immediately if my change breaks the iPad build that I can't run locally.
 18. As a HANDS developer, I want CI to build both iOS and Android on every push to `main`, so that any breakage the PR filter missed is caught within minutes of merging.
@@ -46,7 +46,7 @@ Set up the project foundation before any feature work starts:
 25. As a HANDS developer, I want the linter to flag async calls that are never awaited, so that a failed "save Session" can't silently lose a Patient's data.
 26. As a HANDS developer, I want the linter to flag dynamic method calls, so that AI-written parsing code can't crash mid-Exercise with a runtime type error.
 27. As a HANDS developer, I want the linter to flag stream subscriptions that are never cancelled, so that touch and timer listeners don't leak or record duplicate Touch Samples.
-28. As a HANDS developer, I want any analyzer issue to fail CI, so that the linter acts as our stand-in for code review.
+28. As a HANDS developer, I want any analyzer issue to fail CI, so that the linter catches what a quick human review would miss.
 29. As a HANDS developer, I want a glossary defining Patient, Exercise, Balloon Touch, Tracing, Session, Exercise Run, Trial, Action and Touch Sample, so that my teammates and I name things in code the same way.
 30. As a HANDS developer, I want the glossary to list words to avoid (such as "repetition," "attempt," "game"), so that ambiguous terms don't creep into the code with different meanings.
 31. As the project lead, I want the Flutter decision recorded as an ADR with the rejected alternatives, so that nobody reopens the framework debate without new information.
@@ -73,10 +73,10 @@ Set up the project foundation before any feature work starts:
   - All jobs read the Flutter version from the FVM config so CI matches developers exactly.
   - Flutter SDK and pub caching are enabled.
   - A concurrency group per ref cancels superseded runs.
-- **Merge policy:** passing CI is the only merge requirement GitHub enforces. By team rule, a human reviews every pull request and merges it by hand; review approvals aren't required by a setting. Only merge commits are allowed (no squash or rebase). Auto-merge is disabled for the repo. No formal branching rules; the team agrees on branching verbally. Branch protection on `main` requires the CI checks that always run, plus the build checks, which count as satisfied when skipped by the path filter.
+- **Merge policy:** passing CI is the only merge requirement GitHub enforces. By team rule, a human reviews every pull request and merges it by hand; review approvals aren't required by a setting. Only merge commits are allowed (no squash or rebase). Auto-merge is disabled for the repo. Branch naming (`issue-<N>-<short-slug>`, from `main`) is a team convention in CLAUDE.md, not enforced by GitHub. Branch protection on `main` requires the CI checks that always run, plus the build checks, which count as satisfied when skipped by the path filter.
 - **Broken `main`:** a red `main` shows on GitHub; no failure emails. Team norm: whoever broke `main` reverts first, fixes second.
 - **Lint rules:** base set `flutter_lints`, plus `unawaited_futures`, `avoid_dynamic_calls` and `cancel_subscriptions`. Revisit `very_good_analysis` in spring 2027, while the codebase is still small.
-- **Domain vocabulary:** `CONTEXT.md` is the single glossary. The hierarchy is Patient â†’ Session â†’ Exercise Run â†’ Trial â†’ Action â†’ Touch Sample. Dart types introduced later must use these names. Metrics will be computed from stored raw Trials, Actions and Touch Samples rather than stored precomputed. This shapes the storage work later but isn't implemented here.
+- **Domain vocabulary:** `CONTEXT.md` is the single glossary. The hierarchy is Patient → Session → Exercise Run → Trial → Action → Touch Sample. Dart types introduced later must use these names. Metrics will be computed from stored raw Trials, Actions and Touch Samples rather than stored precomputed. This shapes the storage work later but isn't implemented here.
 - **Repository hygiene:** the learner-notes directory (`.vibe-wise/`) is git-ignored. The README covers prerequisites (FVM, Windows Developer Mode), the one-command setup, the daily testing loop per OS, the CI overview, the synthetic-data-only rule and a CI status badge.
 
 ## Testing Decisions
