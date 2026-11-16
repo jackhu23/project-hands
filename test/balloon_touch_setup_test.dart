@@ -136,7 +136,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Start Now'), findsNothing);
-    expect(find.text('Balloon Touch: 3 balloons'), findsOneWidget);
+    expect(find.text('0 / 3'), findsOneWidget);
   });
 
   testWidgets('Start Now uses the shared theme font and colours', (

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../theme.dart';
 import 'balloon_illustration.dart';
 import 'exercise_screen.dart';
+import 'session.dart';
 
 const _minBalloons = 1, _maxBalloons = 30;
 
@@ -27,7 +28,12 @@ class _SetupScreenState extends State<SetupScreen> {
 
   void _start() => Navigator.of(context).push(
     MaterialPageRoute<void>(
-      builder: (_) => ExerciseScreen(balloonCount: _balloonCount.value),
+      builder: (_) => ExerciseScreen(
+        session: Session(
+          patientId: temporaryPatientId,
+          balloonCount: _balloonCount.value,
+        ),
+      ),
     ),
   );
 
