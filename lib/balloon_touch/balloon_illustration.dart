@@ -18,6 +18,14 @@ Path balloonBodyPath(Rect rect) {
   return path..close();
 }
 
+/// Where the body sits inside a balloon drawn at [size]: centred, 1.25 times
+/// as tall as [bodyWidth].
+Rect balloonBodyRect(Size size, double bodyWidth) => Rect.fromCenter(
+  center: size.center(Offset.zero),
+  width: bodyWidth,
+  height: bodyWidth * 1.25,
+);
+
 Path _highlightPath(Rect rect) {
   Offset p(double x, double y) =>
       Offset(rect.left + x * rect.width, rect.top + y * rect.height);
@@ -40,74 +48,93 @@ Path _knotPath(Rect rect) {
     ..close();
 }
 
-/// The still balloon from the setup screen: body, highlight, knot and halo.
-/// Body height is 1.25 × [bodyWidth] and the knot is 0.085 × [bodyWidth].
+/// The demo's balloon: body, highlight, knot and, unless [halo] is false, the
+/// halo. Body height is 1.25 × [bodyWidth], the knot is 0.085 × [bodyWidth],
+/// and the body is centred in a square 1.75 × [bodyWidth] wide.
 class BalloonIllustration extends StatelessWidget {
-  const BalloonIllustration({super.key, this.bodyWidth = 176});
+  const BalloonIllustration({
+    super.key,
+    this.bodyWidth = 176,
+    this.halo = true,
+    this.pressed = false,
+    this.label = 'Balloon illustration',
+  });
 
   final double bodyWidth;
+  final bool halo, pressed;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
     final side = bodyWidth * 1.75;
     return Semantics(
-      label: 'Balloon illustration',
+      label: label,
       child: CustomPaint(
         size: Size.square(side),
-        painter: _BalloonPainter(bodyWidth),
+        painter: _BalloonPainter(bodyWidth, halo: halo, pressed: pressed),
       ),
     );
   }
 }
 
 class _BalloonPainter extends CustomPainter {
-  _BalloonPainter(this.bodyWidth);
+  _BalloonPainter(this.bodyWidth, {required this.halo, required this.pressed});
 
   final double bodyWidth;
+  final bool halo, pressed;
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = size.center(Offset.zero);
-    final w = bodyWidth, h = bodyWidth * 1.25, knot = bodyWidth * 0.085;
+    final w = bodyWidth, knot = bodyWidth * 0.085;
 
-    canvas.drawCircle(
-      center,
-      w * 1.65 / 2,
-      Paint()..color = HandsColors.warmCream,
-    );
-    canvas.drawCircle(
-      center,
-      w * 1.65 / 2,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2
-        ..color = HandsColors.oliveGreen.withValues(alpha: 0.10),
-    );
+    if (halo) {
+      canvas.drawCircle(
+        center,
+        w * 1.65 / 2,
+        Paint()..color = HandsColors.warmCream,
+      );
+      canvas.drawCircle(
+        center,
+        w * 1.65 / 2,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2
+          ..color = HandsColors.oliveGreen.withValues(alpha: 0.10),
+      );
+    }
 
-    // Body and knot stack vertically, shifted down by half the knot as in the demo.
-    final top = center.dy - (h + knot) / 2 + knot / 2;
-    final body = Rect.fromLTWH(center.dx - w / 2, top, w, h);
+    // Body and knot stack vertically, shifted down by half the knot as in the
+    // demo, which leaves the body centred.
+    final body = balloonBodyRect(size, w);
     final bodyPath = balloonBodyPath(body);
 
     canvas.drawPath(
-      bodyPath.shift(const Offset(0, 6)),
+      bodyPath.shift(Offset(0, pressed ? 2 : 6)),
       Paint()
-        ..color = HandsColors.charcoal.withValues(alpha: 0.16)
+        ..color = HandsColors.charcoal.withValues(alpha: pressed ? 0.08 : 0.16)
         ..maskFilter = MaskFilter.blur(
           BlurStyle.normal,
-          Shadow.convertRadiusToSigma(9),
+          Shadow.convertRadiusToSigma(pressed ? 3 : 9),
         ),
     );
-    canvas.drawPath(bodyPath, Paint()..color = HandsColors.forestSage);
+    canvas.drawPath(
+      bodyPath,
+      Paint()
+        ..color = pressed ? HandsColors.oliveGreen : HandsColors.forestSage,
+    );
     canvas.drawPath(
       _highlightPath(body),
-      Paint()..color = HandsColors.oliveGreen,
+      Paint()
+        ..color = pressed
+            ? HandsColors.ivory.withValues(alpha: 0.22)
+            : HandsColors.oliveGreen,
     );
     canvas.drawPath(
       bodyPath,
       Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 1
+        ..strokeWidth = pressed ? 3 : 1
         ..color = HandsColors.forestSage,
     );
     canvas.drawPath(
@@ -117,5 +144,6 @@ class _BalloonPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_BalloonPainter old) => old.bodyWidth != bodyWidth;
+  bool shouldRepaint(_BalloonPainter old) =>
+      old.bodyWidth != bodyWidth || old.halo != halo || old.pressed != pressed;
 }
