@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hands/balloon_touch/balloon_illustration.dart';
@@ -32,6 +33,23 @@ Offset offBody(WidgetTester tester) =>
 Future<void> touch(WidgetTester tester, Offset down, [Offset? up]) async {
   final gesture = await tester.startGesture(down);
   if (up != null) await gesture.moveTo(up);
+  await gesture.up();
+  await tester.pumpAndSettle();
+}
+
+Future<void> touchWith(
+  WidgetTester tester,
+  Offset at, {
+  int? pointer,
+  PointerDeviceKind kind = PointerDeviceKind.touch,
+  int buttons = kPrimaryButton,
+}) async {
+  final gesture = await tester.startGesture(
+    at,
+    pointer: pointer,
+    kind: kind,
+    buttons: buttons,
+  );
   await gesture.up();
   await tester.pumpAndSettle();
 }
@@ -128,6 +146,44 @@ void main() {
     expect(find.text('1 / 3'), findsOneWidget);
   });
 
+  for (final (name, firstDown) in [
+    ('off the body', offBody),
+    ('on the knot', knot),
+    (
+      'outside the balloon',
+      (WidgetTester t) => t.getTopLeft(balloon) - const Offset(10, 10),
+    ),
+  ]) {
+    testWidgets('a second finger is ignored while the first rests $name', (
+      tester,
+    ) async {
+      await startRun(tester);
+      final first = await tester.startGesture(firstDown(tester), pointer: 1);
+      await touchWith(tester, bodyCenter(tester), pointer: 2);
+      expect(find.text('0 / 3'), findsOneWidget);
+      await first.up();
+    });
+  }
+
+  for (final kind in [PointerDeviceKind.mouse, PointerDeviceKind.stylus]) {
+    testWidgets('a ${kind.name} pops the balloon too', (tester) async {
+      await startRun(tester);
+      await touchWith(tester, bodyCenter(tester), kind: kind);
+      expect(find.text('1 / 3'), findsOneWidget);
+    });
+  }
+
+  testWidgets('a right click does not pop', (tester) async {
+    await startRun(tester);
+    await touchWith(
+      tester,
+      bodyCenter(tester),
+      kind: PointerDeviceKind.mouse,
+      buttons: kSecondaryMouseButton,
+    );
+    expect(find.text('0 / 3'), findsOneWidget);
+  });
+
   testWidgets('the balloon darkens only while pressed on the body', (
     tester,
   ) async {
@@ -192,9 +248,13 @@ void main() {
       await tester.tap(find.text('Start Now'));
       await tester.pumpAndSettle();
 
-      final area = Offset.zero & size;
-      expect(area.contains(tester.getTopLeft(balloon)), isTrue);
-      expect(area.contains(tester.getBottomRight(balloon)), isTrue);
+      final area = tester.getRect(
+        find.ancestor(of: balloon, matching: find.byType(DecoratedBox)).first,
+      );
+      // The body and knot, not the empty corners of the balloon's square.
+      final c = bodyCenter(tester);
+      final drawn = Rect.fromLTRB(c.dx - 60, c.dy - 75, c.dx + 60, c.dy + 86);
+      expect(area.intersect(drawn), drawn);
 
       await touch(tester, bodyCenter(tester));
       expect(find.text('Session finished'), findsOneWidget);
