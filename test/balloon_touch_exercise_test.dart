@@ -360,6 +360,23 @@ void main() {
       expect(await sample(tester), everyElement(closeTo(1.0, 1e-9)));
     });
 
+    testWidgets('reduce motion switched mid-run stops and restarts it', (
+      tester,
+    ) async {
+      addTearDown(
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
+      await startRun(tester);
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(disableAnimations: true);
+      await tester.pump();
+      expect(await sample(tester, 1), everyElement(closeTo(1.0, 1e-9)));
+
+      tester.platformDispatcher.clearAccessibilityFeaturesTestValue();
+      await tester.pump();
+      expect((await sample(tester, 1)).toSet(), hasLength(greaterThan(1)));
+    });
+
     testWidgets('setup and progress illustrations stay still', (tester) async {
       await startRun(tester, balloons: 1);
       await touch(tester, bodyCenter(tester));
