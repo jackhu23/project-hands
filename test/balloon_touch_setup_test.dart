@@ -155,6 +155,10 @@ void main() {
     'iPad portrait': (Size(834, 1194), false),
     'Android tablet landscape': (Size(1280, 800), true),
     'Android tablet portrait': (Size(800, 1280), false),
+    // Edges of the rule: width >= 700 and wider than tall.
+    'exactly 700 wide': (Size(700, 500), true),
+    'wide but under 700': (Size(690, 500), false),
+    'square at 1000': (Size(1000, 1000), false),
   };
   for (final MapEntry(key: name, value: (size, sideBySide))
       in layouts.entries) {

@@ -209,9 +209,15 @@ class _BalloonCard extends StatelessWidget {
     padding: 20,
     child: Column(
       children: [
-        const Spacer(),
-        BalloonIllustration(bodyWidth: min(180, height * 0.38)),
-        const Spacer(),
+        // Scale down rather than overflow when the card is narrow, as SwiftUI does.
+        Expanded(
+          child: Center(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: BalloonIllustration(bodyWidth: min(180, height * 0.38)),
+            ),
+          ),
+        ),
         Padding(
           padding: const EdgeInsets.only(bottom: 20),
           child: Text(
@@ -238,29 +244,34 @@ class _CountCard extends StatelessWidget {
       height: height,
       padding: 24,
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Spacer(),
           Text(
             'Number of repetitions',
             textAlign: TextAlign.center,
             style: handsText(24),
           ),
           const SizedBox(height: 20),
-          ValueListenableBuilder(
-            valueListenable: count,
-            builder: (_, value, _) => Container(
-              width: box,
-              height: box,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: HandsColors.warmCream,
-                borderRadius: BorderRadius.circular(28),
-              ),
-              child: Semantics(
-                label: '$value repetitions',
-                liveRegion: true,
-                excludeSemantics: true,
-                child: Text('$value', style: handsText(48)),
+          Flexible(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: ValueListenableBuilder(
+                valueListenable: count,
+                builder: (_, value, _) => Container(
+                  width: box,
+                  height: box,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: HandsColors.warmCream,
+                    borderRadius: BorderRadius.circular(28),
+                  ),
+                  child: Semantics(
+                    label: '$value repetitions',
+                    liveRegion: true,
+                    excludeSemantics: true,
+                    child: Text('$value', style: handsText(48)),
+                  ),
+                ),
               ),
             ),
           ),
@@ -273,7 +284,6 @@ class _CountCard extends StatelessWidget {
             ),
             child: _CountButtons(count),
           ),
-          const Spacer(),
         ],
       ),
     );
@@ -310,6 +320,6 @@ class _CountButtons extends StatelessWidget {
           fixedSize: const Size(60, 50),
           shape: const RoundedRectangleBorder(),
         ),
-        icon: Icon(icon, weight: 700),
+        icon: Icon(icon),
       );
 }
