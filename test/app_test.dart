@@ -5,6 +5,6 @@ void main() {
   testWidgets('app launches to the home screen', (tester) async {
     await tester.pumpWidget(const HandsApp());
 
-    expect(find.text('Project HANDS'), findsOneWidget);
+    expect(find.text('Balloon Touch'), findsOneWidget);
   });
 }
