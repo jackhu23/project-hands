@@ -1,9 +1,12 @@
 // Project setup check for macOS, Windows and Linux.
-// Run from the repo root, after `fvm install`: fvm dart run tool/setup.dart
+// Run from the repo root, after `fvm install` and `fvm flutter pub get`:
+//   fvm dart run tool/setup.dart
 //
 // `fvm dart run` needs the pinned SDK and resolves packages before this script
-// starts, so installing Flutter and running pub get happen outside it. This
-// script verifies the result and is the place for future setup steps.
+// starts, so installing Flutter and running pub get happen outside it. On a
+// fresh SDK only `flutter pub get` (not `dart pub get`) fetches Flutter's
+// engine packages, so it must run first. This script verifies the result and
+// is the place for future setup steps.
 import 'dart:convert';
 import 'dart:io';
 
@@ -31,7 +34,8 @@ Future<void> main() async {
   if (active != pinned) {
     _fail(
       'Flutter $active is active, but .fvmrc pins $pinned. '
-      'Run `fvm install` from the repo root, then rerun this script.',
+      'Run `fvm install` and `fvm flutter pub get` from the repo root, '
+      'then rerun this script.',
     );
   }
   stdout.writeln('Setup OK: Flutter $active (pinned in .fvmrc).');

@@ -1,0 +1,91 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read # dorny/paths-filter lists the PR's changed files
+
+# A new push to a PR cancels its stale run. Pushes to main get one group per commit,
+# because a shared group would drop queued runs and leave some merges unchecked.
+concurrency:
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/flutter
+      - run: flutter pub get
+      - run: dart format --output=none --set-exit-if-changed .
+      - run: flutter analyze
+      - run: flutter test
+
+  # Proves the documented setup works from a clean checkout on every developer OS.
+  # FVM is deliberately unpinned: it installs what a new developer would get today.
+  setup-script:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install FVM (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          curl -fsSL https://fvm.app/install.sh | bash
+          echo "$HOME/fvm/bin" >> "$GITHUB_PATH"
+      - name: Install FVM (macOS)
+        if: runner.os == 'macOS'
+        run: brew tap leoafarias/fvm && brew install fvm
+      - name: Install FVM (Windows)
+        if: runner.os == 'Windows'
+        run: choco install fvm -y --no-progress
+      - run: fvm install
+      - run: fvm flutter pub get
+      - run: fvm dart run tool/setup.dart
+
+  # Decides whether a PR touches anything that can break a platform build.
+  changes:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    outputs:
+      build: ${{ steps.filter.outputs.build }}
+    steps:
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            build:
+              - pubspec.yaml
+              - pubspec.lock
+              - .fvmrc
+              - ios/**
+              - android/**
+              - .github/workflows/**
+              - .github/actions/**
+
+  # Job-level `if` (not a workflow `paths` filter) so skipped builds report as skipped, not pending.
+  build-android:
+    needs: changes
+    if: ${{ !cancelled() && (github.event_name == 'push' || needs.changes.outputs.build == 'true') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/flutter
+      - run: flutter build apk --debug
+
+  build-ios:
+    needs: changes
+    if: ${{ !cancelled() && (github.event_name == 'push' || needs.changes.outputs.build == 'true') }}
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/flutter
+      - run: flutter build ios --no-codesign
