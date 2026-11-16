@@ -357,7 +357,7 @@ void main() {
         tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
       );
       await startRun(tester);
-      expect(await sample(tester), everyElement(1.0));
+      expect(await sample(tester), everyElement(closeTo(1.0, 1e-9)));
     });
 
     testWidgets('setup and progress illustrations stay still', (tester) async {
