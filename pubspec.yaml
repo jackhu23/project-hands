@@ -18,3 +18,8 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  fonts:
+    # Paytone One, SIL Open Font License 1.1 (assets/fonts/PaytoneOne-OFL.txt).
+    - family: PaytoneOne
+      fonts:
+        - asset: assets/fonts/PaytoneOne-Regular.ttf
