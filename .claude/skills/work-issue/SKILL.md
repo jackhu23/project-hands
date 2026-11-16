@@ -42,4 +42,4 @@ Build issue `$ARGUMENTS` in `jackhu23/project-hands` following [CLAUDE.md](../..
 ## 6. Hand off
 
 - Fill in "Review notes" in the pull request body (`gh pr edit --body-file`): CI failures, AI findings by severity and what was fixed, and anything unresolved.
-- Tell the user the pull request is ready, with its link and a two-line summary. Never merge it yourself, and don't enable auto-merge unless the user asks.
+- Tell the user the pull request is ready, with its link and a two-line summary. Never merge it yourself and never enable auto-merge: a human reviews and merges every pull request.
