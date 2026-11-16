@@ -15,7 +15,7 @@ Always run Flutter and Dart through FVM so the pinned SDK in `.fvmrc` is used.
 ## Conventions
 
 - One branch per issue, named `issue-<N>-<short-slug>`, branched from `main`. Never commit to `main`; every change lands through a pull request into `main` that passes CI.
-- Open pull requests with `--base main`: the GitHub default branch is still `feature/balloon-demo` until #4 switches it.
+- A human reviews and merges every pull request by hand; never enable auto-merge.
 - Build test-first: one failing test, the code to pass it, repeat. Tests go through public interfaces (pump the widget, find what the Patient sees), not private implementation.
 - Run analyze, format check and tests locally before opening a pull request.
 - The repository is public: synthetic data only. Never commit real Patient data, Session exports or screenshots with real IDs.
