@@ -15,3 +15,5 @@ class HandsApp extends StatelessWidget {
     );
   }
 }
+
+const   int verifyFormatFailure=1;
