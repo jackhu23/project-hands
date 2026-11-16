@@ -4,7 +4,7 @@
 
 Project HANDS is a tablet app for post-stroke hand rehabilitation, built by three part-time student developers between Nov 2026 and May 2027. Two develop on macOS and one on Windows, and the app has to run on both iPads and Android tablets for a December demo to Occupational Therapists (OTs).
 
-The team lead has seen this go wrong before. On a previous mixed Mac/Windows team, tool versions drifted, packages installed differently on each machine, and setup scripts written on one OS failed on the other. Without a shared foundation, the team will lose its limited hours to "works on my machine" problems. A Windows developer can't build for iPad at all, so iOS breakages could go unnoticed until demo week. And because code reviews are optional to keep a fast prototyping pace, nothing else would catch broken or sloppy code before it merges.
+The team lead has seen this go wrong before. On a previous mixed Mac/Windows team, tool versions drifted, packages installed differently on each machine, and setup scripts written on one OS failed on the other. Without a shared foundation, the team will lose its limited hours to "works on my machine" problems. A Windows developer can't build for iPad at all, so iOS breakages could go unnoticed until demo week. And because GitHub won't require a review approval (a human reviews every pull request by team rule, not by a setting), CI must catch broken or sloppy code before it merges.
 
 ## Solution
 
@@ -33,28 +33,27 @@ Set up the project foundation before any feature work starts:
 12. As a HANDS developer, I want CI to run static analysis on every PR, so that type errors and lint violations are caught before merge.
 13. As a HANDS developer, I want CI to run all unit and widget tests on every PR, so that logic regressions (for example in metric calculations) are caught before merge.
 14. As a HANDS developer, I want CI to run the setup script on Linux, macOS and Windows on every PR, so that a script change that breaks one OS can't merge.
-15. As a HANDS developer, I want the fast checks to finish in about 1â€“2 minutes, so that the many small PRs I open per feature don't slow me down.
+15. As a HANDS developer, I want the fast checks to finish in about 1–2 minutes, so that the many small PRs I open per feature don't slow me down.
 16. As a HANDS developer, I want the iOS and Android builds to run on a PR only when it changes dependencies, platform configuration or the Flutter version, so that ordinary Dart-only PRs stay fast.
 17. As a HANDS developer on Windows, I want CI to build the iOS app whenever I add or upgrade a package, so that I learn immediately if my change breaks the iPad build that I can't run locally.
 18. As a HANDS developer, I want CI to build both iOS and Android on every push to `main`, so that any breakage the PR filter missed is caught within minutes of merging.
 19. As a HANDS developer, I want CI to use the same pinned Flutter version as my machine, so that "passes locally, fails in CI" only happens for real differences.
 20. As a HANDS developer, I want CI to cache the Flutter SDK and packages, so that repeat runs are fast.
 21. As a HANDS developer, I want a superseded CI run to be cancelled when I push again to the same PR, so that I never wait on stale results.
-22. As a HANDS developer, I want passing CI to be the only requirement to merge, so that I can keep a hackathon pace without waiting for a review.
-23. As a HANDS developer, I want to enable auto-merge on my PR, so that it merges by itself as soon as CI is green while I start the next issue.
-24. As a HANDS developer, I want PRs merged with regular merge commits, so that each issue's history is preserved on `main` and a single PR can be reverted.
-25. As a HANDS developer, I want a documented "revert first, fix second" norm for a red `main`, so that my teammates are never blocked by my breakage.
-26. As a HANDS developer, I want the linter to flag async calls that are never awaited, so that a failed "save Session" can't silently lose a Patient's data.
-27. As a HANDS developer, I want the linter to flag dynamic method calls, so that AI-written parsing code can't crash mid-Exercise with a runtime type error.
-28. As a HANDS developer, I want the linter to flag stream subscriptions that are never cancelled, so that touch and timer listeners don't leak or record duplicate Touch Samples.
-29. As a HANDS developer, I want any analyzer issue to fail CI, so that the linter acts as our stand-in for code review.
-30. As a HANDS developer, I want a glossary defining Patient, Exercise, Balloon Touch, Tracing, Session, Exercise Run, Trial, Action and Touch Sample, so that my teammates and I name things in code the same way.
-31. As a HANDS developer, I want the glossary to list words to avoid (such as "repetition," "attempt," "game"), so that ambiguous terms don't creep into the code with different meanings.
-32. As the project lead, I want the Flutter decision recorded as an ADR with the rejected alternatives, so that nobody reopens the framework debate without new information.
-33. As a developer joining in spring, I want to read the ADR and glossary, so that I understand why things are the way they are without the original conversation.
-34. As the project lead, I want the repository to state that it is public and must contain only synthetic data, so that no real Patient data is ever committed.
-35. As the project lead, I want the CI status shown in the README, so that anyone can see at a glance whether `main` is healthy.
-36. As an OT advisor reviewing the December demo, I want the app to behave identically on iPad and Android, so that usability feedback isn't confounded by platform differences.
+22. As a HANDS developer, I want passing CI to be the only merge requirement GitHub enforces, and a human to review and merge every pull request by hand, so that nothing reaches `main` unseen and no merge waits on a formal approval.
+23. As a HANDS developer, I want PRs merged with regular merge commits, so that each issue's history is preserved on `main` and a single PR can be reverted.
+24. As a HANDS developer, I want a documented "revert first, fix second" norm for a red `main`, so that my teammates are never blocked by my breakage.
+25. As a HANDS developer, I want the linter to flag async calls that are never awaited, so that a failed "save Session" can't silently lose a Patient's data.
+26. As a HANDS developer, I want the linter to flag dynamic method calls, so that AI-written parsing code can't crash mid-Exercise with a runtime type error.
+27. As a HANDS developer, I want the linter to flag stream subscriptions that are never cancelled, so that touch and timer listeners don't leak or record duplicate Touch Samples.
+28. As a HANDS developer, I want any analyzer issue to fail CI, so that the linter catches what a quick human review would miss.
+29. As a HANDS developer, I want a glossary defining Patient, Exercise, Balloon Touch, Tracing, Session, Exercise Run, Trial, Action and Touch Sample, so that my teammates and I name things in code the same way.
+30. As a HANDS developer, I want the glossary to list words to avoid (such as "repetition," "attempt," "game"), so that ambiguous terms don't creep into the code with different meanings.
+31. As the project lead, I want the Flutter decision recorded as an ADR with the rejected alternatives, so that nobody reopens the framework debate without new information.
+32. As a developer joining in spring, I want to read the ADR and glossary, so that I understand why things are the way they are without the original conversation.
+33. As the project lead, I want the repository to state that it is public and must contain only synthetic data, so that no real Patient data is ever committed.
+34. As the project lead, I want the CI status shown in the README, so that anyone can see at a glance whether `main` is healthy.
+35. As an OT advisor reviewing the December demo, I want the app to behave identically on iPad and Android, so that usability feedback isn't confounded by platform differences.
 
 ## Implementation Decisions
 
@@ -74,10 +73,10 @@ Set up the project foundation before any feature work starts:
   - All jobs read the Flutter version from the FVM config so CI matches developers exactly.
   - Flutter SDK and pub caching are enabled.
   - A concurrency group per ref cancels superseded runs.
-- **Merge policy:** passing CI is the only merge requirement; reviews are optional. Only merge commits are allowed (no squash). Auto-merge is enabled for the repo. No formal branching rules; the team agrees on branching verbally. Branch protection on `main` requires the CI checks that always run, plus the build checks, which count as satisfied when skipped by the path filter.
+- **Merge policy:** passing CI is the only merge requirement GitHub enforces. By team rule, a human reviews every pull request and merges it by hand; review approvals aren't required by a setting. Only merge commits are allowed (no squash or rebase). Auto-merge is disabled for the repo. Branch naming (`issue-<N>-<short-slug>`, from `main`) is a team convention in CLAUDE.md, not enforced by GitHub. Branch protection on `main` requires the CI checks that always run, plus the build checks, which count as satisfied when skipped by the path filter.
 - **Broken `main`:** a red `main` shows on GitHub; no failure emails. Team norm: whoever broke `main` reverts first, fixes second.
 - **Lint rules:** base set `flutter_lints`, plus `unawaited_futures`, `avoid_dynamic_calls` and `cancel_subscriptions`. Revisit `very_good_analysis` in spring 2027, while the codebase is still small.
-- **Domain vocabulary:** `CONTEXT.md` is the single glossary. The hierarchy is Patient â†’ Session â†’ Exercise Run â†’ Trial â†’ Action â†’ Touch Sample. Dart types introduced later must use these names. Metrics will be computed from stored raw Trials, Actions and Touch Samples rather than stored precomputed. This shapes the storage work later but isn't implemented here.
+- **Domain vocabulary:** `CONTEXT.md` is the single glossary. The hierarchy is Patient → Session → Exercise Run → Trial → Action → Touch Sample. Dart types introduced later must use these names. Metrics will be computed from stored raw Trials, Actions and Touch Samples rather than stored precomputed. This shapes the storage work later but isn't implemented here.
 - **Repository hygiene:** the learner-notes directory (`.vibe-wise/`) is git-ignored. The README covers prerequisites (FVM, Windows Developer Mode), the one-command setup, the daily testing loop per OS, the CI overview, the synthetic-data-only rule and a CI status badge.
 
 ## Testing Decisions
