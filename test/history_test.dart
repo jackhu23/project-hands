@@ -199,6 +199,13 @@ void main() {
       );
     }
     expect(find.bySemanticsLabel('Total, Accuracy: 50%'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(
+        RegExp(r'^Total, Reaction Time: mean \d+\.\d\d s$'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.bySemanticsLabel(RegExp('^Total, Zone')), findsNothing);
   });
 
   test('formats the run time and duration', () {

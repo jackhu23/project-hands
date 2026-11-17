@@ -59,7 +59,7 @@ Widget _table(List<String> columns, List<(String, List<String>)> rows) {
           children: [
             cell(name, header: true),
             for (final (i, v) in values.indexed)
-              cell(v, label: '$name, ${columns[i]}: $v'),
+              cell(v, label: v.isEmpty ? null : '$name, ${columns[i]}: $v'),
           ],
         ),
     ],
@@ -236,36 +236,38 @@ class RunDetailScreen extends StatelessWidget {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
-        child: _table(
-          [
-            'Zone',
-            'Reaction Time',
-            'Pops',
-            'Misses',
-            'Overlapping Touches',
-            'Accuracy',
-          ],
-          [
-            for (final d in details)
+        // Sideways too, so every column is reachable on a phone.
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: _table(
+            [
+              'Zone',
+              'Reaction Time',
+              'Pops',
+              'Misses',
+              'Overlapping Touches',
+              'Accuracy',
+            ],
+            [
+              for (final d in details)
+                (
+                  'Trial ${d.number}',
+                  [
+                    '${d.zone}',
+                    formatSeconds(d.reactionTime),
+                    ...counts(d.counts),
+                  ],
+                ),
               (
-                'Trial ${d.number}',
+                'Total',
                 [
-                  '${d.zone}',
-                  formatSeconds(d.reactionTime),
-                  ...counts(d.counts),
+                  '',
+                  'mean ${formatSeconds(mean([...details.map((d) => d.reactionTime).nonNulls]))}',
+                  ...counts(total),
                 ],
               ),
-            (
-              'Total',
-              [
-                '',
-                formatSeconds(
-                  mean([...details.map((d) => d.reactionTime).nonNulls]),
-                ),
-                ...counts(total),
-              ],
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
