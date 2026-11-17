@@ -14,6 +14,27 @@ const zoneEllipseSpans = [0.25, 0.55, 0.90];
 /// go in the Zones inside it. To be tuned with the OT.
 const ownZoneShare = 0.7;
 
+/// A Zone with less than this share of the usable area counts as having no
+/// room, so each balloon needs only a few hundred draws at most.
+const minZoneRoom = 0.01;
+
+/// The outermost Zone with room in [usable], sampled on a fixed grid.
+int _outermostZoneWithRoom(Rect usable, Size area) {
+  const n = 32;
+  final counts = List.filled(zoneEllipseSpans.length + 2, 0);
+  for (var i = 0; i < n; i++) {
+    for (var j = 0; j < n; j++) {
+      final point = Offset(
+        usable.left + (i + 0.5) / n * usable.width,
+        usable.top + (j + 0.5) / n * usable.height,
+      );
+      counts[zoneOf(point, area)]++;
+    }
+  }
+  // Zone 1 holds the centre, so it always counts.
+  return max(1, counts.lastIndexWhere((c) => c >= n * n * minZoneRoom));
+}
+
 /// The Zone, 1 to 4, that [point] falls in within [area].
 int zoneOf(Offset point, Size area) {
   final x = (point.dx - area.width / 2) / (area.width / 2);
@@ -125,9 +146,8 @@ class Session {
     if (usable == null) return;
     run.area = area;
 
-    // The usable corner is the furthest point out, so its Zone is the
-    // outermost one with room; on a phone that can be below the level.
-    final top = min(run.difficultyLevel, zoneOf(usable.topLeft, area));
+    // On a phone the outermost Zone with room can be below the level.
+    final top = min(run.difficultyLevel, _outermostZoneWithRoom(usable, area));
     // Otherwise uniform over Zones 1 to top−1, so each gets a share by its area.
     final own = top == 1 || _random.nextDouble() < ownZoneShare;
     final outermost = own ? top : top - 1;
@@ -143,8 +163,6 @@ class Session {
           );
     Offset center;
     int zone;
-    // shortcut: a thin sliver of Zone N can take many draws; cap it if a real
-    // screen ever stalls.
     do {
       center = Offset(
         bounds.left + _random.nextDouble() * bounds.width,

@@ -103,6 +103,12 @@ void main() {
       // Phones, where the insets leave Zone 4 no room.
       Size(800, 360),
       Size(360, 800),
+      // Phones where Zone 4 is only a sliver, which took thousands to
+      // billions of draws per balloon.
+      Size(844, 390),
+      Size(851, 393),
+      Size(817, 393),
+      Size(915, 412),
     ]) {
       // Usable area of each Zone: grid points inside the edge insets.
       final rect = usableArea(area)!;
@@ -112,7 +118,8 @@ void main() {
           usable[zoneOf(Offset(x, y), area)]++;
         }
       }
-      final roomiest = usable.lastIndexWhere((n) => n > 0);
+      final total = usable.reduce((a, b) => a + b);
+      final roomiest = usable.lastIndexWhere((n) => n / total >= minZoneRoom);
       for (final level in [2, 3, 4]) {
         const draws = 2000;
         final session = Session(
