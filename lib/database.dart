@@ -103,17 +103,13 @@ class HandsDatabase extends _$HandsDatabase {
       exerciseRuns,
     )..where((r) => r.outcome.isNull())).get();
     for (final run in open) {
-      final last = trials.completedAt.max();
-      final lastShown = trials.presentedAt.max();
-      final row =
-          await (selectOnly(trials)
-                ..addColumns([last, lastShown])
-                ..where(trials.exerciseRunId.equals(run.id)))
-              .getSingle();
+      // Compared in Dart: SQL max() over these dates drops microseconds.
+      final runTrials = await (select(
+        trials,
+      )..where((t) => t.exerciseRunId.equals(run.id))).get();
       final endedAt = [
         run.startedAt,
-        ?row.read(last),
-        ?row.read(lastShown),
+        for (final t in runTrials) ...[t.presentedAt, ?t.completedAt],
       ].reduce((a, b) => a.isAfter(b) ? a : b);
       await (update(exerciseRuns)..where((r) => r.id.equals(run.id))).write(
         ExerciseRunsCompanion(
