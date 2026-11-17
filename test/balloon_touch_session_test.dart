@@ -224,6 +224,35 @@ void main() {
     expect(session.exerciseRun.completedTrials, 1);
   });
 
+  test('pause and stop finish touches still down as Misses or Overlapping '
+      'Touches', () {
+    TouchInput at(int ms) => (
+      timeStamp: Duration(milliseconds: ms),
+      position: Offset.zero,
+      pressure: 1.0,
+      kind: TouchKind.finger,
+    );
+    for (final end in [(Session s) => s.pause(), (Session s) => s.stop()]) {
+      final session = Session(patientId: 'p', balloonCount: 3)
+        ..presentNextTrial(const Size(800, 600));
+      final trial = session.exerciseRun.activeTrial!;
+      session
+        ..touchDown(1, at(0), onBody: true)
+        ..touchDown(2, at(5), onBody: false)
+        ..touchMove(1, at(10));
+
+      end(session);
+
+      expect(trial.actions.map((a) => a.outcome), [
+        ActionOutcome.miss,
+        ActionOutcome.overlappingTouch,
+      ]);
+      expect(session.unsavedActions, hasLength(2));
+      expect(trial.actions.first.samples, hasLength(2));
+      expect(session.pressingBalloon, isFalse);
+    }
+  });
+
   test('pause and resume only apply from running and paused', () {
     final session = Session(patientId: 'p', balloonCount: 1);
     session.resume();

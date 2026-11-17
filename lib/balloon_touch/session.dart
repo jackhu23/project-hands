@@ -259,6 +259,21 @@ class Session {
     unsavedActions.add(action);
   }
 
+  /// Ends every touch still down at [at]. One cut off can't be a Pop: it is an
+  /// Overlapping Touch if [overlapping] or it was one, otherwise a Miss.
+  void _cutOffTouches(DateTime at, {bool overlapping = false}) {
+    for (final action in _touches.values) {
+      _finish(
+        action,
+        at,
+        overlapping || action.overlapping
+            ? ActionOutcome.overlappingTouch
+            : ActionOutcome.miss,
+      );
+    }
+    _touches.clear();
+  }
+
   /// A cancelled touch is not an Action.
   void touchCancel(int pointer) => _touches.remove(pointer);
 
@@ -325,21 +340,19 @@ class Session {
       endedAt = now;
       // Any touch still down began during the pop, so it is an Overlapping
       // Touch; it is cut off here, as the run is over.
-      for (final action in _touches.values) {
-        _finish(action, now, ActionOutcome.overlappingTouch);
-      }
-      _touches.clear();
+      _cutOffTouches(now, overlapping: true);
     }
     onChange?.call(this);
   }
 
-  /// Pauses the run, dropping any touch in progress so a hold from before
+  /// Pauses the run, cutting off any touch in progress so a hold from before
   /// the pause can't pop the balloon after it.
   void pause() {
     if (status != SessionStatus.running) return;
     status = SessionStatus.paused;
-    exerciseRun.pauses.add(Pause(DateTime.now()));
-    _touches.clear();
+    final now = DateTime.now();
+    exerciseRun.pauses.add(Pause(now));
+    _cutOffTouches(now);
     onChange?.call(this);
   }
 
@@ -355,10 +368,11 @@ class Session {
     if (status != SessionStatus.running && status != SessionStatus.paused) {
       return;
     }
+    final now = DateTime.now();
+    _cutOffTouches(now);
     exerciseRun.activeTrial?.status = TrialStatus.unfinished;
-    _touches.clear();
     status = SessionStatus.stopped;
-    endedAt = DateTime.now();
+    endedAt = now;
     onChange?.call(this);
   }
 }

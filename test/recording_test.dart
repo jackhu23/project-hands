@@ -201,6 +201,20 @@ void main() {
     expect(await outcomes(db), [ActionOutcome.miss]);
   });
 
+  testWidgets('a slide still down when the run pauses is saved as a Miss', (
+    tester,
+  ) async {
+    final db = await pumpApp(tester);
+    await startRun(tester);
+
+    final slide = await tester.startGesture(bodyCenter(tester));
+    await slide.moveBy(const Offset(5, 5));
+    await tapAndSettle(tester, find.byTooltip('Pause'));
+    await slide.up();
+
+    expect(await outcomes(db), [ActionOutcome.miss]);
+  });
+
   for (final (device, kind) in [
     (PointerDeviceKind.stylus, TouchKind.stylus),
     (PointerDeviceKind.invertedStylus, TouchKind.stylus),
