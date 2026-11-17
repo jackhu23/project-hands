@@ -4,7 +4,9 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hands/balloon_touch/balloon_illustration.dart';
-import 'package:hands/main.dart';
+
+import 'test_app.dart';
+
 import 'package:hands/theme.dart';
 
 /// The balloon pulses forever, so pumpAndSettle would never return; this
@@ -18,7 +20,7 @@ Future<void> startRun(WidgetTester tester, {int balloons = 3}) async {
   tester.view.physicalSize = const Size(1280, 800);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
-  await tester.pumpWidget(const HandsApp());
+  await pumpApp(tester);
   await tester.tap(find.text('Balloon Touch'));
   await settle(tester);
   for (var i = 1; i < balloons; i++) {
@@ -259,7 +261,7 @@ void main() {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
-      await tester.pumpWidget(const HandsApp());
+      await pumpApp(tester);
       await tester.tap(find.text('Balloon Touch'));
       await settle(tester);
       await tester.tap(find.text('Start Now'));

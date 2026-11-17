@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hands/balloon_touch/balloon_illustration.dart';
 import 'package:hands/balloon_touch/exercise_screen.dart';
-import 'package:hands/main.dart';
+
+import 'test_app.dart';
+
 import 'package:hands/theme.dart';
 
 Future<void> openSetup(WidgetTester tester) async {
-  await tester.pumpWidget(const HandsApp());
+  await pumpApp(tester);
   await tester.tap(find.text('Balloon Touch'));
   await tester.pumpAndSettle();
 }
@@ -46,7 +48,7 @@ void main() {
   testWidgets('home screen shows one square Balloon Touch button top-left', (
     tester,
   ) async {
-    await tester.pumpWidget(const HandsApp());
+    await pumpApp(tester);
 
     final scaffold = tester.widget<Scaffold>(find.byType(Scaffold));
     expect(scaffold.backgroundColor, Colors.white);

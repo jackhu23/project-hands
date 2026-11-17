@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
+import '../database.dart';
 import '../theme.dart';
 import 'balloon_illustration.dart';
 import 'progress_screen.dart';
@@ -10,9 +11,14 @@ import 'session.dart';
 
 /// The Balloon Touch Exercise Run, ported from the demo's `ExerciseScreen`.
 class ExerciseScreen extends StatefulWidget {
-  const ExerciseScreen({super.key, required this.session});
+  const ExerciseScreen({
+    super.key,
+    required this.session,
+    required this.database,
+  });
 
   final Session session;
+  final HandsDatabase database;
 
   @override
   State<ExerciseScreen> createState() => _ExerciseScreenState();
@@ -65,7 +71,8 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
     _pause();
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => ProgressScreen(session: _session),
+        builder: (_) =>
+            ProgressScreen(session: _session, database: widget.database),
       ),
     );
     if (!mounted) return;
@@ -110,7 +117,8 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
     if (_session.status == SessionStatus.completed) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(
-          builder: (_) => ProgressScreen(session: _session),
+          builder: (_) =>
+              ProgressScreen(session: _session, database: widget.database),
         ),
       );
     }
