@@ -168,11 +168,11 @@ void main() {
   });
 
   test('a Session has random IDs and starts running', () {
-    final a = Session(patientId: temporaryPatientId, balloonCount: 1);
-    final b = Session(patientId: temporaryPatientId, balloonCount: 1);
+    final a = Session(patientId: 'p', balloonCount: 1);
+    final b = Session(patientId: 'p', balloonCount: 1);
     expect(a.id, isNot(b.id));
     expect(a.id, matches(RegExp(r'^[0-9a-f]{32}$')));
-    expect(a.patientId, temporaryPatientId);
+    expect(a.patientId, 'p');
     expect(a.status, SessionStatus.running);
   });
 }
