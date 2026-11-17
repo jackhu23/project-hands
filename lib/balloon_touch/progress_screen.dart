@@ -7,7 +7,8 @@ import 'balloon_illustration.dart';
 import 'session.dart';
 
 /// The progress page, ported from the demo's `BalloonSessionHomeView`.
-/// "Start New Session" returns to setup.
+/// A paused Session can be resumed; "Start New Session" stops it and returns
+/// to setup.
 class ProgressScreen extends StatelessWidget {
   const ProgressScreen({super.key, required this.session});
 
@@ -17,6 +18,7 @@ class ProgressScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final run = session.exerciseRun;
     final done = run.completedTrials, planned = run.balloonCount;
+    final canResume = session.status == SessionStatus.paused;
     return Scaffold(
       backgroundColor: HandsColors.warmCream,
       body: SafeArea(
@@ -103,7 +105,9 @@ class ProgressScreen extends StatelessWidget {
                                   ),
                                 ),
                                 Text(
-                                  'Session finished',
+                                  canResume
+                                      ? 'Session paused'
+                                      : 'Session finished',
                                   style: handsText(25, HandsColors.forestSage),
                                 ),
                                 Text(
@@ -114,12 +118,42 @@ class ProgressScreen extends StatelessWidget {
                               ],
                             ),
                           ),
+                          if (canResume)
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 300),
+                              child: SizedBox(
+                                width: double.infinity,
+                                child: FilledButton(
+                                  onPressed: () {
+                                    session.resume();
+                                    Navigator.of(context).pop();
+                                  },
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor: HandsColors.oliveGreen,
+                                    minimumSize: const Size.fromHeight(50),
+                                    shape: const StadiumBorder(
+                                      side: BorderSide(
+                                        color: HandsColors.ivory,
+                                        width: 2,
+                                      ),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'Resume Session',
+                                    style: handsText(22, HandsColors.ivory),
+                                  ),
+                                ),
+                              ),
+                            ),
                           ConstrainedBox(
                             constraints: const BoxConstraints(maxWidth: 300),
                             child: SizedBox(
                               width: double.infinity,
                               child: OutlinedButton(
-                                onPressed: () => Navigator.of(context).pop(),
+                                onPressed: () {
+                                  session.stop();
+                                  Navigator.of(context).pop();
+                                },
                                 style: OutlinedButton.styleFrom(
                                   minimumSize: const Size.fromHeight(50),
                                   shape: const StadiumBorder(),

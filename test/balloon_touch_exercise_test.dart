@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hands/balloon_touch/balloon_illustration.dart';
 import 'package:hands/main.dart';
+import 'package:hands/theme.dart';
 
 /// The balloon pulses forever, so pumpAndSettle would never return; this
 /// pumps past any route transition instead.
@@ -31,6 +32,13 @@ final balloon = find.bySemanticsLabel('Balloon');
 
 /// The body's centre: the balloon is drawn with its body centred.
 Offset bodyCenter(WidgetTester tester) => tester.getCenter(balloon);
+
+/// The same spot, allowing for rounding through the pulse's transform.
+Matcher sameSpot(Offset spot) => isA<Offset>().having(
+  (o) => (o - spot).distance,
+  'distance',
+  lessThan(1e-6),
+);
 
 /// The knot hangs just under the body (120 wide, 150 tall).
 Offset knot(WidgetTester tester) => bodyCenter(tester) + const Offset(0, 83);
@@ -276,6 +284,190 @@ void main() {
     });
   }
 
+  group('pause', () {
+    final pauseButton = find.widgetWithIcon(IconButton, Icons.pause);
+    final ivoryPanel = find.ancestor(
+      of: find.text('Paused'),
+      matching: find.byWidgetPredicate(
+        (w) =>
+            w is Container &&
+            (w.decoration as BoxDecoration?)?.color == HandsColors.ivory,
+      ),
+    );
+
+    Future<void> tapAndSettle(WidgetTester tester, Finder finder) async {
+      await tester.tap(finder);
+      await settle(tester);
+    }
+
+    void expectPausedPanel(WidgetTester tester) {
+      expect(ivoryPanel, findsOneWidget);
+      expect(find.text('Resume'), findsOneWidget);
+      expect(balloon, findsNothing);
+      expect(tester.widget<IconButton>(pauseButton).onPressed, isNull);
+    }
+
+    testWidgets('Pause swaps the balloon for the Paused panel', (tester) async {
+      await startRun(tester);
+      await tapAndSettle(tester, pauseButton);
+      expectPausedPanel(tester);
+      expect(find.text('0 / 3'), findsOneWidget);
+    });
+
+    testWidgets('Resume brings back the same balloon at the same spot', (
+      tester,
+    ) async {
+      await startRun(tester);
+      await touch(tester, bodyCenter(tester));
+      final spot = bodyCenter(tester);
+
+      await tapAndSettle(tester, pauseButton);
+      // Touching where the balloon was does nothing while paused, unless it
+      // sat where the centred Resume button now is.
+      final resume = find.widgetWithText(FilledButton, 'Resume');
+      if (!tester.getRect(resume).contains(spot)) await touch(tester, spot);
+      await tapAndSettle(tester, find.text('Resume'));
+
+      expect(find.text('Paused'), findsNothing);
+      expect(bodyCenter(tester), sameSpot(spot));
+      expect(find.text('1 / 3'), findsOneWidget);
+      expect(tester.widget<IconButton>(pauseButton).onPressed, isNotNull);
+      await touch(tester, spot);
+      expect(find.text('2 / 3'), findsOneWidget);
+    });
+
+    testWidgets('a hold from before a pause cannot pop after Resume', (
+      tester,
+    ) async {
+      await startRun(tester);
+      final spot = bodyCenter(tester);
+      final hold = await tester.startGesture(spot, pointer: 1);
+      await tester.pump();
+
+      await touchWith(tester, tester.getCenter(pauseButton), pointer: 2);
+      await touchWith(
+        tester,
+        tester.getCenter(find.text('Resume')),
+        pointer: 3,
+      );
+      await hold.up();
+      await settle(tester);
+
+      expect(find.text('0 / 3'), findsOneWidget);
+      expect(
+        tester
+            .widget<BalloonIllustration>(find.byType(BalloonIllustration))
+            .pressed,
+        isFalse,
+      );
+      await touch(tester, spot);
+      expect(find.text('1 / 3'), findsOneWidget);
+    });
+
+    for (final (name, button) in [
+      ('Home', find.byTooltip('Home')),
+      ('Finish', find.text('Finish')),
+    ]) {
+      testWidgets('$name pauses and opens the paused progress page', (
+        tester,
+      ) async {
+        await startRun(tester);
+        await touch(tester, bodyCenter(tester));
+        await tapAndSettle(tester, button);
+
+        for (final text in [
+          '1/3',
+          'Session paused',
+          'You completed 1 of 3 balloons.',
+          'Resume Session',
+          'Start New Session',
+        ]) {
+          expect(find.text(text), findsOneWidget);
+        }
+        expect(find.text('Session finished'), findsNothing);
+        expect(progress(tester), closeTo(1 / 3, 1e-9));
+      });
+    }
+
+    testWidgets('Resume Session returns to the same balloon and count', (
+      tester,
+    ) async {
+      await startRun(tester);
+      await touch(tester, bodyCenter(tester));
+      final spot = bodyCenter(tester);
+      await tapAndSettle(tester, find.byTooltip('Home'));
+
+      await tapAndSettle(tester, find.text('Resume Session'));
+
+      expect(find.text('Paused'), findsNothing);
+      expect(bodyCenter(tester), sameSpot(spot));
+      expect(find.text('1 / 3'), findsOneWidget);
+      await touch(tester, spot);
+      expect(find.text('2 / 3'), findsOneWidget);
+    });
+
+    testWidgets('Start New Session from a paused Session returns to setup', (
+      tester,
+    ) async {
+      await startRun(tester);
+      await touch(tester, bodyCenter(tester));
+      await tapAndSettle(tester, find.text('Finish'));
+
+      await tapAndSettle(tester, find.text('Start New Session'));
+
+      expect(find.text('Start Now'), findsOneWidget);
+      expect(find.text('Resume Session'), findsNothing);
+      await tapAndSettle(tester, find.text('Start Now'));
+      expect(find.text('0 / 3'), findsOneWidget, reason: 'a new Session');
+      expect(balloon, findsOneWidget);
+    });
+
+    // Lifecycle changes must follow the order the platform reports them in.
+    const leave = [
+      AppLifecycleState.inactive,
+      AppLifecycleState.hidden,
+      AppLifecycleState.paused,
+    ];
+    for (var i = 0; i < leave.length; i++) {
+      testWidgets('going ${leave[i].name} pauses the Exercise Run', (
+        tester,
+      ) async {
+        await startRun(tester);
+        final spot = bodyCenter(tester);
+
+        for (final state in leave.take(i + 1)) {
+          tester.binding.handleAppLifecycleStateChanged(state);
+        }
+        await settle(tester);
+        for (final state in [
+          ...leave.take(i).toList().reversed,
+          AppLifecycleState.resumed,
+        ]) {
+          tester.binding.handleAppLifecycleStateChanged(state);
+        }
+        await settle(tester);
+
+        // It stays paused on return until the Patient resumes.
+        expectPausedPanel(tester);
+        await tapAndSettle(tester, find.text('Resume'));
+        expect(bodyCenter(tester), sameSpot(spot));
+      });
+    }
+
+    testWidgets('the gear buttons do nothing', (tester) async {
+      await startRun(tester);
+      final spot = bodyCenter(tester);
+      await tapAndSettle(tester, find.byTooltip('Settings'));
+      expect(bodyCenter(tester), sameSpot(spot));
+      expect(find.text('0 / 3'), findsOneWidget);
+      expect(find.text('Paused'), findsNothing);
+
+      await tapAndSettle(tester, find.byTooltip('Home'));
+      await tapAndSettle(tester, find.byIcon(Icons.settings));
+      expect(find.text('Session paused'), findsOneWidget);
+    });
+  });
+
   group('pulse', () {
     /// The balloon's drawn scale: its square is 1.75 × 120 wide unscaled.
     double scale(WidgetTester tester) => tester.getRect(balloon).width / 210;
@@ -326,27 +518,24 @@ void main() {
       expect((await sample(tester, 1)).toSet(), hasLength(greaterThan(1)));
     });
 
-    testWidgets('holds while the app is not in the foreground', (tester) async {
+    testWidgets('pulses again after resuming from the background', (
+      tester,
+    ) async {
       await startRun(tester);
+      // Flutter rejects jumping between paused and resumed, so walk there.
       for (final state in [
         AppLifecycleState.inactive,
         AppLifecycleState.hidden,
         AppLifecycleState.paused,
-      ]) {
-        tester.binding.handleAppLifecycleStateChanged(state);
-        await tester.pump();
-        final held = scale(tester);
-        await tester.pump(const Duration(seconds: 1));
-        expect(scale(tester), held, reason: '$state');
-      }
-      // Back the way it came; Flutter rejects jumping from paused to resumed.
-      for (final state in [
         AppLifecycleState.hidden,
         AppLifecycleState.inactive,
         AppLifecycleState.resumed,
       ]) {
         tester.binding.handleAppLifecycleStateChanged(state);
       }
+      await settle(tester);
+      await tester.tap(find.text('Resume'));
+      await tester.pump();
       expect((await sample(tester, 1)).toSet(), hasLength(greaterThan(1)));
     });
 

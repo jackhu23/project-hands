@@ -65,6 +65,48 @@ void main() {
     expect(session.exerciseRun.activeTrial!.number, 1);
   });
 
+  test('pause holds the active Trial and resume carries on with it', () {
+    final session = Session(patientId: 'p', balloonCount: 3);
+    session.presentNextTrial(const Size(800, 600));
+    final trial = session.exerciseRun.activeTrial!;
+
+    session.pause();
+    expect(session.status, SessionStatus.paused);
+    session.completeTrial(trial);
+    expect(trial.status, TrialStatus.active, reason: 'no pops while paused');
+
+    session.resume();
+    expect(session.status, SessionStatus.running);
+    expect(session.exerciseRun.activeTrial, same(trial));
+  });
+
+  test('stop ends the Session and leaves the active Trial unfinished', () {
+    final session = Session(patientId: 'p', balloonCount: 3);
+    session.presentNextTrial(const Size(800, 600));
+    session.completeTrial(session.exerciseRun.activeTrial!);
+    session.presentNextTrial(const Size(800, 600));
+    final trial = session.exerciseRun.activeTrial!;
+    session.pause();
+
+    session.stop();
+
+    expect(session.status, SessionStatus.stopped);
+    expect(session.endedAt, isNotNull);
+    expect(trial.status, TrialStatus.unfinished);
+    expect(session.exerciseRun.activeTrial, isNull);
+    expect(session.exerciseRun.completedTrials, 1);
+  });
+
+  test('pause and resume only apply from running and paused', () {
+    final session = Session(patientId: 'p', balloonCount: 1);
+    session.resume();
+    expect(session.status, SessionStatus.running);
+    session.presentNextTrial(const Size(800, 600));
+    session.completeTrial(session.exerciseRun.activeTrial!);
+    session.pause();
+    expect(session.status, SessionStatus.completed);
+  });
+
   test('a Session has random IDs and starts running', () {
     final a = Session(patientId: temporaryPatientId, balloonCount: 1);
     final b = Session(patientId: temporaryPatientId, balloonCount: 1);

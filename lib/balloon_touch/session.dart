@@ -102,4 +102,22 @@ class Session {
       endedAt = now;
     }
   }
+
+  void pause() {
+    if (status == SessionStatus.running) status = SessionStatus.paused;
+  }
+
+  void resume() {
+    if (status == SessionStatus.paused) status = SessionStatus.running;
+  }
+
+  /// Ends the Session early; the balloon showing, if any, becomes unfinished.
+  void stop() {
+    if (status != SessionStatus.running && status != SessionStatus.paused) {
+      return;
+    }
+    exerciseRun.activeTrial?.status = TrialStatus.unfinished;
+    status = SessionStatus.stopped;
+    endedAt = DateTime.now();
+  }
 }
