@@ -2,17 +2,24 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
+import '../database.dart';
 import '../theme.dart';
 import 'balloon_illustration.dart';
+import 'history_screen.dart';
 import 'session.dart';
 
 /// The progress page, ported from the demo's `BalloonSessionHomeView`.
 /// A paused Session can be resumed; "Start New Session" stops it and returns
 /// to setup.
 class ProgressScreen extends StatelessWidget {
-  const ProgressScreen({super.key, required this.session});
+  const ProgressScreen({
+    super.key,
+    required this.session,
+    required this.database,
+  });
 
   final Session session;
+  final HandsDatabase database;
 
   @override
   Widget build(BuildContext context) {
@@ -167,6 +174,21 @@ class ProgressScreen extends StatelessWidget {
                                   style: handsText(22, HandsColors.forestSage),
                                 ),
                               ),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) =>
+                                    HistoryScreen(database: database),
+                              ),
+                            ),
+                            style: TextButton.styleFrom(
+                              minimumSize: const Size(140, 50),
+                            ),
+                            child: Text(
+                              'View history',
+                              style: handsText(20, HandsColors.oliveGreen),
                             ),
                           ),
                         ],

@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
+import '../database.dart';
 import '../theme.dart';
 import 'balloon_illustration.dart';
 import 'exercise_screen.dart';
@@ -11,7 +12,14 @@ const _minBalloons = 1, _maxBalloons = 30;
 
 /// Balloon Touch setup, ported from the demo's `BalloonSetupView`.
 class SetupScreen extends StatefulWidget {
-  const SetupScreen({super.key});
+  const SetupScreen({
+    super.key,
+    required this.database,
+    required this.patientId,
+  });
+
+  final HandsDatabase database;
+  final String patientId;
 
   @override
   State<SetupScreen> createState() => _SetupScreenState();
@@ -31,12 +39,16 @@ class _SetupScreenState extends State<SetupScreen> {
   void _start() {
     // Created once here, not in the route builder, which can run again.
     final session = Session(
-      patientId: temporaryPatientId,
+      patientId: widget.patientId,
       balloonCount: _balloonCount.value,
       difficultyLevel: _difficultyLevel.value,
+      onChange: widget.database.saveSession,
     );
     Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => ExerciseScreen(session: session)),
+      MaterialPageRoute<void>(
+        builder: (_) =>
+            ExerciseScreen(session: session, database: widget.database),
+      ),
     );
   }
 

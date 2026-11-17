@@ -11,6 +11,7 @@ Always run Flutter and Dart through FVM so the pinned SDK in `.fvmrc` is used.
 - Lint: `fvm flutter analyze` (any issue fails)
 - Format: `fvm dart format .` (CI checks with `--output=none --set-exit-if-changed .`)
 - Run: `fvm flutter run`
+- Regenerate drift code after changing `lib/database.dart`: `fvm dart run build_runner build` (the generated `database.g.dart` is committed)
 
 ## Conventions
 

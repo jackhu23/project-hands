@@ -1,9 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hands/main.dart';
+
+import 'test_app.dart';
 
 void main() {
   testWidgets('app launches to the home screen', (tester) async {
-    await tester.pumpWidget(const HandsApp());
+    await pumpApp(tester);
 
     expect(find.text('Balloon Touch'), findsOneWidget);
   });

@@ -26,9 +26,6 @@ String randomId() => List.generate(
   (_) => _secure.nextInt(256).toRadixString(16).padLeft(2, '0'),
 ).join();
 
-/// Temporary random Patient ID, kept for as long as the app runs, as in the demo.
-final temporaryPatientId = randomId();
-
 enum SessionStatus { running, paused, completed, stopped }
 
 enum TrialStatus { active, completed, interrupted, unfinished }
@@ -42,6 +39,7 @@ class Trial {
     required this.bodyWidth,
   }) : presentedAt = DateTime.now();
 
+  final id = randomId();
   final int number;
   final Offset center;
 
@@ -62,8 +60,12 @@ class ExerciseRun {
             difficultyLevel <= maxDifficultyLevel,
       );
 
+  final id = randomId();
   final int balloonCount, difficultyLevel;
   final trials = <Trial>[];
+
+  /// The play area the balloons are placed in, in logical pixels.
+  Size area = Size.zero;
 
   int get completedTrials =>
       trials.where((t) => t.status == TrialStatus.completed).length;
@@ -79,6 +81,7 @@ class Session {
     required int balloonCount,
     int difficultyLevel = minDifficultyLevel,
     Random? random,
+    this.onChange,
   }) : exerciseRun = ExerciseRun(balloonCount, difficultyLevel),
        _random = random ?? Random();
 
@@ -89,6 +92,10 @@ class Session {
   final Random _random;
   SessionStatus status = SessionStatus.running;
   DateTime? endedAt;
+
+  /// Called after each change worth saving: a balloon shown or popped, a
+  /// pause, or the end of the Session.
+  final void Function(Session)? onChange;
 
   /// Shows the next balloon at a random spot inside [area] for the Difficulty
   /// Level, unless one is already showing, none remain, or the area is too small.
@@ -104,6 +111,7 @@ class Session {
     // The knot's height is reserved on both vertical edges, as in the demo.
     const dy = (h / 2 + knot) * maxPulseScale + edgeMargin;
     if (area.width <= dx * 2 || area.height <= dy * 2) return;
+    run.area = area;
 
     var bounds = Rect.fromLTRB(dx, dy, area.width - dx, area.height - dy);
     // shortcut: Levels 2 to 4 stay uniform over the area, until weighted placement lands.
@@ -134,6 +142,7 @@ class Session {
         bodyWidth: w,
       ),
     );
+    onChange?.call(this);
   }
 
   /// Pops [trial]; completes the Session once every balloon is popped.
@@ -149,10 +158,13 @@ class Session {
       status = SessionStatus.completed;
       endedAt = now;
     }
+    onChange?.call(this);
   }
 
   void pause() {
-    if (status == SessionStatus.running) status = SessionStatus.paused;
+    if (status != SessionStatus.running) return;
+    status = SessionStatus.paused;
+    onChange?.call(this);
   }
 
   void resume() {
@@ -167,5 +179,6 @@ class Session {
     exerciseRun.activeTrial?.status = TrialStatus.unfinished;
     status = SessionStatus.stopped;
     endedAt = DateTime.now();
+    onChange?.call(this);
   }
 }
