@@ -33,7 +33,12 @@ class _SetupScreenState extends State<SetupScreen> {
   void initState() {
     super.initState();
     widget.database.lastDifficultyLevel().then((level) {
-      if (level != null && mounted) _difficultyLevel.value = level;
+      // Unless the Patient has already changed it.
+      if (level != null &&
+          mounted &&
+          _difficultyLevel.value == minDifficultyLevel) {
+        _difficultyLevel.value = level;
+      }
     });
   }
 

@@ -239,16 +239,24 @@ class Session {
     final action = _touches.remove(pointer);
     if (action == null) return;
     action._add(input);
-    action
-      ..liftOffAt = action.samples.last.time
-      ..outcome = action.overlapping
+    _finish(
+      action,
+      action.samples.last.time,
+      action.overlapping
           ? ActionOutcome.overlappingTouch
           : action.startedOnBody && onBody
           ? ActionOutcome.pop
-          : ActionOutcome.miss;
+          : ActionOutcome.miss,
+    );
+    if (action.outcome == ActionOutcome.pop) completeTrial(action.trial);
+  }
+
+  void _finish(Action action, DateTime liftOffAt, ActionOutcome outcome) {
+    action
+      ..liftOffAt = liftOffAt
+      ..outcome = outcome;
     action.trial.actions.add(action);
     unsavedActions.add(action);
-    if (action.outcome == ActionOutcome.pop) completeTrial(action.trial);
   }
 
   /// A cancelled touch is not an Action.
@@ -315,6 +323,11 @@ class Session {
     if (exerciseRun.completedTrials >= exerciseRun.balloonCount) {
       status = SessionStatus.completed;
       endedAt = now;
+      // Any touch still down began during the pop, so it is an Overlapping
+      // Touch; it is cut off here, as the run is over.
+      for (final action in _touches.values) {
+        _finish(action, now, ActionOutcome.overlappingTouch);
+      }
       _touches.clear();
     }
     onChange?.call(this);

@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart' hide isNull, isNotNull;
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart' hide Action;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hands/balloon_touch/session.dart';
@@ -170,6 +171,61 @@ void main() {
       ]),
     );
   });
+
+  testWidgets('a touch still down when the last balloon pops is recorded', (
+    tester,
+  ) async {
+    final db = await pumpApp(tester);
+    await startRun(tester, balloons: 1);
+
+    final first = await tester.startGesture(bodyCenter(tester), pointer: 1);
+    final palm = await tester.startGesture(offBody(tester), pointer: 2);
+    await first.up();
+    await settle(tester);
+
+    expect(find.text('Session finished'), findsOneWidget);
+    expect(
+      await outcomes(db),
+      unorderedEquals([ActionOutcome.pop, ActionOutcome.overlappingTouch]),
+    );
+    await palm.up();
+  });
+
+  testWidgets('a Miss is saved when the run pauses', (tester) async {
+    final db = await pumpApp(tester);
+    await startRun(tester);
+
+    await touch(tester, tester.getTopLeft(balloon) - const Offset(10, 10));
+    await tapAndSettle(tester, find.byTooltip('Pause'));
+
+    expect(await outcomes(db), [ActionOutcome.miss]);
+  });
+
+  for (final (device, kind) in [
+    (PointerDeviceKind.stylus, TouchKind.stylus),
+    (PointerDeviceKind.invertedStylus, TouchKind.stylus),
+    (PointerDeviceKind.mouse, TouchKind.mouse),
+  ]) {
+    testWidgets('a ${device.name} records ${kind.name} Touch Samples', (
+      tester,
+    ) async {
+      final db = await pumpApp(tester);
+      await startRun(tester);
+
+      final gesture = await tester.startGesture(
+        bodyCenter(tester),
+        kind: device,
+      );
+      await gesture.up();
+      await settle(tester);
+
+      final action = (await actionsOf(db)).single;
+      expect(
+        (await samplesOf(db, action.id)).map((s) => s.kind),
+        everyElement(kind),
+      );
+    });
+  }
 
   testWidgets('controls, touches while paused and cancels record no Action', (
     tester,

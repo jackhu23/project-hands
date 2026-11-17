@@ -210,95 +210,106 @@ class HandsDatabase extends _$HandsDatabase {
   /// Saves a snapshot of [session], its Exercise Run, Trials and pauses,
   /// replacing any earlier snapshot, and the Actions finished since the last
   /// save with their Touch Samples.
-  Future<void> saveSession(Session session) {
-    // Taken now, as later calls may run before this transaction does.
+  Future<void> saveSession(Session session) async {
+    // Taken now, as later calls may run before this transaction does, and
+    // put back if it fails so the next save retries them.
     final newActions = [...session.unsavedActions];
     session.unsavedActions.clear();
-    return transaction(() async {
-      final run = session.exerciseRun;
-      // Recreates the Patient if "Clear all data" removed it during this launch.
-      await into(patients).insert(
-        PatientRow(id: session.patientId, createdAt: DateTime.now()),
-        mode: InsertMode.insertOrIgnore,
-      );
-      await into(sessions).insertOnConflictUpdate(
-        SessionRow(
-          id: session.id,
-          patientId: session.patientId,
-          startedAt: session.startedAt,
-          endedAt: session.endedAt,
-        ),
-      );
-      await into(exerciseRuns).insertOnConflictUpdate(
-        ExerciseRunRow(
-          id: run.id,
-          sessionId: session.id,
-          exercise: 'Balloon Touch',
-          difficultyLevel: run.difficultyLevel,
-          balloonCount: run.balloonCount,
-          areaWidth: run.area.width,
-          areaHeight: run.area.height,
-          startedAt: session.startedAt,
-          endedAt: session.endedAt,
-          outcome: switch (session.status) {
-            SessionStatus.completed => RunOutcome.completed,
-            SessionStatus.stopped => RunOutcome.stopped,
-            _ => null,
-          },
-        ),
-      );
-      await batch((b) {
-        b.insertAllOnConflictUpdate(trials, [
-          for (final t in run.trials)
-            TrialRow(
-              id: t.id,
-              exerciseRunId: run.id,
-              number: t.number,
-              centerX: t.center.dx,
-              centerY: t.center.dy,
-              bodyWidth: t.bodyWidth,
-              bodyHeight: t.bodyHeight,
-              zone: t.zone,
-              presentedAt: t.presentedAt,
-              completedAt: t.completedAt,
-              status: t.status,
-            ),
-        ]);
-        b.insertAllOnConflictUpdate(pauses, [
-          for (final (i, p) in run.pauses.indexed)
-            PauseRow(
-              exerciseRunId: run.id,
-              number: i + 1,
-              pausedAt: p.pausedAt,
-              resumedAt: p.resumedAt,
-            ),
-        ]);
-        b.insertAllOnConflictUpdate(actions, [
-          for (final a in newActions)
-            ActionRow(
-              id: a.id,
-              trialId: a.trial.id,
-              touchdownAt: a.touchdownAt,
-              liftOffAt: a.liftOffAt,
-              outcome: a.outcome,
-            ),
-        ]);
-        b.insertAllOnConflictUpdate(touchSamples, [
-          for (final a in newActions)
-            for (final s in a.samples)
-              TouchSampleRow(
-                actionId: a.id,
-                sequence: s.sequence,
-                time: s.time,
-                x: s.position.dx,
-                y: s.position.dy,
-                pressure: s.pressure,
-                kind: s.kind,
-              ),
-        ]);
-      });
-    });
+    try {
+      await _save(session, newActions);
+    } catch (_) {
+      session.unsavedActions.insertAll(0, newActions);
+      rethrow;
+    }
   }
+
+  Future<void> _save(
+    Session session,
+    List<Action> newActions,
+  ) => transaction(() async {
+    final run = session.exerciseRun;
+    // Recreates the Patient if "Clear all data" removed it during this launch.
+    await into(patients).insert(
+      PatientRow(id: session.patientId, createdAt: DateTime.now()),
+      mode: InsertMode.insertOrIgnore,
+    );
+    await into(sessions).insertOnConflictUpdate(
+      SessionRow(
+        id: session.id,
+        patientId: session.patientId,
+        startedAt: session.startedAt,
+        endedAt: session.endedAt,
+      ),
+    );
+    await into(exerciseRuns).insertOnConflictUpdate(
+      ExerciseRunRow(
+        id: run.id,
+        sessionId: session.id,
+        exercise: 'Balloon Touch',
+        difficultyLevel: run.difficultyLevel,
+        balloonCount: run.balloonCount,
+        areaWidth: run.area.width,
+        areaHeight: run.area.height,
+        startedAt: session.startedAt,
+        endedAt: session.endedAt,
+        outcome: switch (session.status) {
+          SessionStatus.completed => RunOutcome.completed,
+          SessionStatus.stopped => RunOutcome.stopped,
+          _ => null,
+        },
+      ),
+    );
+    await batch((b) {
+      b.insertAllOnConflictUpdate(trials, [
+        for (final t in run.trials)
+          TrialRow(
+            id: t.id,
+            exerciseRunId: run.id,
+            number: t.number,
+            centerX: t.center.dx,
+            centerY: t.center.dy,
+            bodyWidth: t.bodyWidth,
+            bodyHeight: t.bodyHeight,
+            zone: t.zone,
+            presentedAt: t.presentedAt,
+            completedAt: t.completedAt,
+            status: t.status,
+          ),
+      ]);
+      b.insertAllOnConflictUpdate(pauses, [
+        for (final (i, p) in run.pauses.indexed)
+          PauseRow(
+            exerciseRunId: run.id,
+            number: i + 1,
+            pausedAt: p.pausedAt,
+            resumedAt: p.resumedAt,
+          ),
+      ]);
+      b.insertAllOnConflictUpdate(actions, [
+        for (final a in newActions)
+          ActionRow(
+            id: a.id,
+            trialId: a.trial.id,
+            touchdownAt: a.touchdownAt,
+            liftOffAt: a.liftOffAt,
+            outcome: a.outcome,
+          ),
+      ]);
+      b.insertAllOnConflictUpdate(touchSamples, [
+        for (final a in newActions)
+          for (final s in a.samples)
+            TouchSampleRow(
+              actionId: a.id,
+              sequence: s.sequence,
+              time: s.time,
+              x: s.position.dx,
+              y: s.position.dy,
+              pressure: s.pressure,
+              kind: s.kind,
+            ),
+      ]);
+    });
+  });
 
   /// The Difficulty Level of the newest Exercise Run, if any.
   Future<int?> lastDifficultyLevel() async {

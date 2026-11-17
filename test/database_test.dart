@@ -134,6 +134,26 @@ void main() {
     expect(rows[1].duration, older.endedAt!.difference(older.startedAt));
   });
 
+  test('Actions from a failed save are kept for the next one', () async {
+    final db = HandsDatabase(NativeDatabase.memory());
+    final session = Session(patientId: await db.launch(), balloonCount: 1)
+      ..presentNextTrial(const Size(1000, 800));
+    const input = (
+      timeStamp: Duration.zero,
+      position: Offset.zero,
+      pressure: 1.0,
+      kind: TouchKind.finger,
+    );
+    session
+      ..touchDown(1, input, onBody: false)
+      ..touchUp(1, input, onBody: false);
+    await db.close();
+
+    await expectLater(db.saveSession(session), throwsA(anything));
+
+    expect(session.unsavedActions, hasLength(1));
+  });
+
   test('a version 1 database is rebuilt on upgrade', () async {
     final db = HandsDatabase(
       NativeDatabase.memory(
