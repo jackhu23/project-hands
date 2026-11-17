@@ -95,6 +95,73 @@ void main() {
     }
   });
 
+  test('at Levels 2 to 4 about 70% land in the outermost Zone with room up '
+      'to N, and the rest inside it by area', () {
+    for (final area in const [
+      Size(1194, 834),
+      Size(834, 1194),
+      // Phones, where the insets leave Zone 4 no room.
+      Size(800, 360),
+      Size(360, 800),
+      // Phones where Zone 4 is only a sliver, which took thousands to
+      // billions of draws per balloon.
+      Size(844, 390),
+      Size(851, 393),
+      Size(817, 393),
+      Size(915, 412),
+    ]) {
+      // Usable area of each Zone: grid points inside the edge insets.
+      final rect = usableArea(area)!;
+      final usable = List.filled(5, 0);
+      for (var x = rect.left; x <= rect.right; x += 2) {
+        for (var y = rect.top; y <= rect.bottom; y += 2) {
+          usable[zoneOf(Offset(x, y), area)]++;
+        }
+      }
+      final total = usable.reduce((a, b) => a + b);
+      final roomiest = usable.lastIndexWhere((n) => n / total >= minZoneRoom);
+      for (final level in [2, 3, 4]) {
+        const draws = 2000;
+        final session = Session(
+          patientId: 'p',
+          balloonCount: draws,
+          difficultyLevel: level,
+          random: Random(level),
+        );
+        final counts = List.filled(5, 0);
+        for (var i = 0; i < draws; i++) {
+          session.presentNextTrial(area);
+          final trial = session.exerciseRun.activeTrial!;
+          counts[trial.zone]++;
+          session.completeTrial(trial);
+        }
+        final reason = '$area level $level $counts';
+        // Four standard deviations of a share p over n draws.
+        double tolerance(double p, int n) => 4 * sqrt(p * (1 - p) / n);
+
+        final own = min(level, roomiest);
+        expect(
+          counts[own] / draws,
+          closeTo(ownZoneShare, tolerance(ownZoneShare, draws)),
+          reason: reason,
+        );
+        for (var zone = own + 1; zone <= 4; zone++) {
+          expect(counts[zone], 0, reason: reason);
+        }
+        final inner = usable.sublist(1, own).reduce((a, b) => a + b);
+        final innerDraws = draws - counts[own];
+        for (var zone = 1; zone < own; zone++) {
+          final share = usable[zone] / inner;
+          expect(
+            counts[zone] / innerDraws,
+            closeTo(share, tolerance(share, innerDraws)),
+            reason: '$reason zone $zone',
+          );
+        }
+      }
+    }
+  });
+
   test('each Trial reports the Zone its centre is in', () {
     const area = Size(1194, 834);
     final session = Session(

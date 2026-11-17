@@ -10,12 +10,48 @@ const minDifficultyLevel = 1, maxDifficultyLevel = 4;
 /// from Zone 1 outward; outside the last one is Zone 4. To be tuned with the OT.
 const zoneEllipseSpans = [0.25, 0.55, 0.90];
 
+/// The share of balloons placed in the Difficulty Level's own Zone; the rest
+/// go in the Zones inside it. To be tuned with the OT.
+const ownZoneShare = 0.7;
+
+/// A Zone with less than this share of the usable area counts as having no
+/// room, so each balloon needs only a few hundred draws at most.
+const minZoneRoom = 0.01;
+
+/// The outermost Zone with room in [usable], sampled on a fixed grid.
+int _outermostZoneWithRoom(Rect usable, Size area) {
+  const n = 32;
+  final counts = List.filled(zoneEllipseSpans.length + 2, 0);
+  for (var i = 0; i < n; i++) {
+    for (var j = 0; j < n; j++) {
+      final point = Offset(
+        usable.left + (i + 0.5) / n * usable.width,
+        usable.top + (j + 0.5) / n * usable.height,
+      );
+      counts[zoneOf(point, area)]++;
+    }
+  }
+  // Zone 1 holds the centre, so it always counts.
+  return max(1, counts.lastIndexWhere((c) => c >= n * n * minZoneRoom));
+}
+
 /// The Zone, 1 to 4, that [point] falls in within [area].
 int zoneOf(Offset point, Size area) {
   final x = (point.dx - area.width / 2) / (area.width / 2);
   final y = (point.dy - area.height / 2) / (area.height / 2);
   final i = zoneEllipseSpans.indexWhere((span) => x * x + y * y <= span * span);
   return i == -1 ? zoneEllipseSpans.length + 1 : i + 1;
+}
+
+/// Where a balloon's centre may go in [area] so that, at full pulse plus the
+/// edge margin, it isn't clipped; null when the area is too small.
+Rect? usableArea(Size area) {
+  const w = balloonBodyWidth, knot = w * 0.085;
+  const dx = w / 2 * maxPulseScale + edgeMargin;
+  // The knot's height is reserved on both vertical edges, as in the demo.
+  const dy = (w * 1.25 / 2 + knot) * maxPulseScale + edgeMargin;
+  if (area.width <= dx * 2 || area.height <= dy * 2) return null;
+  return Rect.fromLTRB(dx, dy, area.width - dx, area.height - dy);
 }
 
 final _secure = Random.secure();
@@ -106,40 +142,41 @@ class Session {
         run.completedTrials >= run.balloonCount) {
       return;
     }
-    const w = balloonBodyWidth, h = w * 1.25, knot = w * 0.085;
-    const dx = w / 2 * maxPulseScale + edgeMargin;
-    // The knot's height is reserved on both vertical edges, as in the demo.
-    const dy = (h / 2 + knot) * maxPulseScale + edgeMargin;
-    if (area.width <= dx * 2 || area.height <= dy * 2) return;
+    final usable = usableArea(area);
+    if (usable == null) return;
     run.area = area;
 
-    var bounds = Rect.fromLTRB(dx, dy, area.width - dx, area.height - dy);
-    // shortcut: Levels 2 to 4 stay uniform over the area, until weighted placement lands.
-    final inZone1 = run.difficultyLevel == 1;
-    if (inZone1) {
-      bounds = bounds.intersect(
-        Rect.fromCenter(
-          center: area.center(Offset.zero),
-          width: area.width * zoneEllipseSpans[0],
-          height: area.height * zoneEllipseSpans[0],
-        ),
-      );
-    }
-    // Rejection sampling; both boxes share the area's centre, so most draws hit.
+    // On a phone the outermost Zone with room can be below the level.
+    final top = min(run.difficultyLevel, _outermostZoneWithRoom(usable, area));
+    // Otherwise uniform over Zones 1 to top−1, so each gets a share by its area.
+    final own = top == 1 || _random.nextDouble() < ownZoneShare;
+    final outermost = own ? top : top - 1;
+    // Rejection sampling within the box around the outermost allowed Zone.
+    final bounds = outermost > zoneEllipseSpans.length
+        ? usable
+        : usable.intersect(
+            Rect.fromCenter(
+              center: area.center(Offset.zero),
+              width: area.width * zoneEllipseSpans[outermost - 1],
+              height: area.height * zoneEllipseSpans[outermost - 1],
+            ),
+          );
     Offset center;
+    int zone;
     do {
       center = Offset(
         bounds.left + _random.nextDouble() * bounds.width,
         bounds.top + _random.nextDouble() * bounds.height,
       );
-    } while (inZone1 && zoneOf(center, area) != 1);
+      zone = zoneOf(center, area);
+    } while (own ? zone != top : zone >= top);
 
     run.trials.add(
       Trial(
         number: run.completedTrials + 1,
         center: center,
-        zone: zoneOf(center, area),
-        bodyWidth: w,
+        zone: zone,
+        bodyWidth: balloonBodyWidth,
       ),
     );
     onChange?.call(this);
