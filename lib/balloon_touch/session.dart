@@ -10,6 +10,10 @@ const minDifficultyLevel = 1, maxDifficultyLevel = 4;
 /// from Zone 1 outward; outside the last one is Zone 4. To be tuned with the OT.
 const zoneEllipseSpans = [0.25, 0.55, 0.90];
 
+/// The share of balloons placed in the Difficulty Level's own Zone; the rest
+/// go in the Zones inside it. To be tuned with the OT.
+const ownZoneShare = 0.7;
+
 /// The Zone, 1 to 4, that [point] falls in within [area].
 int zoneOf(Offset point, Size area) {
   final x = (point.dx - area.width / 2) / (area.width / 2);
@@ -113,26 +117,33 @@ class Session {
     if (area.width <= dx * 2 || area.height <= dy * 2) return;
     run.area = area;
 
-    var bounds = Rect.fromLTRB(dx, dy, area.width - dx, area.height - dy);
-    // shortcut: Levels 2 to 4 stay uniform over the area, until weighted placement lands.
-    final inZone1 = run.difficultyLevel == 1;
-    if (inZone1) {
-      bounds = bounds.intersect(
-        Rect.fromCenter(
-          center: area.center(Offset.zero),
-          width: area.width * zoneEllipseSpans[0],
-          height: area.height * zoneEllipseSpans[0],
-        ),
-      );
-    }
-    // Rejection sampling; both boxes share the area's centre, so most draws hit.
+    final usable = Rect.fromLTRB(dx, dy, area.width - dx, area.height - dy);
+    final level = run.difficultyLevel;
+    // Otherwise uniform over Zones 1 to N−1, so each gets a share by its area.
+    var own = level == 1 || _random.nextDouble() < ownZoneShare;
     Offset center;
-    do {
+    for (var tries = 1; ; tries++) {
+      // On a small screen the insets can cover all of Zone N; Zone 1, holding
+      // the centre, always has room.
+      if (tries > 1000) own = false;
+      final outermost = own ? level : level - 1;
+      // Rejection sampling within the box around the outermost allowed Zone.
+      final bounds = outermost > zoneEllipseSpans.length
+          ? usable
+          : usable.intersect(
+              Rect.fromCenter(
+                center: area.center(Offset.zero),
+                width: area.width * zoneEllipseSpans[outermost - 1],
+                height: area.height * zoneEllipseSpans[outermost - 1],
+              ),
+            );
       center = Offset(
         bounds.left + _random.nextDouble() * bounds.width,
         bounds.top + _random.nextDouble() * bounds.height,
       );
-    } while (inZone1 && zoneOf(center, area) != 1);
+      final zone = zoneOf(center, area);
+      if (own ? zone == level : zone < level) break;
+    }
 
     run.trials.add(
       Trial(

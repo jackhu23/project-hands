@@ -95,6 +95,56 @@ void main() {
     }
   });
 
+  test('at Levels 2 to 4 about 70% land in Zone N and the rest inside it '
+      'by area', () {
+    for (final area in const [Size(1194, 834), Size(834, 1194)]) {
+      // Usable area of each Zone: grid points inside the edge insets.
+      const knot = balloonBodyWidth * 0.085;
+      const dx = balloonBodyWidth / 2 * maxPulseScale + edgeMargin;
+      const dy =
+          (balloonBodyWidth * 1.25 / 2 + knot) * maxPulseScale + edgeMargin;
+      final usable = List.filled(5, 0);
+      for (var x = dx; x <= area.width - dx; x += 2) {
+        for (var y = dy; y <= area.height - dy; y += 2) {
+          usable[zoneOf(Offset(x, y), area)]++;
+        }
+      }
+      for (final level in [2, 3, 4]) {
+        const draws = 3000;
+        final session = Session(
+          patientId: 'p',
+          balloonCount: draws,
+          difficultyLevel: level,
+          random: Random(level),
+        );
+        final counts = List.filled(5, 0);
+        for (var i = 0; i < draws; i++) {
+          session.presentNextTrial(area);
+          final trial = session.exerciseRun.activeTrial!;
+          counts[trial.zone]++;
+          session.completeTrial(trial);
+        }
+        final reason = '$area level $level $counts';
+        expect(
+          counts[level] / draws,
+          closeTo(ownZoneShare, 0.03),
+          reason: reason,
+        );
+        for (var zone = level + 1; zone <= 4; zone++) {
+          expect(counts[zone], 0, reason: reason);
+        }
+        final inner = usable.sublist(1, level).reduce((a, b) => a + b);
+        for (var zone = 1; zone < level; zone++) {
+          expect(
+            counts[zone] / draws,
+            closeTo((1 - ownZoneShare) * usable[zone] / inner, 0.03),
+            reason: '$reason zone $zone',
+          );
+        }
+      }
+    }
+  });
+
   test('each Trial reports the Zone its centre is in', () {
     const area = Size(1194, 834);
     final session = Session(
