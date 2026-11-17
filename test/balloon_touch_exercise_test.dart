@@ -322,8 +322,10 @@ void main() {
       final spot = bodyCenter(tester);
 
       await tapAndSettle(tester, pauseButton);
-      // Touching where the balloon was does nothing while paused.
-      await touch(tester, spot);
+      // Touching where the balloon was does nothing while paused, unless it
+      // sat where the centred Resume button now is.
+      final resume = find.widgetWithText(FilledButton, 'Resume');
+      if (!tester.getRect(resume).contains(spot)) await touch(tester, spot);
       await tapAndSettle(tester, find.text('Resume'));
 
       expect(find.text('Paused'), findsNothing);
