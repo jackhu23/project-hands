@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hands/balloon_touch/balloon_illustration.dart';
 import 'package:hands/balloon_touch/exercise_screen.dart';
+import 'package:hands/theme.dart';
 
 import 'test_app.dart';
-
-import 'package:hands/theme.dart';
 
 Future<void> openSetup(WidgetTester tester) async {
   await pumpApp(tester);
