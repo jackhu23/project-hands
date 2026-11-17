@@ -28,6 +28,49 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
   int? _pointer;
   bool _startedOnBody = false;
 
+  late final AppLifecycleListener _lifecycle;
+
+  @override
+  void initState() {
+    super.initState();
+    // Leaving the foreground pauses a running Exercise Run, as in the demo.
+    _lifecycle = AppLifecycleListener(
+      onStateChange: (state) {
+        if (state != AppLifecycleState.resumed) _pause();
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _lifecycle.dispose();
+    super.dispose();
+  }
+
+  bool get _paused => _session.status == SessionStatus.paused;
+
+  void _pause() => setState(_session.pause);
+
+  void _resume() => setState(_session.resume);
+
+  /// Home and Finish: pause and open the progress page. Quirk carried over:
+  /// Finish doesn't end the Session.
+  Future<void> _leave() async {
+    _pause();
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => ProgressScreen(session: _session),
+      ),
+    );
+    if (!mounted) return;
+    // Start New Session stopped it: carry on back to setup.
+    if (_session.status == SessionStatus.stopped) {
+      Navigator.of(context).pop();
+    } else {
+      setState(() {});
+    }
+  }
+
   bool _onBody(Offset global) {
     final box = _balloonKey.currentContext?.findRenderObject() as RenderBox?;
     final trial = _session.exerciseRun.activeTrial;
@@ -94,6 +137,7 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
                     child: LayoutBuilder(
                       builder: (context, constraints) {
                         // Like the demo, a balloon appears once the area has a size.
+                        if (_paused) return _pausedPanel();
                         _session.presentNextTrial(constraints.biggest);
                         final trial = run.activeTrial;
                         if (trial == null) return const SizedBox.expand();
@@ -128,7 +172,32 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
     );
   }
 
-  // Finish, Home, Pause and the gear are shown only; they do something in #13.
+  Widget _pausedPanel() => Container(
+    padding: const EdgeInsets.all(32),
+    decoration: BoxDecoration(
+      color: HandsColors.ivory,
+      borderRadius: BorderRadius.circular(28),
+    ),
+    child: Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        spacing: 24,
+        children: [
+          Text('Paused', style: handsText(28, HandsColors.forestSage)),
+          FilledButton(
+            onPressed: _resume,
+            style: FilledButton.styleFrom(
+              backgroundColor: HandsColors.oliveGreen,
+              minimumSize: const Size(140, 56),
+            ),
+            child: Text('Resume', style: handsText(22, HandsColors.ivory)),
+          ),
+        ],
+      ),
+    ),
+  );
+
+  // Quirk carried over: the gear does nothing.
   Widget _header(ExerciseRun run) => Row(
     spacing: 24,
     children: [
@@ -173,7 +242,7 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
       ),
       const Spacer(),
       FilledButton.tonal(
-        onPressed: () {},
+        onPressed: _leave,
         style: FilledButton.styleFrom(
           backgroundColor: HandsColors.oliveGreen.withValues(alpha: 0.15),
           minimumSize: const Size(0, 44),
@@ -181,7 +250,7 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
         child: Text('Finish', style: handsText(17, HandsColors.oliveGreen)),
       ),
       IconButton(
-        onPressed: () {},
+        onPressed: _leave,
         tooltip: 'Home',
         iconSize: 24,
         color: HandsColors.oliveGreen,
@@ -189,7 +258,7 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
         icon: const Icon(Icons.home),
       ),
       IconButton(
-        onPressed: () {},
+        onPressed: _paused ? null : _pause,
         tooltip: 'Pause',
         color: HandsColors.oliveGreen,
         style: IconButton.styleFrom(minimumSize: const Size.square(44)),
@@ -206,8 +275,8 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
 }
 
 /// The demo's pulse: scale `0.98 + 0.05 × (sin(t·π/2) + 1) / 2`, t in seconds.
-/// It holds while [holding] or while the app isn't in the foreground, and
-/// stays at 1.0 with reduce motion on. The popping rule hit-tests through the
+/// It holds while [holding] and stays at 1.0 with reduce motion on. Leaving
+/// the foreground pauses the run, which takes the balloon off screen. The popping rule hit-tests through the
 /// transform, so it tests against the drawn (scaled) shape.
 class _Pulse extends StatefulWidget {
   const _Pulse({required this.holding, required this.child});
@@ -224,20 +293,7 @@ class _PulseState extends State<_Pulse> with SingleTickerProviderStateMixin {
     vsync: this,
     duration: const Duration(seconds: 4),
   );
-  late final AppLifecycleListener _lifecycle;
-  late AppLifecycleState? _state = WidgetsBinding.instance.lifecycleState;
   bool _reduceMotion = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _lifecycle = AppLifecycleListener(
-      onStateChange: (state) {
-        _state = state;
-        _sync();
-      },
-    );
-  }
 
   @override
   void didChangeDependencies() {
@@ -253,8 +309,7 @@ class _PulseState extends State<_Pulse> with SingleTickerProviderStateMixin {
   }
 
   void _sync() {
-    final foreground = _state == null || _state == AppLifecycleState.resumed;
-    if (_reduceMotion || widget.holding || !foreground) {
+    if (_reduceMotion || widget.holding) {
       _clock.stop();
     } else if (!_clock.isAnimating) {
       _clock.repeat();
@@ -263,7 +318,6 @@ class _PulseState extends State<_Pulse> with SingleTickerProviderStateMixin {
 
   @override
   void dispose() {
-    _lifecycle.dispose();
     _clock.dispose();
     super.dispose();
   }
