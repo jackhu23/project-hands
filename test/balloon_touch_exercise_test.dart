@@ -334,6 +334,34 @@ void main() {
       expect(find.text('2 / 3'), findsOneWidget);
     });
 
+    testWidgets('a hold from before a pause cannot pop after Resume', (
+      tester,
+    ) async {
+      await startRun(tester);
+      final spot = bodyCenter(tester);
+      final hold = await tester.startGesture(spot, pointer: 1);
+      await tester.pump();
+
+      await touchWith(tester, tester.getCenter(pauseButton), pointer: 2);
+      await touchWith(
+        tester,
+        tester.getCenter(find.text('Resume')),
+        pointer: 3,
+      );
+      await hold.up();
+      await settle(tester);
+
+      expect(find.text('0 / 3'), findsOneWidget);
+      expect(
+        tester
+            .widget<BalloonIllustration>(find.byType(BalloonIllustration))
+            .pressed,
+        isFalse,
+      );
+      await touch(tester, spot);
+      expect(find.text('1 / 3'), findsOneWidget);
+    });
+
     for (final (name, button) in [
       ('Home', find.byTooltip('Home')),
       ('Finish', find.text('Finish')),

@@ -49,7 +49,13 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
 
   bool get _paused => _session.status == SessionStatus.paused;
 
-  void _pause() => setState(_session.pause);
+  // Like the demo, pausing drops the balloon and any touch on it, so a hold
+  // from before the pause can't pop it after Resume.
+  void _pause() => setState(() {
+    _session.pause();
+    _pointer = null;
+    _startedOnBody = false;
+  });
 
   void _resume() => setState(_session.resume);
 
@@ -276,8 +282,9 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
 
 /// The demo's pulse: scale `0.98 + 0.05 × (sin(t·π/2) + 1) / 2`, t in seconds.
 /// It holds while [holding] and stays at 1.0 with reduce motion on. Leaving
-/// the foreground pauses the run, which takes the balloon off screen. The popping rule hit-tests through the
-/// transform, so it tests against the drawn (scaled) shape.
+/// the foreground pauses the run, which takes the balloon off screen. The
+/// popping rule hit-tests through the transform, so it tests against the
+/// drawn (scaled) shape.
 class _Pulse extends StatefulWidget {
   const _Pulse({required this.holding, required this.child});
 
