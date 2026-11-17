@@ -56,7 +56,11 @@ class Trial {
 }
 
 class ExerciseRun {
-  ExerciseRun(this.balloonCount, this.difficultyLevel);
+  ExerciseRun(this.balloonCount, this.difficultyLevel)
+    : assert(
+        difficultyLevel >= minDifficultyLevel &&
+            difficultyLevel <= maxDifficultyLevel,
+      );
 
   final int balloonCount, difficultyLevel;
   final trials = <Trial>[];

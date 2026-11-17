@@ -68,12 +68,10 @@ void main() {
           : c + Offset(area.width / 2 * fraction, 0);
       expect(zoneOf(c, area), 1);
       for (final vertical in [false, true]) {
-        expect(zoneOf(along(0.24, vertical: vertical), area), 1);
-        expect(zoneOf(along(0.26, vertical: vertical), area), 2);
-        expect(zoneOf(along(0.54, vertical: vertical), area), 2);
-        expect(zoneOf(along(0.56, vertical: vertical), area), 3);
-        expect(zoneOf(along(0.89, vertical: vertical), area), 3);
-        expect(zoneOf(along(0.91, vertical: vertical), area), 4);
+        for (final (i, span) in zoneEllipseSpans.indexed) {
+          expect(zoneOf(along(span - 0.01, vertical: vertical), area), i + 1);
+          expect(zoneOf(along(span + 0.01, vertical: vertical), area), i + 2);
+        }
       }
       expect(zoneOf(Offset.zero, area), 4, reason: 'corner');
     }
