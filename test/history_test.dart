@@ -130,6 +130,77 @@ void main() {
     expect(row, findsNothing);
   });
 
+  testWidgets('the summary counts every run but measures completed ones', (
+    tester,
+  ) async {
+    await pumpApp(tester);
+    await startRun(tester);
+    await popBalloon(tester);
+    await tapAndSettle(tester, find.text('Start New Session'));
+    await tapAndSettle(tester, find.text('Start Now'));
+    await tapAndSettle(tester, find.byTooltip('Home'));
+    await tapAndSettle(tester, find.text('Start New Session'));
+    await tapAndSettle(tester, find.byTooltip('Back'));
+
+    await openHistoryFromHome(tester);
+
+    for (final column in ['Overall', 'Level 1']) {
+      expect(find.bySemanticsLabel('Runs, $column: 2'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel('Completed runs, $column: 1'),
+        findsOneWidget,
+      );
+      expect(find.bySemanticsLabel('Stopped runs, $column: 1'), findsOneWidget);
+      expect(find.bySemanticsLabel('Accuracy, $column: 100%'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel('Overlapping Touches per run, $column: 0.0'),
+        findsOneWidget,
+      );
+      for (final metric in ['Reaction Time', 'Pop touch duration']) {
+        expect(
+          find.bySemanticsLabel(
+            RegExp(
+              '^$metric, $column: '
+              r'\d+\.\d\d s$',
+            ),
+          ),
+          findsOneWidget,
+        );
+      }
+    }
+  });
+
+  testWidgets('tapping a run opens its detail with each Trial and totals', (
+    tester,
+  ) async {
+    await pumpApp(tester);
+    await startRun(tester);
+    await tester.tapAt(
+      tester.getTopLeft(find.bySemanticsLabel('Balloon')) -
+          const Offset(10, 10),
+    );
+    await settle(tester);
+    await popBalloon(tester);
+    await tapAndSettle(tester, find.text('View history'));
+
+    await tapAndSettle(tester, row);
+
+    expect(find.bySemanticsLabel('Trial 1, Zone: 1'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(RegExp(r'^Trial 1, Reaction Time: \d+\.\d\d s$')),
+      findsOneWidget,
+    );
+    for (final label in ['Trial 1', 'Total']) {
+      expect(find.bySemanticsLabel('$label, Pops: 1'), findsOneWidget);
+      expect(find.bySemanticsLabel('$label, Misses: 1'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel('$label, Overlapping Touches: 0'),
+        findsOneWidget,
+      );
+    }
+    expect(find.bySemanticsLabel('Total, Accuracy: 50%'), findsOneWidget);
+  });
+
   test('formats the run time and duration', () {
     expect(formatRunTime(DateTime(2026, 3, 7, 9, 5)), '7 Mar 2026, 09:05');
     expect(formatDuration(const Duration(minutes: 2, seconds: 5)), '2:05');
@@ -137,5 +208,7 @@ void main() {
     expect(formatDuration(const Duration(hours: 1, minutes: 1)), '61:00');
     expect(formatAccuracy(2 / 3), '67%');
     expect(formatAccuracy(null), '–');
+    expect(formatSeconds(const Duration(milliseconds: 1234)), '1.23 s');
+    expect(formatSeconds(null), '–');
   });
 }
