@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hands/balloon_touch/balloon_illustration.dart';
+import 'package:hands/balloon_touch/exercise_screen.dart';
 import 'package:hands/main.dart';
 import 'package:hands/theme.dart';
 
@@ -19,6 +20,13 @@ Future<void> useScreen(WidgetTester tester, Size size) async {
 Text countText(WidgetTester tester) => tester.widget<Text>(
   find.descendant(
     of: find.bySemanticsLabel(RegExp(r'^\d+ repetitions$')),
+    matching: find.byType(Text),
+  ),
+);
+
+Text levelText(WidgetTester tester) => tester.widget<Text>(
+  find.descendant(
+    of: find.bySemanticsLabel(RegExp(r'^Difficulty Level \d$')),
     matching: find.byType(Text),
   ),
 );
@@ -103,6 +111,67 @@ void main() {
     await tester.tap(find.byTooltip('Decrease repetitions'));
     await tester.pump();
     expect(countText(tester).data, '29');
+  });
+
+  testWidgets('Difficulty Level starts at 1 and stays within 1 to 4', (
+    tester,
+  ) async {
+    await openSetup(tester);
+
+    expect(find.text('Difficulty Level'), findsOneWidget);
+    expect(levelText(tester).data, '1');
+    expect(enabled(tester, 'Decrease Difficulty Level'), isFalse);
+    expect(enabled(tester, 'Increase Difficulty Level'), isTrue);
+    final button = tester.getSize(find.byTooltip('Increase Difficulty Level'));
+    expect(button.width, greaterThanOrEqualTo(60));
+    expect(button.height, greaterThanOrEqualTo(50));
+
+    for (var i = 0; i < 3; i++) {
+      await tester.tap(find.byTooltip('Increase Difficulty Level'));
+      await tester.pump();
+    }
+    expect(levelText(tester).data, '4');
+    expect(enabled(tester, 'Increase Difficulty Level'), isFalse);
+    expect(enabled(tester, 'Decrease Difficulty Level'), isTrue);
+
+    await tester.tap(find.byTooltip('Decrease Difficulty Level'));
+    await tester.pump();
+    expect(levelText(tester).data, '3');
+  });
+
+  testWidgets('settings sheet changes the same Difficulty Level', (
+    tester,
+  ) async {
+    await openSetup(tester);
+    await tester.tap(find.byTooltip('Increase Difficulty Level'));
+    await tester.pump();
+
+    await tester.tap(find.byTooltip('Practice settings'));
+    await tester.pumpAndSettle();
+    expect(find.text('Difficulty Level: 2'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Increase Difficulty Level').last);
+    await tester.pump();
+    expect(find.text('Difficulty Level: 3'), findsOneWidget);
+
+    await tester.tap(find.text('Done'));
+    await tester.pumpAndSettle();
+    expect(levelText(tester).data, '3');
+  });
+
+  testWidgets('Start Now starts the Exercise Run at the chosen level', (
+    tester,
+  ) async {
+    await openSetup(tester);
+    await tester.tap(find.byTooltip('Increase Difficulty Level'));
+    await tester.pump();
+
+    await tester.tap(find.text('Start Now'));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    final screen = tester.widget<ExerciseScreen>(find.byType(ExerciseScreen));
+    expect(screen.session.exerciseRun.difficultyLevel, 2);
   });
 
   testWidgets('settings sheet changes the same count', (tester) async {
