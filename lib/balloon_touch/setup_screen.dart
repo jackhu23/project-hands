@@ -30,6 +30,14 @@ class _SetupScreenState extends State<SetupScreen> {
   final _difficultyLevel = ValueNotifier(minDifficultyLevel);
 
   @override
+  void initState() {
+    super.initState();
+    widget.database.lastDifficultyLevel().then((level) {
+      if (level != null && mounted) _difficultyLevel.value = level;
+    });
+  }
+
+  @override
   void dispose() {
     _balloonCount.dispose();
     _difficultyLevel.dispose();

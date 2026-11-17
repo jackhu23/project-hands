@@ -135,5 +135,7 @@ void main() {
     expect(formatDuration(const Duration(minutes: 2, seconds: 5)), '2:05');
     expect(formatDuration(const Duration(milliseconds: 900)), '0:00');
     expect(formatDuration(const Duration(hours: 1, minutes: 1)), '61:00');
+    expect(formatAccuracy(2 / 3), '67%');
+    expect(formatAccuracy(null), '–');
   });
 }
