@@ -86,6 +86,20 @@ void main() {
     expect(find.text('Stopped'), findsOneWidget);
   });
 
+  testWidgets('the system back gesture during a run lists it as Stopped', (
+    tester,
+  ) async {
+    await pumpApp(tester);
+    await startRun(tester);
+    await tester.binding.handlePopRoute();
+    await settle(tester);
+    await tapAndSettle(tester, find.byTooltip('Back'));
+
+    await openHistoryFromHome(tester);
+
+    expect(find.text('Stopped'), findsOneWidget);
+  });
+
   testWidgets('history survives a restart, newest run first', (tester) async {
     final db = await pumpApp(tester);
     await startRun(tester);

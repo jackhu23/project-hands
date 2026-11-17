@@ -34,6 +34,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   Future<void> _clearAll() async {
     await widget.database.clearAll();
+    if (!mounted) return;
     setState(() {
       _rows = widget.database.history();
     });

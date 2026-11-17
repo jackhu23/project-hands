@@ -117,6 +117,13 @@ class HandsDatabase extends _$HandsDatabase {
           outcome: const Value(RunOutcome.stopped),
         ),
       );
+      // As Session.stop leaves it.
+      await (update(trials)..where(
+            (t) =>
+                t.exerciseRunId.equals(run.id) &
+                t.status.equalsValue(TrialStatus.active),
+          ))
+          .write(const TrialsCompanion(status: Value(TrialStatus.unfinished)));
       await (update(sessions)..where((s) => s.id.equals(run.sessionId))).write(
         SessionsCompanion(endedAt: Value(endedAt)),
       );
@@ -190,19 +197,21 @@ class HandsDatabase extends _$HandsDatabase {
           ])
           ..addColumns([popped])
           ..where(exerciseRuns.outcome.isNotNull())
-          ..groupBy([exerciseRuns.id])
-          ..orderBy([OrderingTerm.desc(exerciseRuns.startedAt)]);
+          ..groupBy([exerciseRuns.id]);
     return (await query.get()).map((row) {
-      final run = row.readTable(exerciseRuns);
-      return (
-        startedAt: run.startedAt,
-        // shortcut: includes paused time, until pause times are saved.
-        duration: run.endedAt!.difference(run.startedAt),
-        popped: row.read(popped)!,
-        balloonCount: run.balloonCount,
-        stopped: run.outcome == RunOutcome.stopped,
-      );
-    }).toList();
+        final run = row.readTable(exerciseRuns);
+        return (
+          startedAt: run.startedAt,
+          // shortcut: includes paused time, until pause times are saved.
+          duration: run.endedAt!.difference(run.startedAt),
+          popped: row.read(popped)!,
+          balloonCount: run.balloonCount,
+          stopped: run.outcome == RunOutcome.stopped,
+        );
+      }).toList()
+      // Sorted in Dart, which compares instants; the stored text follows the
+      // wall clock, so a daylight-saving change could misorder it in SQL.
+      ..sort((a, b) => b.startedAt.compareTo(a.startedAt));
   }
 
   /// Deletes every row, including the Patient. Debug builds only.

@@ -128,57 +128,63 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
   Widget build(BuildContext context) {
     final run = _session.exerciseRun;
     final pressed = _pointer != null && _startedOnBody;
-    return Scaffold(
-      backgroundColor: HandsColors.warmCream,
-      body: Listener(
-        onPointerDown: _down,
-        onPointerUp: _up,
-        onPointerCancel: _cancel,
-        behavior: HitTestBehavior.translucent,
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(56),
-            child: Column(
-              spacing: 20,
-              children: [
-                _header(run),
-                Expanded(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: HandsColors.warmCream,
-                      borderRadius: BorderRadius.circular(28),
-                    ),
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        // Like the demo, a balloon appears once the area has a size.
-                        if (_paused) return _pausedPanel();
-                        _session.presentNextTrial(constraints.biggest);
-                        final trial = run.activeTrial;
-                        if (trial == null) return const SizedBox.expand();
-                        final side = trial.bodyWidth * 1.75;
-                        return Stack(
-                          children: [
-                            Positioned(
-                              left: trial.center.dx - side / 2,
-                              top: trial.center.dy - side / 2,
-                              child: _Pulse(
-                                holding: pressed,
-                                child: BalloonIllustration(
-                                  key: _balloonKey,
-                                  bodyWidth: trial.bodyWidth,
-                                  halo: false,
-                                  pressed: pressed,
-                                  label: 'Balloon',
+    // The system back gesture abandons the run, so it is saved as stopped.
+    return PopScope(
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) _session.stop();
+      },
+      child: Scaffold(
+        backgroundColor: HandsColors.warmCream,
+        body: Listener(
+          onPointerDown: _down,
+          onPointerUp: _up,
+          onPointerCancel: _cancel,
+          behavior: HitTestBehavior.translucent,
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(56),
+              child: Column(
+                spacing: 20,
+                children: [
+                  _header(run),
+                  Expanded(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: HandsColors.warmCream,
+                        borderRadius: BorderRadius.circular(28),
+                      ),
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          // Like the demo, a balloon appears once the area has a size.
+                          if (_paused) return _pausedPanel();
+                          _session.presentNextTrial(constraints.biggest);
+                          final trial = run.activeTrial;
+                          if (trial == null) return const SizedBox.expand();
+                          final side = trial.bodyWidth * 1.75;
+                          return Stack(
+                            children: [
+                              Positioned(
+                                left: trial.center.dx - side / 2,
+                                top: trial.center.dy - side / 2,
+                                child: _Pulse(
+                                  holding: pressed,
+                                  child: BalloonIllustration(
+                                    key: _balloonKey,
+                                    bodyWidth: trial.bodyWidth,
+                                    halo: false,
+                                    pressed: pressed,
+                                    label: 'Balloon',
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
-                        );
-                      },
+                            ],
+                          );
+                        },
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

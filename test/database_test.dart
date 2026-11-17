@@ -83,6 +83,12 @@ void main() {
     expect(run.outcome, RunOutcome.stopped);
     expect(run.endedAt, lastActivity);
     expect((await db.select(db.sessions).getSingle()).endedAt, lastActivity);
+    // The balloon still showing ends unfinished, as Session.stop leaves it.
+    final statuses = (await db.select(db.trials).get()).map((t) => t.status);
+    expect(
+      statuses,
+      unorderedEquals([TrialStatus.completed, TrialStatus.unfinished]),
+    );
   });
 
   test('history lists ended runs newest first', () async {
