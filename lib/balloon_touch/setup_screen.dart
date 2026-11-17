@@ -94,8 +94,8 @@ class _SetupScreenState extends State<SetupScreen> {
             final size = constraints.biggest;
             final sideBySide = size.width >= 700 && size.width > size.height;
             final cardHeight = sideBySide
-                ? (size.height - 210).clamp(320.0, 480.0)
-                : 340.0;
+                ? (size.height - 210).clamp(430.0, 590.0)
+                : 450.0;
             final cards = [
               _BalloonCard(height: cardHeight),
               _CountCard(
@@ -313,31 +313,35 @@ class _CountCard extends StatelessWidget {
             child: _countButtons(count),
           ),
           const SizedBox(height: 20),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Row(
-              spacing: 16,
-              children: [
-                Text('Difficulty Level', style: handsText(24)),
-                ValueListenableBuilder(
-                  valueListenable: level,
-                  builder: (_, value, _) => Semantics(
-                    label: 'Difficulty Level $value',
-                    liveRegion: true,
-                    excludeSemantics: true,
-                    child: Text('$value', style: handsText(32)),
-                  ),
+          Text(
+            'Difficulty Level',
+            textAlign: TextAlign.center,
+            style: handsText(24),
+          ),
+          const SizedBox(height: 8),
+          // Not scaled to fit, so the buttons keep their full touch size.
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            spacing: 16,
+            children: [
+              ValueListenableBuilder(
+                valueListenable: level,
+                builder: (_, value, _) => Semantics(
+                  label: 'Difficulty Level $value',
+                  liveRegion: true,
+                  excludeSemantics: true,
+                  child: Text('$value', style: handsText(32)),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: const ShapeDecoration(
-                    color: HandsColors.warmCream,
-                    shape: StadiumBorder(),
-                  ),
-                  child: _levelButtons(level),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: const ShapeDecoration(
+                  color: HandsColors.warmCream,
+                  shape: StadiumBorder(),
                 ),
-              ],
-            ),
+                child: _levelButtons(level),
+              ),
+            ],
           ),
         ],
       ),

@@ -122,9 +122,6 @@ void main() {
     expect(levelText(tester).data, '1');
     expect(enabled(tester, 'Decrease Difficulty Level'), isFalse);
     expect(enabled(tester, 'Increase Difficulty Level'), isTrue);
-    final button = tester.getSize(find.byTooltip('Increase Difficulty Level'));
-    expect(button.width, greaterThanOrEqualTo(60));
-    expect(button.height, greaterThanOrEqualTo(50));
 
     for (var i = 0; i < 3; i++) {
       await tester.tap(find.byTooltip('Increase Difficulty Level'));
@@ -166,6 +163,7 @@ void main() {
     await tester.tap(find.byTooltip('Increase Difficulty Level'));
     await tester.pump();
 
+    await tester.ensureVisible(find.text('Start Now'));
     await tester.tap(find.text('Start Now'));
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
@@ -201,6 +199,7 @@ void main() {
     await tester.tap(find.byTooltip('Increase repetitions'));
     await tester.pump();
 
+    await tester.ensureVisible(find.text('Start Now'));
     await tester.tap(find.text('Start Now'));
     // The balloon pulses forever, so pump past the route transition instead.
     await tester.pump();
@@ -226,6 +225,7 @@ void main() {
     'iPad portrait': (Size(834, 1194), false),
     'Android tablet landscape': (Size(1280, 800), true),
     'Android tablet portrait': (Size(800, 1280), false),
+    'phone landscape': (Size(844, 390), true),
     // Edges of the rule: width >= 700 and wider than tall.
     'exactly 700 wide': (Size(700, 500), true),
     'wide but under 700': (Size(690, 500), false),
@@ -246,6 +246,20 @@ void main() {
         } else {
           expect(count.dy, greaterThan(balloon.dy));
           expect(count.dx, closeTo(balloon.dx, 1));
+        }
+        // getRect, unlike getSize, includes any scaling, as drawn on screen.
+        for (final tooltip in [
+          'Decrease Difficulty Level',
+          'Increase Difficulty Level',
+        ]) {
+          final button = tester.getRect(
+            find.ancestor(
+              of: find.byTooltip(tooltip),
+              matching: find.byType(IconButton),
+            ),
+          );
+          expect(button.width, greaterThanOrEqualTo(60), reason: tooltip);
+          expect(button.height, greaterThanOrEqualTo(50), reason: tooltip);
         }
       },
     );
