@@ -4,6 +4,22 @@ import 'dart:ui';
 /// Placement numbers copied from the demo's `BalloonSessionModel`.
 const balloonBodyWidth = 120.0, maxPulseScale = 1.03, edgeMargin = 24.0;
 
+const minDifficultyLevel = 1, maxDifficultyLevel = 4;
+
+/// How much of the exercise area's width and height each Zone ellipse spans,
+/// from Zone 1 outward; outside the last one is Zone 4. To be tuned with the OT.
+const zoneEllipseSpans = [0.25, 0.55, 0.90];
+
+/// The Zone, 1 to 4, that [point] falls in within [area].
+int zoneOf(Offset point, Size area) {
+  final x = (point.dx - area.width / 2) / (area.width / 2);
+  final y = (point.dy - area.height / 2) / (area.height / 2);
+  final i = zoneEllipseSpans.indexWhere(
+    (span) => x * x + y * y <= span * span,
+  );
+  return i == -1 ? zoneEllipseSpans.length + 1 : i + 1;
+}
+
 final _secure = Random.secure();
 
 /// A random 128-bit hex ID, standing in for the demo's UUIDs.
@@ -21,11 +37,18 @@ enum TrialStatus { active, completed, interrupted, unfinished }
 
 /// One balloon. [center] is the body's centre within the exercise area.
 class Trial {
-  Trial({required this.number, required this.center, required this.bodyWidth})
-    : presentedAt = DateTime.now();
+  Trial({
+    required this.number,
+    required this.center,
+    required this.zone,
+    required this.bodyWidth,
+  }) : presentedAt = DateTime.now();
 
   final int number;
   final Offset center;
+
+  /// The Zone the [center] is in.
+  final int zone;
   final double bodyWidth;
   final DateTime presentedAt;
   DateTime? completedAt;
@@ -35,9 +58,9 @@ class Trial {
 }
 
 class ExerciseRun {
-  ExerciseRun(this.balloonCount);
+  ExerciseRun(this.balloonCount, this.difficultyLevel);
 
-  final int balloonCount;
+  final int balloonCount, difficultyLevel;
   final trials = <Trial>[];
 
   int get completedTrials =>
@@ -49,8 +72,12 @@ class ExerciseRun {
 
 /// An in-memory Session with one Balloon Touch Exercise Run.
 class Session {
-  Session({required this.patientId, required int balloonCount, Random? random})
-    : exerciseRun = ExerciseRun(balloonCount),
+  Session({
+    required this.patientId,
+    required int balloonCount,
+    int difficultyLevel = minDifficultyLevel,
+    Random? random,
+  }) : exerciseRun = ExerciseRun(balloonCount, difficultyLevel),
       _random = random ?? Random();
 
   final id = randomId();
@@ -61,8 +88,8 @@ class Session {
   SessionStatus status = SessionStatus.running;
   DateTime? endedAt;
 
-  /// Shows the next balloon at a uniformly random spot inside [area], unless
-  /// one is already showing, none remain, or the area is too small.
+  /// Shows the next balloon at a random spot inside [area] for the Difficulty
+  /// Level, unless one is already showing, none remain, or the area is too small.
   void presentNextTrial(Size area) {
     final run = exerciseRun;
     if (status != SessionStatus.running ||
@@ -76,13 +103,32 @@ class Session {
     const dy = (h / 2 + knot) * maxPulseScale + edgeMargin;
     if (area.width <= dx * 2 || area.height <= dy * 2) return;
 
+    var bounds = Rect.fromLTRB(dx, dy, area.width - dx, area.height - dy);
+    // shortcut: Levels 2 to 4 stay uniform over the area, until weighted placement lands.
+    final inZone1 = run.difficultyLevel == 1;
+    if (inZone1) {
+      bounds = bounds.intersect(
+        Rect.fromCenter(
+          center: area.center(Offset.zero),
+          width: area.width * zoneEllipseSpans[0],
+          height: area.height * zoneEllipseSpans[0],
+        ),
+      );
+    }
+    // Rejection sampling; both boxes share the area's centre, so most draws hit.
+    Offset center;
+    do {
+      center = Offset(
+        bounds.left + _random.nextDouble() * bounds.width,
+        bounds.top + _random.nextDouble() * bounds.height,
+      );
+    } while (inZone1 && zoneOf(center, area) != 1);
+
     run.trials.add(
       Trial(
         number: run.completedTrials + 1,
-        center: Offset(
-          dx + _random.nextDouble() * (area.width - dx * 2),
-          dy + _random.nextDouble() * (area.height - dy * 2),
-        ),
+        center: center,
+        zone: zoneOf(center, area),
         bodyWidth: w,
       ),
     );
