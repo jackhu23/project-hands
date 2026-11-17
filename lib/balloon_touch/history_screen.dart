@@ -15,6 +15,10 @@ String _two(int n) => n.toString().padLeft(2, '0');
 String formatRunTime(DateTime t) =>
     '${t.day} ${_months[t.month - 1]} ${t.year}, ${_two(t.hour)}:${_two(t.minute)}';
 
+/// A whole percentage, or a dash when there is nothing to divide.
+String formatAccuracy(double? accuracy) =>
+    accuracy == null ? '–' : '${(accuracy * 100).round()}%';
+
 /// Minutes and seconds, for example "2:05".
 String formatDuration(Duration d) => '${d.inMinutes}:${_two(d.inSeconds % 60)}';
 
@@ -90,6 +94,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     spacing: 24,
                     children: [
                       if (run.stopped) Text('Stopped', style: handsText(17)),
+                      Text(
+                        'Level ${run.difficultyLevel}',
+                        semanticsLabel:
+                            'Difficulty Level ${run.difficultyLevel}',
+                        style: handsText(17),
+                      ),
+                      Text(
+                        'Accuracy ${formatAccuracy(run.accuracy)}',
+                        style: handsText(17),
+                      ),
                       Text(
                         formatDuration(run.duration),
                         semanticsLabel:

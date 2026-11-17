@@ -564,6 +564,17 @@ class $ExerciseRunsTable extends ExerciseRuns
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _difficultyLevelMeta = const VerificationMeta(
+    'difficultyLevel',
+  );
+  @override
+  late final GeneratedColumn<int> difficultyLevel = GeneratedColumn<int>(
+    'difficulty_level',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
   static const VerificationMeta _balloonCountMeta = const VerificationMeta(
     'balloonCount',
   );
@@ -633,6 +644,7 @@ class $ExerciseRunsTable extends ExerciseRuns
     id,
     sessionId,
     exercise,
+    difficultyLevel,
     balloonCount,
     areaWidth,
     areaHeight,
@@ -672,6 +684,17 @@ class $ExerciseRunsTable extends ExerciseRuns
       );
     } else if (isInserting) {
       context.missing(_exerciseMeta);
+    }
+    if (data.containsKey('difficulty_level')) {
+      context.handle(
+        _difficultyLevelMeta,
+        difficultyLevel.isAcceptableOrUnknown(
+          data['difficulty_level']!,
+          _difficultyLevelMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_difficultyLevelMeta);
     }
     if (data.containsKey('balloon_count')) {
       context.handle(
@@ -735,6 +758,10 @@ class $ExerciseRunsTable extends ExerciseRuns
         DriftSqlType.string,
         data['${effectivePrefix}exercise'],
       )!,
+      difficultyLevel: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}difficulty_level'],
+      )!,
       balloonCount: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}balloon_count'],
@@ -779,6 +806,7 @@ class ExerciseRunRow extends DataClass implements Insertable<ExerciseRunRow> {
   final String id;
   final String sessionId;
   final String exercise;
+  final int difficultyLevel;
   final int balloonCount;
 
   /// The play area in logical pixels; Trial positions are relative to its
@@ -794,6 +822,7 @@ class ExerciseRunRow extends DataClass implements Insertable<ExerciseRunRow> {
     required this.id,
     required this.sessionId,
     required this.exercise,
+    required this.difficultyLevel,
     required this.balloonCount,
     required this.areaWidth,
     required this.areaHeight,
@@ -807,6 +836,7 @@ class ExerciseRunRow extends DataClass implements Insertable<ExerciseRunRow> {
     map['id'] = Variable<String>(id);
     map['session_id'] = Variable<String>(sessionId);
     map['exercise'] = Variable<String>(exercise);
+    map['difficulty_level'] = Variable<int>(difficultyLevel);
     map['balloon_count'] = Variable<int>(balloonCount);
     map['area_width'] = Variable<double>(areaWidth);
     map['area_height'] = Variable<double>(areaHeight);
@@ -827,6 +857,7 @@ class ExerciseRunRow extends DataClass implements Insertable<ExerciseRunRow> {
       id: Value(id),
       sessionId: Value(sessionId),
       exercise: Value(exercise),
+      difficultyLevel: Value(difficultyLevel),
       balloonCount: Value(balloonCount),
       areaWidth: Value(areaWidth),
       areaHeight: Value(areaHeight),
@@ -849,6 +880,7 @@ class ExerciseRunRow extends DataClass implements Insertable<ExerciseRunRow> {
       id: serializer.fromJson<String>(json['id']),
       sessionId: serializer.fromJson<String>(json['sessionId']),
       exercise: serializer.fromJson<String>(json['exercise']),
+      difficultyLevel: serializer.fromJson<int>(json['difficultyLevel']),
       balloonCount: serializer.fromJson<int>(json['balloonCount']),
       areaWidth: serializer.fromJson<double>(json['areaWidth']),
       areaHeight: serializer.fromJson<double>(json['areaHeight']),
@@ -866,6 +898,7 @@ class ExerciseRunRow extends DataClass implements Insertable<ExerciseRunRow> {
       'id': serializer.toJson<String>(id),
       'sessionId': serializer.toJson<String>(sessionId),
       'exercise': serializer.toJson<String>(exercise),
+      'difficultyLevel': serializer.toJson<int>(difficultyLevel),
       'balloonCount': serializer.toJson<int>(balloonCount),
       'areaWidth': serializer.toJson<double>(areaWidth),
       'areaHeight': serializer.toJson<double>(areaHeight),
@@ -881,6 +914,7 @@ class ExerciseRunRow extends DataClass implements Insertable<ExerciseRunRow> {
     String? id,
     String? sessionId,
     String? exercise,
+    int? difficultyLevel,
     int? balloonCount,
     double? areaWidth,
     double? areaHeight,
@@ -891,6 +925,7 @@ class ExerciseRunRow extends DataClass implements Insertable<ExerciseRunRow> {
     id: id ?? this.id,
     sessionId: sessionId ?? this.sessionId,
     exercise: exercise ?? this.exercise,
+    difficultyLevel: difficultyLevel ?? this.difficultyLevel,
     balloonCount: balloonCount ?? this.balloonCount,
     areaWidth: areaWidth ?? this.areaWidth,
     areaHeight: areaHeight ?? this.areaHeight,
@@ -903,6 +938,9 @@ class ExerciseRunRow extends DataClass implements Insertable<ExerciseRunRow> {
       id: data.id.present ? data.id.value : this.id,
       sessionId: data.sessionId.present ? data.sessionId.value : this.sessionId,
       exercise: data.exercise.present ? data.exercise.value : this.exercise,
+      difficultyLevel: data.difficultyLevel.present
+          ? data.difficultyLevel.value
+          : this.difficultyLevel,
       balloonCount: data.balloonCount.present
           ? data.balloonCount.value
           : this.balloonCount,
@@ -922,6 +960,7 @@ class ExerciseRunRow extends DataClass implements Insertable<ExerciseRunRow> {
           ..write('id: $id, ')
           ..write('sessionId: $sessionId, ')
           ..write('exercise: $exercise, ')
+          ..write('difficultyLevel: $difficultyLevel, ')
           ..write('balloonCount: $balloonCount, ')
           ..write('areaWidth: $areaWidth, ')
           ..write('areaHeight: $areaHeight, ')
@@ -937,6 +976,7 @@ class ExerciseRunRow extends DataClass implements Insertable<ExerciseRunRow> {
     id,
     sessionId,
     exercise,
+    difficultyLevel,
     balloonCount,
     areaWidth,
     areaHeight,
@@ -951,6 +991,7 @@ class ExerciseRunRow extends DataClass implements Insertable<ExerciseRunRow> {
           other.id == this.id &&
           other.sessionId == this.sessionId &&
           other.exercise == this.exercise &&
+          other.difficultyLevel == this.difficultyLevel &&
           other.balloonCount == this.balloonCount &&
           other.areaWidth == this.areaWidth &&
           other.areaHeight == this.areaHeight &&
@@ -963,6 +1004,7 @@ class ExerciseRunsCompanion extends UpdateCompanion<ExerciseRunRow> {
   final Value<String> id;
   final Value<String> sessionId;
   final Value<String> exercise;
+  final Value<int> difficultyLevel;
   final Value<int> balloonCount;
   final Value<double> areaWidth;
   final Value<double> areaHeight;
@@ -974,6 +1016,7 @@ class ExerciseRunsCompanion extends UpdateCompanion<ExerciseRunRow> {
     this.id = const Value.absent(),
     this.sessionId = const Value.absent(),
     this.exercise = const Value.absent(),
+    this.difficultyLevel = const Value.absent(),
     this.balloonCount = const Value.absent(),
     this.areaWidth = const Value.absent(),
     this.areaHeight = const Value.absent(),
@@ -986,6 +1029,7 @@ class ExerciseRunsCompanion extends UpdateCompanion<ExerciseRunRow> {
     required String id,
     required String sessionId,
     required String exercise,
+    required int difficultyLevel,
     required int balloonCount,
     required double areaWidth,
     required double areaHeight,
@@ -996,6 +1040,7 @@ class ExerciseRunsCompanion extends UpdateCompanion<ExerciseRunRow> {
   }) : id = Value(id),
        sessionId = Value(sessionId),
        exercise = Value(exercise),
+       difficultyLevel = Value(difficultyLevel),
        balloonCount = Value(balloonCount),
        areaWidth = Value(areaWidth),
        areaHeight = Value(areaHeight),
@@ -1004,6 +1049,7 @@ class ExerciseRunsCompanion extends UpdateCompanion<ExerciseRunRow> {
     Expression<String>? id,
     Expression<String>? sessionId,
     Expression<String>? exercise,
+    Expression<int>? difficultyLevel,
     Expression<int>? balloonCount,
     Expression<double>? areaWidth,
     Expression<double>? areaHeight,
@@ -1016,6 +1062,7 @@ class ExerciseRunsCompanion extends UpdateCompanion<ExerciseRunRow> {
       if (id != null) 'id': id,
       if (sessionId != null) 'session_id': sessionId,
       if (exercise != null) 'exercise': exercise,
+      if (difficultyLevel != null) 'difficulty_level': difficultyLevel,
       if (balloonCount != null) 'balloon_count': balloonCount,
       if (areaWidth != null) 'area_width': areaWidth,
       if (areaHeight != null) 'area_height': areaHeight,
@@ -1030,6 +1077,7 @@ class ExerciseRunsCompanion extends UpdateCompanion<ExerciseRunRow> {
     Value<String>? id,
     Value<String>? sessionId,
     Value<String>? exercise,
+    Value<int>? difficultyLevel,
     Value<int>? balloonCount,
     Value<double>? areaWidth,
     Value<double>? areaHeight,
@@ -1042,6 +1090,7 @@ class ExerciseRunsCompanion extends UpdateCompanion<ExerciseRunRow> {
       id: id ?? this.id,
       sessionId: sessionId ?? this.sessionId,
       exercise: exercise ?? this.exercise,
+      difficultyLevel: difficultyLevel ?? this.difficultyLevel,
       balloonCount: balloonCount ?? this.balloonCount,
       areaWidth: areaWidth ?? this.areaWidth,
       areaHeight: areaHeight ?? this.areaHeight,
@@ -1063,6 +1112,9 @@ class ExerciseRunsCompanion extends UpdateCompanion<ExerciseRunRow> {
     }
     if (exercise.present) {
       map['exercise'] = Variable<String>(exercise.value);
+    }
+    if (difficultyLevel.present) {
+      map['difficulty_level'] = Variable<int>(difficultyLevel.value);
     }
     if (balloonCount.present) {
       map['balloon_count'] = Variable<int>(balloonCount.value);
@@ -1096,6 +1148,7 @@ class ExerciseRunsCompanion extends UpdateCompanion<ExerciseRunRow> {
           ..write('id: $id, ')
           ..write('sessionId: $sessionId, ')
           ..write('exercise: $exercise, ')
+          ..write('difficultyLevel: $difficultyLevel, ')
           ..write('balloonCount: $balloonCount, ')
           ..write('areaWidth: $areaWidth, ')
           ..write('areaHeight: $areaHeight, ')
@@ -1189,6 +1242,15 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, TrialRow> {
     type: DriftSqlType.double,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _zoneMeta = const VerificationMeta('zone');
+  @override
+  late final GeneratedColumn<int> zone = GeneratedColumn<int>(
+    'zone',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
   static const VerificationMeta _presentedAtMeta = const VerificationMeta(
     'presentedAt',
   );
@@ -1229,6 +1291,7 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, TrialRow> {
     centerY,
     bodyWidth,
     bodyHeight,
+    zone,
     presentedAt,
     completedAt,
     status,
@@ -1301,6 +1364,14 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, TrialRow> {
     } else if (isInserting) {
       context.missing(_bodyHeightMeta);
     }
+    if (data.containsKey('zone')) {
+      context.handle(
+        _zoneMeta,
+        zone.isAcceptableOrUnknown(data['zone']!, _zoneMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_zoneMeta);
+    }
     if (data.containsKey('presented_at')) {
       context.handle(
         _presentedAtMeta,
@@ -1358,6 +1429,10 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, TrialRow> {
         DriftSqlType.double,
         data['${effectivePrefix}body_height'],
       )!,
+      zone: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}zone'],
+      )!,
       presentedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}presented_at'],
@@ -1392,6 +1467,7 @@ class TrialRow extends DataClass implements Insertable<TrialRow> {
   final double centerY;
   final double bodyWidth;
   final double bodyHeight;
+  final int zone;
   final DateTime presentedAt;
   final DateTime? completedAt;
   final TrialStatus status;
@@ -1403,6 +1479,7 @@ class TrialRow extends DataClass implements Insertable<TrialRow> {
     required this.centerY,
     required this.bodyWidth,
     required this.bodyHeight,
+    required this.zone,
     required this.presentedAt,
     this.completedAt,
     required this.status,
@@ -1417,6 +1494,7 @@ class TrialRow extends DataClass implements Insertable<TrialRow> {
     map['center_y'] = Variable<double>(centerY);
     map['body_width'] = Variable<double>(bodyWidth);
     map['body_height'] = Variable<double>(bodyHeight);
+    map['zone'] = Variable<int>(zone);
     map['presented_at'] = Variable<DateTime>(presentedAt);
     if (!nullToAbsent || completedAt != null) {
       map['completed_at'] = Variable<DateTime>(completedAt);
@@ -1438,6 +1516,7 @@ class TrialRow extends DataClass implements Insertable<TrialRow> {
       centerY: Value(centerY),
       bodyWidth: Value(bodyWidth),
       bodyHeight: Value(bodyHeight),
+      zone: Value(zone),
       presentedAt: Value(presentedAt),
       completedAt: completedAt == null && nullToAbsent
           ? const Value.absent()
@@ -1459,6 +1538,7 @@ class TrialRow extends DataClass implements Insertable<TrialRow> {
       centerY: serializer.fromJson<double>(json['centerY']),
       bodyWidth: serializer.fromJson<double>(json['bodyWidth']),
       bodyHeight: serializer.fromJson<double>(json['bodyHeight']),
+      zone: serializer.fromJson<int>(json['zone']),
       presentedAt: serializer.fromJson<DateTime>(json['presentedAt']),
       completedAt: serializer.fromJson<DateTime?>(json['completedAt']),
       status: $TrialsTable.$converterstatus.fromJson(
@@ -1477,6 +1557,7 @@ class TrialRow extends DataClass implements Insertable<TrialRow> {
       'centerY': serializer.toJson<double>(centerY),
       'bodyWidth': serializer.toJson<double>(bodyWidth),
       'bodyHeight': serializer.toJson<double>(bodyHeight),
+      'zone': serializer.toJson<int>(zone),
       'presentedAt': serializer.toJson<DateTime>(presentedAt),
       'completedAt': serializer.toJson<DateTime?>(completedAt),
       'status': serializer.toJson<String>(
@@ -1493,6 +1574,7 @@ class TrialRow extends DataClass implements Insertable<TrialRow> {
     double? centerY,
     double? bodyWidth,
     double? bodyHeight,
+    int? zone,
     DateTime? presentedAt,
     Value<DateTime?> completedAt = const Value.absent(),
     TrialStatus? status,
@@ -1504,6 +1586,7 @@ class TrialRow extends DataClass implements Insertable<TrialRow> {
     centerY: centerY ?? this.centerY,
     bodyWidth: bodyWidth ?? this.bodyWidth,
     bodyHeight: bodyHeight ?? this.bodyHeight,
+    zone: zone ?? this.zone,
     presentedAt: presentedAt ?? this.presentedAt,
     completedAt: completedAt.present ? completedAt.value : this.completedAt,
     status: status ?? this.status,
@@ -1521,6 +1604,7 @@ class TrialRow extends DataClass implements Insertable<TrialRow> {
       bodyHeight: data.bodyHeight.present
           ? data.bodyHeight.value
           : this.bodyHeight,
+      zone: data.zone.present ? data.zone.value : this.zone,
       presentedAt: data.presentedAt.present
           ? data.presentedAt.value
           : this.presentedAt,
@@ -1541,6 +1625,7 @@ class TrialRow extends DataClass implements Insertable<TrialRow> {
           ..write('centerY: $centerY, ')
           ..write('bodyWidth: $bodyWidth, ')
           ..write('bodyHeight: $bodyHeight, ')
+          ..write('zone: $zone, ')
           ..write('presentedAt: $presentedAt, ')
           ..write('completedAt: $completedAt, ')
           ..write('status: $status')
@@ -1557,6 +1642,7 @@ class TrialRow extends DataClass implements Insertable<TrialRow> {
     centerY,
     bodyWidth,
     bodyHeight,
+    zone,
     presentedAt,
     completedAt,
     status,
@@ -1572,6 +1658,7 @@ class TrialRow extends DataClass implements Insertable<TrialRow> {
           other.centerY == this.centerY &&
           other.bodyWidth == this.bodyWidth &&
           other.bodyHeight == this.bodyHeight &&
+          other.zone == this.zone &&
           other.presentedAt == this.presentedAt &&
           other.completedAt == this.completedAt &&
           other.status == this.status);
@@ -1585,6 +1672,7 @@ class TrialsCompanion extends UpdateCompanion<TrialRow> {
   final Value<double> centerY;
   final Value<double> bodyWidth;
   final Value<double> bodyHeight;
+  final Value<int> zone;
   final Value<DateTime> presentedAt;
   final Value<DateTime?> completedAt;
   final Value<TrialStatus> status;
@@ -1597,6 +1685,7 @@ class TrialsCompanion extends UpdateCompanion<TrialRow> {
     this.centerY = const Value.absent(),
     this.bodyWidth = const Value.absent(),
     this.bodyHeight = const Value.absent(),
+    this.zone = const Value.absent(),
     this.presentedAt = const Value.absent(),
     this.completedAt = const Value.absent(),
     this.status = const Value.absent(),
@@ -1610,6 +1699,7 @@ class TrialsCompanion extends UpdateCompanion<TrialRow> {
     required double centerY,
     required double bodyWidth,
     required double bodyHeight,
+    required int zone,
     required DateTime presentedAt,
     this.completedAt = const Value.absent(),
     required TrialStatus status,
@@ -1621,6 +1711,7 @@ class TrialsCompanion extends UpdateCompanion<TrialRow> {
        centerY = Value(centerY),
        bodyWidth = Value(bodyWidth),
        bodyHeight = Value(bodyHeight),
+       zone = Value(zone),
        presentedAt = Value(presentedAt),
        status = Value(status);
   static Insertable<TrialRow> custom({
@@ -1631,6 +1722,7 @@ class TrialsCompanion extends UpdateCompanion<TrialRow> {
     Expression<double>? centerY,
     Expression<double>? bodyWidth,
     Expression<double>? bodyHeight,
+    Expression<int>? zone,
     Expression<DateTime>? presentedAt,
     Expression<DateTime>? completedAt,
     Expression<String>? status,
@@ -1644,6 +1736,7 @@ class TrialsCompanion extends UpdateCompanion<TrialRow> {
       if (centerY != null) 'center_y': centerY,
       if (bodyWidth != null) 'body_width': bodyWidth,
       if (bodyHeight != null) 'body_height': bodyHeight,
+      if (zone != null) 'zone': zone,
       if (presentedAt != null) 'presented_at': presentedAt,
       if (completedAt != null) 'completed_at': completedAt,
       if (status != null) 'status': status,
@@ -1659,6 +1752,7 @@ class TrialsCompanion extends UpdateCompanion<TrialRow> {
     Value<double>? centerY,
     Value<double>? bodyWidth,
     Value<double>? bodyHeight,
+    Value<int>? zone,
     Value<DateTime>? presentedAt,
     Value<DateTime?>? completedAt,
     Value<TrialStatus>? status,
@@ -1672,6 +1766,7 @@ class TrialsCompanion extends UpdateCompanion<TrialRow> {
       centerY: centerY ?? this.centerY,
       bodyWidth: bodyWidth ?? this.bodyWidth,
       bodyHeight: bodyHeight ?? this.bodyHeight,
+      zone: zone ?? this.zone,
       presentedAt: presentedAt ?? this.presentedAt,
       completedAt: completedAt ?? this.completedAt,
       status: status ?? this.status,
@@ -1703,6 +1798,9 @@ class TrialsCompanion extends UpdateCompanion<TrialRow> {
     if (bodyHeight.present) {
       map['body_height'] = Variable<double>(bodyHeight.value);
     }
+    if (zone.present) {
+      map['zone'] = Variable<int>(zone.value);
+    }
     if (presentedAt.present) {
       map['presented_at'] = Variable<DateTime>(presentedAt.value);
     }
@@ -1730,9 +1828,1168 @@ class TrialsCompanion extends UpdateCompanion<TrialRow> {
           ..write('centerY: $centerY, ')
           ..write('bodyWidth: $bodyWidth, ')
           ..write('bodyHeight: $bodyHeight, ')
+          ..write('zone: $zone, ')
           ..write('presentedAt: $presentedAt, ')
           ..write('completedAt: $completedAt, ')
           ..write('status: $status, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $PausesTable extends Pauses with TableInfo<$PausesTable, PauseRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PausesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _exerciseRunIdMeta = const VerificationMeta(
+    'exerciseRunId',
+  );
+  @override
+  late final GeneratedColumn<String> exerciseRunId = GeneratedColumn<String>(
+    'exercise_run_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES exercise_runs (id)',
+    ),
+  );
+  static const VerificationMeta _numberMeta = const VerificationMeta('number');
+  @override
+  late final GeneratedColumn<int> number = GeneratedColumn<int>(
+    'number',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _pausedAtMeta = const VerificationMeta(
+    'pausedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> pausedAt = GeneratedColumn<DateTime>(
+    'paused_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _resumedAtMeta = const VerificationMeta(
+    'resumedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> resumedAt = GeneratedColumn<DateTime>(
+    'resumed_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    exerciseRunId,
+    number,
+    pausedAt,
+    resumedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'pauses';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PauseRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('exercise_run_id')) {
+      context.handle(
+        _exerciseRunIdMeta,
+        exerciseRunId.isAcceptableOrUnknown(
+          data['exercise_run_id']!,
+          _exerciseRunIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_exerciseRunIdMeta);
+    }
+    if (data.containsKey('number')) {
+      context.handle(
+        _numberMeta,
+        number.isAcceptableOrUnknown(data['number']!, _numberMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_numberMeta);
+    }
+    if (data.containsKey('paused_at')) {
+      context.handle(
+        _pausedAtMeta,
+        pausedAt.isAcceptableOrUnknown(data['paused_at']!, _pausedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_pausedAtMeta);
+    }
+    if (data.containsKey('resumed_at')) {
+      context.handle(
+        _resumedAtMeta,
+        resumedAt.isAcceptableOrUnknown(data['resumed_at']!, _resumedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {exerciseRunId, number};
+  @override
+  PauseRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PauseRow(
+      exerciseRunId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}exercise_run_id'],
+      )!,
+      number: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}number'],
+      )!,
+      pausedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}paused_at'],
+      )!,
+      resumedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}resumed_at'],
+      ),
+    );
+  }
+
+  @override
+  $PausesTable createAlias(String alias) {
+    return $PausesTable(attachedDatabase, alias);
+  }
+}
+
+class PauseRow extends DataClass implements Insertable<PauseRow> {
+  final String exerciseRunId;
+  final int number;
+  final DateTime pausedAt;
+  final DateTime? resumedAt;
+  const PauseRow({
+    required this.exerciseRunId,
+    required this.number,
+    required this.pausedAt,
+    this.resumedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['exercise_run_id'] = Variable<String>(exerciseRunId);
+    map['number'] = Variable<int>(number);
+    map['paused_at'] = Variable<DateTime>(pausedAt);
+    if (!nullToAbsent || resumedAt != null) {
+      map['resumed_at'] = Variable<DateTime>(resumedAt);
+    }
+    return map;
+  }
+
+  PausesCompanion toCompanion(bool nullToAbsent) {
+    return PausesCompanion(
+      exerciseRunId: Value(exerciseRunId),
+      number: Value(number),
+      pausedAt: Value(pausedAt),
+      resumedAt: resumedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(resumedAt),
+    );
+  }
+
+  factory PauseRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PauseRow(
+      exerciseRunId: serializer.fromJson<String>(json['exerciseRunId']),
+      number: serializer.fromJson<int>(json['number']),
+      pausedAt: serializer.fromJson<DateTime>(json['pausedAt']),
+      resumedAt: serializer.fromJson<DateTime?>(json['resumedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'exerciseRunId': serializer.toJson<String>(exerciseRunId),
+      'number': serializer.toJson<int>(number),
+      'pausedAt': serializer.toJson<DateTime>(pausedAt),
+      'resumedAt': serializer.toJson<DateTime?>(resumedAt),
+    };
+  }
+
+  PauseRow copyWith({
+    String? exerciseRunId,
+    int? number,
+    DateTime? pausedAt,
+    Value<DateTime?> resumedAt = const Value.absent(),
+  }) => PauseRow(
+    exerciseRunId: exerciseRunId ?? this.exerciseRunId,
+    number: number ?? this.number,
+    pausedAt: pausedAt ?? this.pausedAt,
+    resumedAt: resumedAt.present ? resumedAt.value : this.resumedAt,
+  );
+  PauseRow copyWithCompanion(PausesCompanion data) {
+    return PauseRow(
+      exerciseRunId: data.exerciseRunId.present
+          ? data.exerciseRunId.value
+          : this.exerciseRunId,
+      number: data.number.present ? data.number.value : this.number,
+      pausedAt: data.pausedAt.present ? data.pausedAt.value : this.pausedAt,
+      resumedAt: data.resumedAt.present ? data.resumedAt.value : this.resumedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PauseRow(')
+          ..write('exerciseRunId: $exerciseRunId, ')
+          ..write('number: $number, ')
+          ..write('pausedAt: $pausedAt, ')
+          ..write('resumedAt: $resumedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(exerciseRunId, number, pausedAt, resumedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PauseRow &&
+          other.exerciseRunId == this.exerciseRunId &&
+          other.number == this.number &&
+          other.pausedAt == this.pausedAt &&
+          other.resumedAt == this.resumedAt);
+}
+
+class PausesCompanion extends UpdateCompanion<PauseRow> {
+  final Value<String> exerciseRunId;
+  final Value<int> number;
+  final Value<DateTime> pausedAt;
+  final Value<DateTime?> resumedAt;
+  final Value<int> rowid;
+  const PausesCompanion({
+    this.exerciseRunId = const Value.absent(),
+    this.number = const Value.absent(),
+    this.pausedAt = const Value.absent(),
+    this.resumedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PausesCompanion.insert({
+    required String exerciseRunId,
+    required int number,
+    required DateTime pausedAt,
+    this.resumedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : exerciseRunId = Value(exerciseRunId),
+       number = Value(number),
+       pausedAt = Value(pausedAt);
+  static Insertable<PauseRow> custom({
+    Expression<String>? exerciseRunId,
+    Expression<int>? number,
+    Expression<DateTime>? pausedAt,
+    Expression<DateTime>? resumedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (exerciseRunId != null) 'exercise_run_id': exerciseRunId,
+      if (number != null) 'number': number,
+      if (pausedAt != null) 'paused_at': pausedAt,
+      if (resumedAt != null) 'resumed_at': resumedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PausesCompanion copyWith({
+    Value<String>? exerciseRunId,
+    Value<int>? number,
+    Value<DateTime>? pausedAt,
+    Value<DateTime?>? resumedAt,
+    Value<int>? rowid,
+  }) {
+    return PausesCompanion(
+      exerciseRunId: exerciseRunId ?? this.exerciseRunId,
+      number: number ?? this.number,
+      pausedAt: pausedAt ?? this.pausedAt,
+      resumedAt: resumedAt ?? this.resumedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (exerciseRunId.present) {
+      map['exercise_run_id'] = Variable<String>(exerciseRunId.value);
+    }
+    if (number.present) {
+      map['number'] = Variable<int>(number.value);
+    }
+    if (pausedAt.present) {
+      map['paused_at'] = Variable<DateTime>(pausedAt.value);
+    }
+    if (resumedAt.present) {
+      map['resumed_at'] = Variable<DateTime>(resumedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PausesCompanion(')
+          ..write('exerciseRunId: $exerciseRunId, ')
+          ..write('number: $number, ')
+          ..write('pausedAt: $pausedAt, ')
+          ..write('resumedAt: $resumedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ActionsTable extends Actions with TableInfo<$ActionsTable, ActionRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ActionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _trialIdMeta = const VerificationMeta(
+    'trialId',
+  );
+  @override
+  late final GeneratedColumn<String> trialId = GeneratedColumn<String>(
+    'trial_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES trials (id)',
+    ),
+  );
+  static const VerificationMeta _touchdownAtMeta = const VerificationMeta(
+    'touchdownAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> touchdownAt = GeneratedColumn<DateTime>(
+    'touchdown_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _liftOffAtMeta = const VerificationMeta(
+    'liftOffAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> liftOffAt = GeneratedColumn<DateTime>(
+    'lift_off_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<ActionOutcome, String> outcome =
+      GeneratedColumn<String>(
+        'outcome',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      ).withConverter<ActionOutcome>($ActionsTable.$converteroutcome);
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    trialId,
+    touchdownAt,
+    liftOffAt,
+    outcome,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'actions';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ActionRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('trial_id')) {
+      context.handle(
+        _trialIdMeta,
+        trialId.isAcceptableOrUnknown(data['trial_id']!, _trialIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_trialIdMeta);
+    }
+    if (data.containsKey('touchdown_at')) {
+      context.handle(
+        _touchdownAtMeta,
+        touchdownAt.isAcceptableOrUnknown(
+          data['touchdown_at']!,
+          _touchdownAtMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_touchdownAtMeta);
+    }
+    if (data.containsKey('lift_off_at')) {
+      context.handle(
+        _liftOffAtMeta,
+        liftOffAt.isAcceptableOrUnknown(data['lift_off_at']!, _liftOffAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_liftOffAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ActionRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ActionRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      trialId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}trial_id'],
+      )!,
+      touchdownAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}touchdown_at'],
+      )!,
+      liftOffAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}lift_off_at'],
+      )!,
+      outcome: $ActionsTable.$converteroutcome.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}outcome'],
+        )!,
+      ),
+    );
+  }
+
+  @override
+  $ActionsTable createAlias(String alias) {
+    return $ActionsTable(attachedDatabase, alias);
+  }
+
+  static JsonTypeConverter2<ActionOutcome, String, String> $converteroutcome =
+      const EnumNameConverter<ActionOutcome>(ActionOutcome.values);
+}
+
+class ActionRow extends DataClass implements Insertable<ActionRow> {
+  final String id;
+  final String trialId;
+  final DateTime touchdownAt;
+  final DateTime liftOffAt;
+  final ActionOutcome outcome;
+  const ActionRow({
+    required this.id,
+    required this.trialId,
+    required this.touchdownAt,
+    required this.liftOffAt,
+    required this.outcome,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['trial_id'] = Variable<String>(trialId);
+    map['touchdown_at'] = Variable<DateTime>(touchdownAt);
+    map['lift_off_at'] = Variable<DateTime>(liftOffAt);
+    {
+      map['outcome'] = Variable<String>(
+        $ActionsTable.$converteroutcome.toSql(outcome),
+      );
+    }
+    return map;
+  }
+
+  ActionsCompanion toCompanion(bool nullToAbsent) {
+    return ActionsCompanion(
+      id: Value(id),
+      trialId: Value(trialId),
+      touchdownAt: Value(touchdownAt),
+      liftOffAt: Value(liftOffAt),
+      outcome: Value(outcome),
+    );
+  }
+
+  factory ActionRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ActionRow(
+      id: serializer.fromJson<String>(json['id']),
+      trialId: serializer.fromJson<String>(json['trialId']),
+      touchdownAt: serializer.fromJson<DateTime>(json['touchdownAt']),
+      liftOffAt: serializer.fromJson<DateTime>(json['liftOffAt']),
+      outcome: $ActionsTable.$converteroutcome.fromJson(
+        serializer.fromJson<String>(json['outcome']),
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'trialId': serializer.toJson<String>(trialId),
+      'touchdownAt': serializer.toJson<DateTime>(touchdownAt),
+      'liftOffAt': serializer.toJson<DateTime>(liftOffAt),
+      'outcome': serializer.toJson<String>(
+        $ActionsTable.$converteroutcome.toJson(outcome),
+      ),
+    };
+  }
+
+  ActionRow copyWith({
+    String? id,
+    String? trialId,
+    DateTime? touchdownAt,
+    DateTime? liftOffAt,
+    ActionOutcome? outcome,
+  }) => ActionRow(
+    id: id ?? this.id,
+    trialId: trialId ?? this.trialId,
+    touchdownAt: touchdownAt ?? this.touchdownAt,
+    liftOffAt: liftOffAt ?? this.liftOffAt,
+    outcome: outcome ?? this.outcome,
+  );
+  ActionRow copyWithCompanion(ActionsCompanion data) {
+    return ActionRow(
+      id: data.id.present ? data.id.value : this.id,
+      trialId: data.trialId.present ? data.trialId.value : this.trialId,
+      touchdownAt: data.touchdownAt.present
+          ? data.touchdownAt.value
+          : this.touchdownAt,
+      liftOffAt: data.liftOffAt.present ? data.liftOffAt.value : this.liftOffAt,
+      outcome: data.outcome.present ? data.outcome.value : this.outcome,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ActionRow(')
+          ..write('id: $id, ')
+          ..write('trialId: $trialId, ')
+          ..write('touchdownAt: $touchdownAt, ')
+          ..write('liftOffAt: $liftOffAt, ')
+          ..write('outcome: $outcome')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, trialId, touchdownAt, liftOffAt, outcome);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ActionRow &&
+          other.id == this.id &&
+          other.trialId == this.trialId &&
+          other.touchdownAt == this.touchdownAt &&
+          other.liftOffAt == this.liftOffAt &&
+          other.outcome == this.outcome);
+}
+
+class ActionsCompanion extends UpdateCompanion<ActionRow> {
+  final Value<String> id;
+  final Value<String> trialId;
+  final Value<DateTime> touchdownAt;
+  final Value<DateTime> liftOffAt;
+  final Value<ActionOutcome> outcome;
+  final Value<int> rowid;
+  const ActionsCompanion({
+    this.id = const Value.absent(),
+    this.trialId = const Value.absent(),
+    this.touchdownAt = const Value.absent(),
+    this.liftOffAt = const Value.absent(),
+    this.outcome = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ActionsCompanion.insert({
+    required String id,
+    required String trialId,
+    required DateTime touchdownAt,
+    required DateTime liftOffAt,
+    required ActionOutcome outcome,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       trialId = Value(trialId),
+       touchdownAt = Value(touchdownAt),
+       liftOffAt = Value(liftOffAt),
+       outcome = Value(outcome);
+  static Insertable<ActionRow> custom({
+    Expression<String>? id,
+    Expression<String>? trialId,
+    Expression<DateTime>? touchdownAt,
+    Expression<DateTime>? liftOffAt,
+    Expression<String>? outcome,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (trialId != null) 'trial_id': trialId,
+      if (touchdownAt != null) 'touchdown_at': touchdownAt,
+      if (liftOffAt != null) 'lift_off_at': liftOffAt,
+      if (outcome != null) 'outcome': outcome,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ActionsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? trialId,
+    Value<DateTime>? touchdownAt,
+    Value<DateTime>? liftOffAt,
+    Value<ActionOutcome>? outcome,
+    Value<int>? rowid,
+  }) {
+    return ActionsCompanion(
+      id: id ?? this.id,
+      trialId: trialId ?? this.trialId,
+      touchdownAt: touchdownAt ?? this.touchdownAt,
+      liftOffAt: liftOffAt ?? this.liftOffAt,
+      outcome: outcome ?? this.outcome,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (trialId.present) {
+      map['trial_id'] = Variable<String>(trialId.value);
+    }
+    if (touchdownAt.present) {
+      map['touchdown_at'] = Variable<DateTime>(touchdownAt.value);
+    }
+    if (liftOffAt.present) {
+      map['lift_off_at'] = Variable<DateTime>(liftOffAt.value);
+    }
+    if (outcome.present) {
+      map['outcome'] = Variable<String>(
+        $ActionsTable.$converteroutcome.toSql(outcome.value),
+      );
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ActionsCompanion(')
+          ..write('id: $id, ')
+          ..write('trialId: $trialId, ')
+          ..write('touchdownAt: $touchdownAt, ')
+          ..write('liftOffAt: $liftOffAt, ')
+          ..write('outcome: $outcome, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $TouchSamplesTable extends TouchSamples
+    with TableInfo<$TouchSamplesTable, TouchSampleRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TouchSamplesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _actionIdMeta = const VerificationMeta(
+    'actionId',
+  );
+  @override
+  late final GeneratedColumn<String> actionId = GeneratedColumn<String>(
+    'action_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES actions (id)',
+    ),
+  );
+  static const VerificationMeta _sequenceMeta = const VerificationMeta(
+    'sequence',
+  );
+  @override
+  late final GeneratedColumn<int> sequence = GeneratedColumn<int>(
+    'sequence',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _timeMeta = const VerificationMeta('time');
+  @override
+  late final GeneratedColumn<DateTime> time = GeneratedColumn<DateTime>(
+    'time',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _xMeta = const VerificationMeta('x');
+  @override
+  late final GeneratedColumn<double> x = GeneratedColumn<double>(
+    'x',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _yMeta = const VerificationMeta('y');
+  @override
+  late final GeneratedColumn<double> y = GeneratedColumn<double>(
+    'y',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _pressureMeta = const VerificationMeta(
+    'pressure',
+  );
+  @override
+  late final GeneratedColumn<double> pressure = GeneratedColumn<double>(
+    'pressure',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<TouchKind, String> kind =
+      GeneratedColumn<String>(
+        'kind',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      ).withConverter<TouchKind>($TouchSamplesTable.$converterkind);
+  @override
+  List<GeneratedColumn> get $columns => [
+    actionId,
+    sequence,
+    time,
+    x,
+    y,
+    pressure,
+    kind,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'touch_samples';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<TouchSampleRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('action_id')) {
+      context.handle(
+        _actionIdMeta,
+        actionId.isAcceptableOrUnknown(data['action_id']!, _actionIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_actionIdMeta);
+    }
+    if (data.containsKey('sequence')) {
+      context.handle(
+        _sequenceMeta,
+        sequence.isAcceptableOrUnknown(data['sequence']!, _sequenceMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sequenceMeta);
+    }
+    if (data.containsKey('time')) {
+      context.handle(
+        _timeMeta,
+        time.isAcceptableOrUnknown(data['time']!, _timeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_timeMeta);
+    }
+    if (data.containsKey('x')) {
+      context.handle(_xMeta, x.isAcceptableOrUnknown(data['x']!, _xMeta));
+    } else if (isInserting) {
+      context.missing(_xMeta);
+    }
+    if (data.containsKey('y')) {
+      context.handle(_yMeta, y.isAcceptableOrUnknown(data['y']!, _yMeta));
+    } else if (isInserting) {
+      context.missing(_yMeta);
+    }
+    if (data.containsKey('pressure')) {
+      context.handle(
+        _pressureMeta,
+        pressure.isAcceptableOrUnknown(data['pressure']!, _pressureMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_pressureMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {actionId, sequence};
+  @override
+  TouchSampleRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TouchSampleRow(
+      actionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}action_id'],
+      )!,
+      sequence: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sequence'],
+      )!,
+      time: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}time'],
+      )!,
+      x: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}x'],
+      )!,
+      y: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}y'],
+      )!,
+      pressure: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}pressure'],
+      )!,
+      kind: $TouchSamplesTable.$converterkind.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}kind'],
+        )!,
+      ),
+    );
+  }
+
+  @override
+  $TouchSamplesTable createAlias(String alias) {
+    return $TouchSamplesTable(attachedDatabase, alias);
+  }
+
+  static JsonTypeConverter2<TouchKind, String, String> $converterkind =
+      const EnumNameConverter<TouchKind>(TouchKind.values);
+}
+
+class TouchSampleRow extends DataClass implements Insertable<TouchSampleRow> {
+  final String actionId;
+  final int sequence;
+  final DateTime time;
+  final double x;
+  final double y;
+  final double pressure;
+  final TouchKind kind;
+  const TouchSampleRow({
+    required this.actionId,
+    required this.sequence,
+    required this.time,
+    required this.x,
+    required this.y,
+    required this.pressure,
+    required this.kind,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['action_id'] = Variable<String>(actionId);
+    map['sequence'] = Variable<int>(sequence);
+    map['time'] = Variable<DateTime>(time);
+    map['x'] = Variable<double>(x);
+    map['y'] = Variable<double>(y);
+    map['pressure'] = Variable<double>(pressure);
+    {
+      map['kind'] = Variable<String>(
+        $TouchSamplesTable.$converterkind.toSql(kind),
+      );
+    }
+    return map;
+  }
+
+  TouchSamplesCompanion toCompanion(bool nullToAbsent) {
+    return TouchSamplesCompanion(
+      actionId: Value(actionId),
+      sequence: Value(sequence),
+      time: Value(time),
+      x: Value(x),
+      y: Value(y),
+      pressure: Value(pressure),
+      kind: Value(kind),
+    );
+  }
+
+  factory TouchSampleRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TouchSampleRow(
+      actionId: serializer.fromJson<String>(json['actionId']),
+      sequence: serializer.fromJson<int>(json['sequence']),
+      time: serializer.fromJson<DateTime>(json['time']),
+      x: serializer.fromJson<double>(json['x']),
+      y: serializer.fromJson<double>(json['y']),
+      pressure: serializer.fromJson<double>(json['pressure']),
+      kind: $TouchSamplesTable.$converterkind.fromJson(
+        serializer.fromJson<String>(json['kind']),
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'actionId': serializer.toJson<String>(actionId),
+      'sequence': serializer.toJson<int>(sequence),
+      'time': serializer.toJson<DateTime>(time),
+      'x': serializer.toJson<double>(x),
+      'y': serializer.toJson<double>(y),
+      'pressure': serializer.toJson<double>(pressure),
+      'kind': serializer.toJson<String>(
+        $TouchSamplesTable.$converterkind.toJson(kind),
+      ),
+    };
+  }
+
+  TouchSampleRow copyWith({
+    String? actionId,
+    int? sequence,
+    DateTime? time,
+    double? x,
+    double? y,
+    double? pressure,
+    TouchKind? kind,
+  }) => TouchSampleRow(
+    actionId: actionId ?? this.actionId,
+    sequence: sequence ?? this.sequence,
+    time: time ?? this.time,
+    x: x ?? this.x,
+    y: y ?? this.y,
+    pressure: pressure ?? this.pressure,
+    kind: kind ?? this.kind,
+  );
+  TouchSampleRow copyWithCompanion(TouchSamplesCompanion data) {
+    return TouchSampleRow(
+      actionId: data.actionId.present ? data.actionId.value : this.actionId,
+      sequence: data.sequence.present ? data.sequence.value : this.sequence,
+      time: data.time.present ? data.time.value : this.time,
+      x: data.x.present ? data.x.value : this.x,
+      y: data.y.present ? data.y.value : this.y,
+      pressure: data.pressure.present ? data.pressure.value : this.pressure,
+      kind: data.kind.present ? data.kind.value : this.kind,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TouchSampleRow(')
+          ..write('actionId: $actionId, ')
+          ..write('sequence: $sequence, ')
+          ..write('time: $time, ')
+          ..write('x: $x, ')
+          ..write('y: $y, ')
+          ..write('pressure: $pressure, ')
+          ..write('kind: $kind')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(actionId, sequence, time, x, y, pressure, kind);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TouchSampleRow &&
+          other.actionId == this.actionId &&
+          other.sequence == this.sequence &&
+          other.time == this.time &&
+          other.x == this.x &&
+          other.y == this.y &&
+          other.pressure == this.pressure &&
+          other.kind == this.kind);
+}
+
+class TouchSamplesCompanion extends UpdateCompanion<TouchSampleRow> {
+  final Value<String> actionId;
+  final Value<int> sequence;
+  final Value<DateTime> time;
+  final Value<double> x;
+  final Value<double> y;
+  final Value<double> pressure;
+  final Value<TouchKind> kind;
+  final Value<int> rowid;
+  const TouchSamplesCompanion({
+    this.actionId = const Value.absent(),
+    this.sequence = const Value.absent(),
+    this.time = const Value.absent(),
+    this.x = const Value.absent(),
+    this.y = const Value.absent(),
+    this.pressure = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  TouchSamplesCompanion.insert({
+    required String actionId,
+    required int sequence,
+    required DateTime time,
+    required double x,
+    required double y,
+    required double pressure,
+    required TouchKind kind,
+    this.rowid = const Value.absent(),
+  }) : actionId = Value(actionId),
+       sequence = Value(sequence),
+       time = Value(time),
+       x = Value(x),
+       y = Value(y),
+       pressure = Value(pressure),
+       kind = Value(kind);
+  static Insertable<TouchSampleRow> custom({
+    Expression<String>? actionId,
+    Expression<int>? sequence,
+    Expression<DateTime>? time,
+    Expression<double>? x,
+    Expression<double>? y,
+    Expression<double>? pressure,
+    Expression<String>? kind,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (actionId != null) 'action_id': actionId,
+      if (sequence != null) 'sequence': sequence,
+      if (time != null) 'time': time,
+      if (x != null) 'x': x,
+      if (y != null) 'y': y,
+      if (pressure != null) 'pressure': pressure,
+      if (kind != null) 'kind': kind,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  TouchSamplesCompanion copyWith({
+    Value<String>? actionId,
+    Value<int>? sequence,
+    Value<DateTime>? time,
+    Value<double>? x,
+    Value<double>? y,
+    Value<double>? pressure,
+    Value<TouchKind>? kind,
+    Value<int>? rowid,
+  }) {
+    return TouchSamplesCompanion(
+      actionId: actionId ?? this.actionId,
+      sequence: sequence ?? this.sequence,
+      time: time ?? this.time,
+      x: x ?? this.x,
+      y: y ?? this.y,
+      pressure: pressure ?? this.pressure,
+      kind: kind ?? this.kind,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (actionId.present) {
+      map['action_id'] = Variable<String>(actionId.value);
+    }
+    if (sequence.present) {
+      map['sequence'] = Variable<int>(sequence.value);
+    }
+    if (time.present) {
+      map['time'] = Variable<DateTime>(time.value);
+    }
+    if (x.present) {
+      map['x'] = Variable<double>(x.value);
+    }
+    if (y.present) {
+      map['y'] = Variable<double>(y.value);
+    }
+    if (pressure.present) {
+      map['pressure'] = Variable<double>(pressure.value);
+    }
+    if (kind.present) {
+      map['kind'] = Variable<String>(
+        $TouchSamplesTable.$converterkind.toSql(kind.value),
+      );
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TouchSamplesCompanion(')
+          ..write('actionId: $actionId, ')
+          ..write('sequence: $sequence, ')
+          ..write('time: $time, ')
+          ..write('x: $x, ')
+          ..write('y: $y, ')
+          ..write('pressure: $pressure, ')
+          ..write('kind: $kind, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -1746,6 +3003,9 @@ abstract class _$HandsDatabase extends GeneratedDatabase {
   late final $SessionsTable sessions = $SessionsTable(this);
   late final $ExerciseRunsTable exerciseRuns = $ExerciseRunsTable(this);
   late final $TrialsTable trials = $TrialsTable(this);
+  late final $PausesTable pauses = $PausesTable(this);
+  late final $ActionsTable actions = $ActionsTable(this);
+  late final $TouchSamplesTable touchSamples = $TouchSamplesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -1755,6 +3015,9 @@ abstract class _$HandsDatabase extends GeneratedDatabase {
     sessions,
     exerciseRuns,
     trials,
+    pauses,
+    actions,
+    touchSamples,
   ];
   @override
   DriftDatabaseOptions get options =>
@@ -2386,6 +3649,7 @@ typedef $$ExerciseRunsTableCreateCompanionBuilder =
       required String id,
       required String sessionId,
       required String exercise,
+      required int difficultyLevel,
       required int balloonCount,
       required double areaWidth,
       required double areaHeight,
@@ -2399,6 +3663,7 @@ typedef $$ExerciseRunsTableUpdateCompanionBuilder =
       Value<String> id,
       Value<String> sessionId,
       Value<String> exercise,
+      Value<int> difficultyLevel,
       Value<int> balloonCount,
       Value<double> areaWidth,
       Value<double> areaHeight,
@@ -2448,6 +3713,25 @@ final class $$ExerciseRunsTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$PausesTable, List<PauseRow>> _pausesRefsTable(
+    _$HandsDatabase db,
+  ) => MultiTypedResultKey.fromTable(
+    db.pauses,
+    aliasName: 'exercise_runs__id__pauses__exercise_run_id',
+  );
+
+  $$PausesTableProcessedTableManager get pausesRefs {
+    final manager = $$PausesTableTableManager(
+      $_db,
+      $_db.pauses,
+    ).filter((f) => f.exerciseRunId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_pausesRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$ExerciseRunsTableFilterComposer
@@ -2466,6 +3750,11 @@ class $$ExerciseRunsTableFilterComposer
 
   ColumnFilters<String> get exercise => $composableBuilder(
     column: $table.exercise,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get difficultyLevel => $composableBuilder(
+    column: $table.difficultyLevel,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2547,6 +3836,31 @@ class $$ExerciseRunsTableFilterComposer
     );
     return f(composer);
   }
+
+  Expression<bool> pausesRefs(
+    Expression<bool> Function($$PausesTableFilterComposer f) f,
+  ) {
+    final $$PausesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.pauses,
+      getReferencedColumn: (t) => t.exerciseRunId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PausesTableFilterComposer(
+            $db: $db,
+            $table: $db.pauses,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$ExerciseRunsTableOrderingComposer
@@ -2565,6 +3879,11 @@ class $$ExerciseRunsTableOrderingComposer
 
   ColumnOrderings<String> get exercise => $composableBuilder(
     column: $table.exercise,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get difficultyLevel => $composableBuilder(
+    column: $table.difficultyLevel,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -2637,6 +3956,11 @@ class $$ExerciseRunsTableAnnotationComposer
   GeneratedColumn<String> get exercise =>
       $composableBuilder(column: $table.exercise, builder: (column) => column);
 
+  GeneratedColumn<int> get difficultyLevel => $composableBuilder(
+    column: $table.difficultyLevel,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<int> get balloonCount => $composableBuilder(
     column: $table.balloonCount,
     builder: (column) => column,
@@ -2706,6 +4030,31 @@ class $$ExerciseRunsTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> pausesRefs<T extends Object>(
+    Expression<T> Function($$PausesTableAnnotationComposer a) f,
+  ) {
+    final $$PausesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.pauses,
+      getReferencedColumn: (t) => t.exerciseRunId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PausesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.pauses,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$ExerciseRunsTableTableManager
@@ -2721,7 +4070,11 @@ class $$ExerciseRunsTableTableManager
           $$ExerciseRunsTableUpdateCompanionBuilder,
           (ExerciseRunRow, $$ExerciseRunsTableReferences),
           ExerciseRunRow,
-          PrefetchHooks Function({bool sessionId, bool trialsRefs})
+          PrefetchHooks Function({
+            bool sessionId,
+            bool trialsRefs,
+            bool pausesRefs,
+          })
         > {
   $$ExerciseRunsTableTableManager(_$HandsDatabase db, $ExerciseRunsTable table)
     : super(
@@ -2739,6 +4092,7 @@ class $$ExerciseRunsTableTableManager
                 Value<String> id = const Value.absent(),
                 Value<String> sessionId = const Value.absent(),
                 Value<String> exercise = const Value.absent(),
+                Value<int> difficultyLevel = const Value.absent(),
                 Value<int> balloonCount = const Value.absent(),
                 Value<double> areaWidth = const Value.absent(),
                 Value<double> areaHeight = const Value.absent(),
@@ -2750,6 +4104,7 @@ class $$ExerciseRunsTableTableManager
                 id: id,
                 sessionId: sessionId,
                 exercise: exercise,
+                difficultyLevel: difficultyLevel,
                 balloonCount: balloonCount,
                 areaWidth: areaWidth,
                 areaHeight: areaHeight,
@@ -2763,6 +4118,7 @@ class $$ExerciseRunsTableTableManager
                 required String id,
                 required String sessionId,
                 required String exercise,
+                required int difficultyLevel,
                 required int balloonCount,
                 required double areaWidth,
                 required double areaHeight,
@@ -2774,6 +4130,7 @@ class $$ExerciseRunsTableTableManager
                 id: id,
                 sessionId: sessionId,
                 exercise: exercise,
+                difficultyLevel: difficultyLevel,
                 balloonCount: balloonCount,
                 areaWidth: areaWidth,
                 areaHeight: areaHeight,
@@ -2790,66 +4147,90 @@ class $$ExerciseRunsTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({sessionId = false, trialsRefs = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [if (trialsRefs) db.trials],
-              addJoins:
-                  <
-                    T extends TableManagerState<
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic
-                    >
-                  >(state) {
-                    if (sessionId) {
-                      state = state.withJoin(
-                        currentTable: table,
-                        currentColumn: table.sessionId,
-                        referencedTable: $$ExerciseRunsTableReferences
-                            ._sessionIdTable(db),
-                        referencedColumn: $$ExerciseRunsTableReferences
-                            ._sessionIdTable(db)
-                            .id,
-                      ) as T;
-                    }
+          prefetchHooksCallback:
+              ({sessionId = false, trialsRefs = false, pausesRefs = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (trialsRefs) db.trials,
+                    if (pausesRefs) db.pauses,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (sessionId) {
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.sessionId,
+                            referencedTable: $$ExerciseRunsTableReferences
+                                ._sessionIdTable(db),
+                            referencedColumn: $$ExerciseRunsTableReferences
+                                ._sessionIdTable(db)
+                                .id,
+                          ) as T;
+                        }
 
-                    return state;
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (trialsRefs)
+                        await $_getPrefetchedDataByColumns<
+                          ExerciseRunRow,
+                          $ExerciseRunsTable,
+                          TrialRow,
+                          $TrialsTable
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ExerciseRunsTableReferences
+                              ._trialsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ExerciseRunsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).trialsRefs,
+                          currentColumn: 'id',
+                          referencedColumn: 'exercise_run_id',
+                          typedResults: items,
+                        ),
+                      if (pausesRefs)
+                        await $_getPrefetchedDataByColumns<
+                          ExerciseRunRow,
+                          $ExerciseRunsTable,
+                          PauseRow,
+                          $PausesTable
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ExerciseRunsTableReferences
+                              ._pausesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ExerciseRunsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).pausesRefs,
+                          currentColumn: 'id',
+                          referencedColumn: 'exercise_run_id',
+                          typedResults: items,
+                        ),
+                    ];
                   },
-              getPrefetchedDataCallback: (items) async {
-                return [
-                  if (trialsRefs)
-                    await $_getPrefetchedDataByColumns<
-                      ExerciseRunRow,
-                      $ExerciseRunsTable,
-                      TrialRow,
-                      $TrialsTable
-                    >(
-                      currentTable: table,
-                      referencedTable: $$ExerciseRunsTableReferences
-                          ._trialsRefsTable(db),
-                      managerFromTypedResult: (p0) =>
-                          $$ExerciseRunsTableReferences(
-                            db,
-                            table,
-                            p0,
-                          ).trialsRefs,
-                      currentColumn: 'id',
-                      referencedColumn: 'exercise_run_id',
-                      typedResults: items,
-                    ),
-                ];
+                );
               },
-            );
-          },
         ),
       );
 }
@@ -2866,7 +4247,7 @@ typedef $$ExerciseRunsTableProcessedTableManager =
       $$ExerciseRunsTableUpdateCompanionBuilder,
       (ExerciseRunRow, $$ExerciseRunsTableReferences),
       ExerciseRunRow,
-      PrefetchHooks Function({bool sessionId, bool trialsRefs})
+      PrefetchHooks Function({bool sessionId, bool trialsRefs, bool pausesRefs})
     >;
 typedef $$TrialsTableCreateCompanionBuilder = TrialsCompanion Function({
   required String id,
@@ -2876,6 +4257,7 @@ typedef $$TrialsTableCreateCompanionBuilder = TrialsCompanion Function({
   required double centerY,
   required double bodyWidth,
   required double bodyHeight,
+  required int zone,
   required DateTime presentedAt,
   Value<DateTime?> completedAt,
   required TrialStatus status,
@@ -2889,6 +4271,7 @@ typedef $$TrialsTableUpdateCompanionBuilder = TrialsCompanion Function({
   Value<double> centerY,
   Value<double> bodyWidth,
   Value<double> bodyHeight,
+  Value<int> zone,
   Value<DateTime> presentedAt,
   Value<DateTime?> completedAt,
   Value<TrialStatus> status,
@@ -2913,6 +4296,25 @@ final class $$TrialsTableReferences
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<$ActionsTable, List<ActionRow>> _actionsRefsTable(
+    _$HandsDatabase db,
+  ) => MultiTypedResultKey.fromTable(
+    db.actions,
+    aliasName: 'trials__id__actions__trial_id',
+  );
+
+  $$ActionsTableProcessedTableManager get actionsRefs {
+    final manager = $$ActionsTableTableManager(
+      $_db,
+      $_db.actions,
+    ).filter((f) => f.trialId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_actionsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
     );
   }
 }
@@ -2956,6 +4358,11 @@ class $$TrialsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<int> get zone => $composableBuilder(
+    column: $table.zone,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<DateTime> get presentedAt => $composableBuilder(
     column: $table.presentedAt,
     builder: (column) => ColumnFilters(column),
@@ -2993,6 +4400,31 @@ class $$TrialsTableFilterComposer
           ),
     );
     return composer;
+  }
+
+  Expression<bool> actionsRefs(
+    Expression<bool> Function($$ActionsTableFilterComposer f) f,
+  ) {
+    final $$ActionsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.actions,
+      getReferencedColumn: (t) => t.trialId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ActionsTableFilterComposer(
+            $db: $db,
+            $table: $db.actions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
   }
 }
 
@@ -3032,6 +4464,11 @@ class $$TrialsTableOrderingComposer
 
   ColumnOrderings<double> get bodyHeight => $composableBuilder(
     column: $table.bodyHeight,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get zone => $composableBuilder(
+    column: $table.zone,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -3103,6 +4540,9 @@ class $$TrialsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<int> get zone =>
+      $composableBuilder(column: $table.zone, builder: (column) => column);
+
   GeneratedColumn<DateTime> get presentedAt => $composableBuilder(
     column: $table.presentedAt,
     builder: (column) => column,
@@ -3138,6 +4578,31 @@ class $$TrialsTableAnnotationComposer
     );
     return composer;
   }
+
+  Expression<T> actionsRefs<T extends Object>(
+    Expression<T> Function($$ActionsTableAnnotationComposer a) f,
+  ) {
+    final $$ActionsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.actions,
+      getReferencedColumn: (t) => t.trialId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ActionsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.actions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$TrialsTableTableManager
@@ -3153,7 +4618,7 @@ class $$TrialsTableTableManager
           $$TrialsTableUpdateCompanionBuilder,
           (TrialRow, $$TrialsTableReferences),
           TrialRow,
-          PrefetchHooks Function({bool exerciseRunId})
+          PrefetchHooks Function({bool exerciseRunId, bool actionsRefs})
         > {
   $$TrialsTableTableManager(_$HandsDatabase db, $TrialsTable table)
     : super(
@@ -3175,6 +4640,7 @@ class $$TrialsTableTableManager
                 Value<double> centerY = const Value.absent(),
                 Value<double> bodyWidth = const Value.absent(),
                 Value<double> bodyHeight = const Value.absent(),
+                Value<int> zone = const Value.absent(),
                 Value<DateTime> presentedAt = const Value.absent(),
                 Value<DateTime?> completedAt = const Value.absent(),
                 Value<TrialStatus> status = const Value.absent(),
@@ -3187,6 +4653,7 @@ class $$TrialsTableTableManager
                 centerY: centerY,
                 bodyWidth: bodyWidth,
                 bodyHeight: bodyHeight,
+                zone: zone,
                 presentedAt: presentedAt,
                 completedAt: completedAt,
                 status: status,
@@ -3201,6 +4668,7 @@ class $$TrialsTableTableManager
                 required double centerY,
                 required double bodyWidth,
                 required double bodyHeight,
+                required int zone,
                 required DateTime presentedAt,
                 Value<DateTime?> completedAt = const Value.absent(),
                 required TrialStatus status,
@@ -3213,6 +4681,7 @@ class $$TrialsTableTableManager
                 centerY: centerY,
                 bodyWidth: bodyWidth,
                 bodyHeight: bodyHeight,
+                zone: zone,
                 presentedAt: presentedAt,
                 completedAt: completedAt,
                 status: status,
@@ -3223,6 +4692,322 @@ class $$TrialsTableTableManager
                 (e) => (
                   e.readTable<$TrialsTable, TrialRow>(table),
                   $$TrialsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback:
+              ({exerciseRunId = false, actionsRefs = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [if (actionsRefs) db.actions],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (exerciseRunId) {
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.exerciseRunId,
+                            referencedTable: $$TrialsTableReferences
+                                ._exerciseRunIdTable(db),
+                            referencedColumn: $$TrialsTableReferences
+                                ._exerciseRunIdTable(db)
+                                .id,
+                          ) as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (actionsRefs)
+                        await $_getPrefetchedDataByColumns<
+                          TrialRow,
+                          $TrialsTable,
+                          ActionRow,
+                          $ActionsTable
+                        >(
+                          currentTable: table,
+                          referencedTable: $$TrialsTableReferences
+                              ._actionsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$TrialsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).actionsRefs,
+                          currentColumn: 'id',
+                          referencedColumn: 'trial_id',
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$TrialsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$HandsDatabase,
+      $TrialsTable,
+      TrialRow,
+      $$TrialsTableFilterComposer,
+      $$TrialsTableOrderingComposer,
+      $$TrialsTableAnnotationComposer,
+      $$TrialsTableCreateCompanionBuilder,
+      $$TrialsTableUpdateCompanionBuilder,
+      (TrialRow, $$TrialsTableReferences),
+      TrialRow,
+      PrefetchHooks Function({bool exerciseRunId, bool actionsRefs})
+    >;
+typedef $$PausesTableCreateCompanionBuilder = PausesCompanion Function({
+  required String exerciseRunId,
+  required int number,
+  required DateTime pausedAt,
+  Value<DateTime?> resumedAt,
+  Value<int> rowid,
+});
+typedef $$PausesTableUpdateCompanionBuilder = PausesCompanion Function({
+  Value<String> exerciseRunId,
+  Value<int> number,
+  Value<DateTime> pausedAt,
+  Value<DateTime?> resumedAt,
+  Value<int> rowid,
+});
+
+final class $$PausesTableReferences
+    extends BaseReferences<_$HandsDatabase, $PausesTable, PauseRow> {
+  $$PausesTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $ExerciseRunsTable _exerciseRunIdTable(_$HandsDatabase db) =>
+      db.exerciseRuns.createAlias('pauses__exercise_run_id__exercise_runs__id');
+
+  $$ExerciseRunsTableProcessedTableManager get exerciseRunId {
+    final $_column = $_itemColumn<String>('exercise_run_id')!;
+
+    final manager = $$ExerciseRunsTableTableManager(
+      $_db,
+      $_db.exerciseRuns,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_exerciseRunIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$PausesTableFilterComposer
+    extends Composer<_$HandsDatabase, $PausesTable> {
+  $$PausesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get number => $composableBuilder(
+    column: $table.number,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get pausedAt => $composableBuilder(
+    column: $table.pausedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get resumedAt => $composableBuilder(
+    column: $table.resumedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$ExerciseRunsTableFilterComposer get exerciseRunId {
+    final $$ExerciseRunsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.exerciseRunId,
+      referencedTable: $db.exerciseRuns,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ExerciseRunsTableFilterComposer(
+            $db: $db,
+            $table: $db.exerciseRuns,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PausesTableOrderingComposer
+    extends Composer<_$HandsDatabase, $PausesTable> {
+  $$PausesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get number => $composableBuilder(
+    column: $table.number,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get pausedAt => $composableBuilder(
+    column: $table.pausedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get resumedAt => $composableBuilder(
+    column: $table.resumedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$ExerciseRunsTableOrderingComposer get exerciseRunId {
+    final $$ExerciseRunsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.exerciseRunId,
+      referencedTable: $db.exerciseRuns,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ExerciseRunsTableOrderingComposer(
+            $db: $db,
+            $table: $db.exerciseRuns,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PausesTableAnnotationComposer
+    extends Composer<_$HandsDatabase, $PausesTable> {
+  $$PausesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get number =>
+      $composableBuilder(column: $table.number, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get pausedAt =>
+      $composableBuilder(column: $table.pausedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get resumedAt =>
+      $composableBuilder(column: $table.resumedAt, builder: (column) => column);
+
+  $$ExerciseRunsTableAnnotationComposer get exerciseRunId {
+    final $$ExerciseRunsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.exerciseRunId,
+      referencedTable: $db.exerciseRuns,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ExerciseRunsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.exerciseRuns,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PausesTableTableManager
+    extends
+        RootTableManager<
+          _$HandsDatabase,
+          $PausesTable,
+          PauseRow,
+          $$PausesTableFilterComposer,
+          $$PausesTableOrderingComposer,
+          $$PausesTableAnnotationComposer,
+          $$PausesTableCreateCompanionBuilder,
+          $$PausesTableUpdateCompanionBuilder,
+          (PauseRow, $$PausesTableReferences),
+          PauseRow,
+          PrefetchHooks Function({bool exerciseRunId})
+        > {
+  $$PausesTableTableManager(_$HandsDatabase db, $PausesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PausesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PausesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PausesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> exerciseRunId = const Value.absent(),
+                Value<int> number = const Value.absent(),
+                Value<DateTime> pausedAt = const Value.absent(),
+                Value<DateTime?> resumedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PausesCompanion(
+                exerciseRunId: exerciseRunId,
+                number: number,
+                pausedAt: pausedAt,
+                resumedAt: resumedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String exerciseRunId,
+                required int number,
+                required DateTime pausedAt,
+                Value<DateTime?> resumedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PausesCompanion.insert(
+                exerciseRunId: exerciseRunId,
+                number: number,
+                pausedAt: pausedAt,
+                resumedAt: resumedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$PausesTable, PauseRow>(table),
+                  $$PausesTableReferences(db, table, e),
                 ),
               )
               .toList(),
@@ -3250,9 +5035,9 @@ class $$TrialsTableTableManager
                       state = state.withJoin(
                         currentTable: table,
                         currentColumn: table.exerciseRunId,
-                        referencedTable: $$TrialsTableReferences
+                        referencedTable: $$PausesTableReferences
                             ._exerciseRunIdTable(db),
-                        referencedColumn: $$TrialsTableReferences
+                        referencedColumn: $$PausesTableReferences
                             ._exerciseRunIdTable(db)
                             .id,
                       ) as T;
@@ -3269,19 +5054,779 @@ class $$TrialsTableTableManager
       );
 }
 
-typedef $$TrialsTableProcessedTableManager =
+typedef $$PausesTableProcessedTableManager =
     ProcessedTableManager<
       _$HandsDatabase,
-      $TrialsTable,
-      TrialRow,
-      $$TrialsTableFilterComposer,
-      $$TrialsTableOrderingComposer,
-      $$TrialsTableAnnotationComposer,
-      $$TrialsTableCreateCompanionBuilder,
-      $$TrialsTableUpdateCompanionBuilder,
-      (TrialRow, $$TrialsTableReferences),
-      TrialRow,
+      $PausesTable,
+      PauseRow,
+      $$PausesTableFilterComposer,
+      $$PausesTableOrderingComposer,
+      $$PausesTableAnnotationComposer,
+      $$PausesTableCreateCompanionBuilder,
+      $$PausesTableUpdateCompanionBuilder,
+      (PauseRow, $$PausesTableReferences),
+      PauseRow,
       PrefetchHooks Function({bool exerciseRunId})
+    >;
+typedef $$ActionsTableCreateCompanionBuilder = ActionsCompanion Function({
+  required String id,
+  required String trialId,
+  required DateTime touchdownAt,
+  required DateTime liftOffAt,
+  required ActionOutcome outcome,
+  Value<int> rowid,
+});
+typedef $$ActionsTableUpdateCompanionBuilder = ActionsCompanion Function({
+  Value<String> id,
+  Value<String> trialId,
+  Value<DateTime> touchdownAt,
+  Value<DateTime> liftOffAt,
+  Value<ActionOutcome> outcome,
+  Value<int> rowid,
+});
+
+final class $$ActionsTableReferences
+    extends BaseReferences<_$HandsDatabase, $ActionsTable, ActionRow> {
+  $$ActionsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $TrialsTable _trialIdTable(_$HandsDatabase db) =>
+      db.trials.createAlias('actions__trial_id__trials__id');
+
+  $$TrialsTableProcessedTableManager get trialId {
+    final $_column = $_itemColumn<String>('trial_id')!;
+
+    final manager = $$TrialsTableTableManager(
+      $_db,
+      $_db.trials,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_trialIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<$TouchSamplesTable, List<TouchSampleRow>>
+  _touchSamplesRefsTable(_$HandsDatabase db) => MultiTypedResultKey.fromTable(
+    db.touchSamples,
+    aliasName: 'actions__id__touch_samples__action_id',
+  );
+
+  $$TouchSamplesTableProcessedTableManager get touchSamplesRefs {
+    final manager = $$TouchSamplesTableTableManager(
+      $_db,
+      $_db.touchSamples,
+    ).filter((f) => f.actionId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_touchSamplesRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$ActionsTableFilterComposer
+    extends Composer<_$HandsDatabase, $ActionsTable> {
+  $$ActionsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get touchdownAt => $composableBuilder(
+    column: $table.touchdownAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get liftOffAt => $composableBuilder(
+    column: $table.liftOffAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<ActionOutcome, ActionOutcome, String>
+  get outcome => $composableBuilder(
+    column: $table.outcome,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
+  );
+
+  $$TrialsTableFilterComposer get trialId {
+    final $$TrialsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.trialId,
+      referencedTable: $db.trials,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TrialsTableFilterComposer(
+            $db: $db,
+            $table: $db.trials,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> touchSamplesRefs(
+    Expression<bool> Function($$TouchSamplesTableFilterComposer f) f,
+  ) {
+    final $$TouchSamplesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.touchSamples,
+      getReferencedColumn: (t) => t.actionId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TouchSamplesTableFilterComposer(
+            $db: $db,
+            $table: $db.touchSamples,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$ActionsTableOrderingComposer
+    extends Composer<_$HandsDatabase, $ActionsTable> {
+  $$ActionsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get touchdownAt => $composableBuilder(
+    column: $table.touchdownAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get liftOffAt => $composableBuilder(
+    column: $table.liftOffAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get outcome => $composableBuilder(
+    column: $table.outcome,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$TrialsTableOrderingComposer get trialId {
+    final $$TrialsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.trialId,
+      referencedTable: $db.trials,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TrialsTableOrderingComposer(
+            $db: $db,
+            $table: $db.trials,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ActionsTableAnnotationComposer
+    extends Composer<_$HandsDatabase, $ActionsTable> {
+  $$ActionsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get touchdownAt => $composableBuilder(
+    column: $table.touchdownAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get liftOffAt =>
+      $composableBuilder(column: $table.liftOffAt, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<ActionOutcome, String> get outcome =>
+      $composableBuilder(column: $table.outcome, builder: (column) => column);
+
+  $$TrialsTableAnnotationComposer get trialId {
+    final $$TrialsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.trialId,
+      referencedTable: $db.trials,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TrialsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.trials,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> touchSamplesRefs<T extends Object>(
+    Expression<T> Function($$TouchSamplesTableAnnotationComposer a) f,
+  ) {
+    final $$TouchSamplesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.touchSamples,
+      getReferencedColumn: (t) => t.actionId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TouchSamplesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.touchSamples,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$ActionsTableTableManager
+    extends
+        RootTableManager<
+          _$HandsDatabase,
+          $ActionsTable,
+          ActionRow,
+          $$ActionsTableFilterComposer,
+          $$ActionsTableOrderingComposer,
+          $$ActionsTableAnnotationComposer,
+          $$ActionsTableCreateCompanionBuilder,
+          $$ActionsTableUpdateCompanionBuilder,
+          (ActionRow, $$ActionsTableReferences),
+          ActionRow,
+          PrefetchHooks Function({bool trialId, bool touchSamplesRefs})
+        > {
+  $$ActionsTableTableManager(_$HandsDatabase db, $ActionsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ActionsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ActionsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ActionsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> trialId = const Value.absent(),
+                Value<DateTime> touchdownAt = const Value.absent(),
+                Value<DateTime> liftOffAt = const Value.absent(),
+                Value<ActionOutcome> outcome = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ActionsCompanion(
+                id: id,
+                trialId: trialId,
+                touchdownAt: touchdownAt,
+                liftOffAt: liftOffAt,
+                outcome: outcome,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String trialId,
+                required DateTime touchdownAt,
+                required DateTime liftOffAt,
+                required ActionOutcome outcome,
+                Value<int> rowid = const Value.absent(),
+              }) => ActionsCompanion.insert(
+                id: id,
+                trialId: trialId,
+                touchdownAt: touchdownAt,
+                liftOffAt: liftOffAt,
+                outcome: outcome,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$ActionsTable, ActionRow>(table),
+                  $$ActionsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({trialId = false, touchSamplesRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [if (touchSamplesRefs) db.touchSamples],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (trialId) {
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.trialId,
+                        referencedTable: $$ActionsTableReferences._trialIdTable(
+                          db,
+                        ),
+                        referencedColumn: $$ActionsTableReferences
+                            ._trialIdTable(db)
+                            .id,
+                      ) as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (touchSamplesRefs)
+                    await $_getPrefetchedDataByColumns<
+                      ActionRow,
+                      $ActionsTable,
+                      TouchSampleRow,
+                      $TouchSamplesTable
+                    >(
+                      currentTable: table,
+                      referencedTable: $$ActionsTableReferences
+                          ._touchSamplesRefsTable(db),
+                      managerFromTypedResult: (p0) => $$ActionsTableReferences(
+                        db,
+                        table,
+                        p0,
+                      ).touchSamplesRefs,
+                      currentColumn: 'id',
+                      referencedColumn: 'action_id',
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$ActionsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$HandsDatabase,
+      $ActionsTable,
+      ActionRow,
+      $$ActionsTableFilterComposer,
+      $$ActionsTableOrderingComposer,
+      $$ActionsTableAnnotationComposer,
+      $$ActionsTableCreateCompanionBuilder,
+      $$ActionsTableUpdateCompanionBuilder,
+      (ActionRow, $$ActionsTableReferences),
+      ActionRow,
+      PrefetchHooks Function({bool trialId, bool touchSamplesRefs})
+    >;
+typedef $$TouchSamplesTableCreateCompanionBuilder =
+    TouchSamplesCompanion Function({
+      required String actionId,
+      required int sequence,
+      required DateTime time,
+      required double x,
+      required double y,
+      required double pressure,
+      required TouchKind kind,
+      Value<int> rowid,
+    });
+typedef $$TouchSamplesTableUpdateCompanionBuilder =
+    TouchSamplesCompanion Function({
+      Value<String> actionId,
+      Value<int> sequence,
+      Value<DateTime> time,
+      Value<double> x,
+      Value<double> y,
+      Value<double> pressure,
+      Value<TouchKind> kind,
+      Value<int> rowid,
+    });
+
+final class $$TouchSamplesTableReferences
+    extends
+        BaseReferences<_$HandsDatabase, $TouchSamplesTable, TouchSampleRow> {
+  $$TouchSamplesTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $ActionsTable _actionIdTable(_$HandsDatabase db) =>
+      db.actions.createAlias('touch_samples__action_id__actions__id');
+
+  $$ActionsTableProcessedTableManager get actionId {
+    final $_column = $_itemColumn<String>('action_id')!;
+
+    final manager = $$ActionsTableTableManager(
+      $_db,
+      $_db.actions,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_actionIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$TouchSamplesTableFilterComposer
+    extends Composer<_$HandsDatabase, $TouchSamplesTable> {
+  $$TouchSamplesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get sequence => $composableBuilder(
+    column: $table.sequence,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get time => $composableBuilder(
+    column: $table.time,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get x => $composableBuilder(
+    column: $table.x,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get y => $composableBuilder(
+    column: $table.y,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get pressure => $composableBuilder(
+    column: $table.pressure,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<TouchKind, TouchKind, String> get kind =>
+      $composableBuilder(
+        column: $table.kind,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
+
+  $$ActionsTableFilterComposer get actionId {
+    final $$ActionsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actionId,
+      referencedTable: $db.actions,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ActionsTableFilterComposer(
+            $db: $db,
+            $table: $db.actions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$TouchSamplesTableOrderingComposer
+    extends Composer<_$HandsDatabase, $TouchSamplesTable> {
+  $$TouchSamplesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get sequence => $composableBuilder(
+    column: $table.sequence,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get time => $composableBuilder(
+    column: $table.time,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get x => $composableBuilder(
+    column: $table.x,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get y => $composableBuilder(
+    column: $table.y,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get pressure => $composableBuilder(
+    column: $table.pressure,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$ActionsTableOrderingComposer get actionId {
+    final $$ActionsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actionId,
+      referencedTable: $db.actions,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ActionsTableOrderingComposer(
+            $db: $db,
+            $table: $db.actions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$TouchSamplesTableAnnotationComposer
+    extends Composer<_$HandsDatabase, $TouchSamplesTable> {
+  $$TouchSamplesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get sequence =>
+      $composableBuilder(column: $table.sequence, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get time =>
+      $composableBuilder(column: $table.time, builder: (column) => column);
+
+  GeneratedColumn<double> get x =>
+      $composableBuilder(column: $table.x, builder: (column) => column);
+
+  GeneratedColumn<double> get y =>
+      $composableBuilder(column: $table.y, builder: (column) => column);
+
+  GeneratedColumn<double> get pressure =>
+      $composableBuilder(column: $table.pressure, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<TouchKind, String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  $$ActionsTableAnnotationComposer get actionId {
+    final $$ActionsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.actionId,
+      referencedTable: $db.actions,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ActionsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.actions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$TouchSamplesTableTableManager
+    extends
+        RootTableManager<
+          _$HandsDatabase,
+          $TouchSamplesTable,
+          TouchSampleRow,
+          $$TouchSamplesTableFilterComposer,
+          $$TouchSamplesTableOrderingComposer,
+          $$TouchSamplesTableAnnotationComposer,
+          $$TouchSamplesTableCreateCompanionBuilder,
+          $$TouchSamplesTableUpdateCompanionBuilder,
+          (TouchSampleRow, $$TouchSamplesTableReferences),
+          TouchSampleRow,
+          PrefetchHooks Function({bool actionId})
+        > {
+  $$TouchSamplesTableTableManager(_$HandsDatabase db, $TouchSamplesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$TouchSamplesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$TouchSamplesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$TouchSamplesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> actionId = const Value.absent(),
+                Value<int> sequence = const Value.absent(),
+                Value<DateTime> time = const Value.absent(),
+                Value<double> x = const Value.absent(),
+                Value<double> y = const Value.absent(),
+                Value<double> pressure = const Value.absent(),
+                Value<TouchKind> kind = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => TouchSamplesCompanion(
+                actionId: actionId,
+                sequence: sequence,
+                time: time,
+                x: x,
+                y: y,
+                pressure: pressure,
+                kind: kind,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String actionId,
+                required int sequence,
+                required DateTime time,
+                required double x,
+                required double y,
+                required double pressure,
+                required TouchKind kind,
+                Value<int> rowid = const Value.absent(),
+              }) => TouchSamplesCompanion.insert(
+                actionId: actionId,
+                sequence: sequence,
+                time: time,
+                x: x,
+                y: y,
+                pressure: pressure,
+                kind: kind,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$TouchSamplesTable, TouchSampleRow>(table),
+                  $$TouchSamplesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({actionId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (actionId) {
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.actionId,
+                        referencedTable: $$TouchSamplesTableReferences
+                            ._actionIdTable(db),
+                        referencedColumn: $$TouchSamplesTableReferences
+                            ._actionIdTable(db)
+                            .id,
+                      ) as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$TouchSamplesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$HandsDatabase,
+      $TouchSamplesTable,
+      TouchSampleRow,
+      $$TouchSamplesTableFilterComposer,
+      $$TouchSamplesTableOrderingComposer,
+      $$TouchSamplesTableAnnotationComposer,
+      $$TouchSamplesTableCreateCompanionBuilder,
+      $$TouchSamplesTableUpdateCompanionBuilder,
+      (TouchSampleRow, $$TouchSamplesTableReferences),
+      TouchSampleRow,
+      PrefetchHooks Function({bool actionId})
     >;
 
 class $HandsDatabaseManager {
@@ -3295,4 +5840,10 @@ class $HandsDatabaseManager {
       $$ExerciseRunsTableTableManager(_db, _db.exerciseRuns);
   $$TrialsTableTableManager get trials =>
       $$TrialsTableTableManager(_db, _db.trials);
+  $$PausesTableTableManager get pauses =>
+      $$PausesTableTableManager(_db, _db.pauses);
+  $$ActionsTableTableManager get actions =>
+      $$ActionsTableTableManager(_db, _db.actions);
+  $$TouchSamplesTableTableManager get touchSamples =>
+      $$TouchSamplesTableTableManager(_db, _db.touchSamples);
 }

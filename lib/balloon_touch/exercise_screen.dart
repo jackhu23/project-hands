@@ -1,7 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Action;
 
 import '../database.dart';
 import '../theme.dart';
@@ -28,12 +28,6 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
   Session get _session => widget.session;
   final _balloonKey = GlobalKey();
 
-  // The popping rule: an Action pops the balloon only if it starts and ends
-  // on the body. The first pointer down anywhere on screen is the Action;
-  // others are ignored until it lifts, and a cancelled one does nothing.
-  int? _pointer;
-  bool _startedOnBody = false;
-
   late final AppLifecycleListener _lifecycle;
 
   @override
@@ -55,13 +49,8 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
 
   bool get _paused => _session.status == SessionStatus.paused;
 
-  // Like the demo, pausing drops the balloon and any touch on it, so a hold
-  // from before the pause can't pop it after Resume.
-  void _pause() => setState(() {
-    _session.pause();
-    _pointer = null;
-    _startedOnBody = false;
-  });
+  // Like the demo, pausing drops the balloon and any touch on it.
+  void _pause() => setState(_session.pause);
 
   void _resume() => setState(_session.resume);
 
@@ -92,28 +81,42 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
         .contains(box.globalToLocal(global));
   }
 
+  static TouchInput _input(PointerEvent event) => (
+    timeStamp: event.timeStamp,
+    position: event.localPosition,
+    pressure: event.pressure,
+    kind: switch (event.kind) {
+      PointerDeviceKind.stylus ||
+      PointerDeviceKind.invertedStylus => TouchKind.stylus,
+      PointerDeviceKind.mouse || PointerDeviceKind.trackpad => TouchKind.mouse,
+      _ => TouchKind.finger,
+    },
+  );
+
+  // The Session labels each Action and applies the popping rule.
   void _down(PointerDownEvent event) {
-    if (_pointer != null || event.buttons & kPrimaryButton == 0) return;
-    setState(() {
-      _pointer = event.pointer;
-      _startedOnBody = _onBody(event.position);
-    });
+    if (event.buttons & kPrimaryButton == 0) return;
+    setState(
+      () => _session.touchDown(
+        event.pointer,
+        _input(event),
+        onBody: _onBody(event.position),
+      ),
+    );
   }
+
+  void _move(PointerMoveEvent event) =>
+      _session.touchMove(event.pointer, _input(event));
 
   void _up(PointerUpEvent event) {
-    if (event.pointer != _pointer) return;
-    final pops = _startedOnBody && _onBody(event.position);
-    setState(() => _pointer = null);
-    final trial = _session.exerciseRun.activeTrial;
-    if (pops && trial != null) _pop(trial);
-  }
-
-  void _cancel(PointerCancelEvent event) {
-    if (event.pointer == _pointer) setState(() => _pointer = null);
-  }
-
-  void _pop(Trial trial) {
-    setState(() => _session.completeTrial(trial));
+    if (_session.status != SessionStatus.running) return;
+    setState(
+      () => _session.touchUp(
+        event.pointer,
+        _input(event),
+        onBody: _onBody(event.position),
+      ),
+    );
     if (_session.status == SessionStatus.completed) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(
@@ -127,7 +130,7 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
   @override
   Widget build(BuildContext context) {
     final run = _session.exerciseRun;
-    final pressed = _pointer != null && _startedOnBody;
+    final pressed = _session.pressingBalloon;
     // The system back gesture abandons the run, so it is saved as stopped.
     return PopScope(
       onPopInvokedWithResult: (didPop, _) {
@@ -135,24 +138,28 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
       },
       child: Scaffold(
         backgroundColor: HandsColors.warmCream,
-        body: Listener(
-          onPointerDown: _down,
-          onPointerUp: _up,
-          onPointerCancel: _cancel,
-          behavior: HitTestBehavior.translucent,
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(56),
-              child: Column(
-                spacing: 20,
-                children: [
-                  _header(run),
-                  Expanded(
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: HandsColors.warmCream,
-                        borderRadius: BorderRadius.circular(28),
-                      ),
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(56),
+            child: Column(
+              spacing: 20,
+              children: [
+                _header(run),
+                Expanded(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: HandsColors.warmCream,
+                      borderRadius: BorderRadius.circular(28),
+                    ),
+                    // Only touches in the play area are Actions, and their
+                    // positions are relative to its top-left.
+                    child: Listener(
+                      onPointerDown: _down,
+                      onPointerMove: _move,
+                      onPointerUp: _up,
+                      onPointerCancel: (event) =>
+                          setState(() => _session.touchCancel(event.pointer)),
+                      behavior: HitTestBehavior.translucent,
                       child: LayoutBuilder(
                         builder: (context, constraints) {
                           // Like the demo, a balloon appears once the area has a size.
@@ -183,8 +190,8 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
                       ),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),

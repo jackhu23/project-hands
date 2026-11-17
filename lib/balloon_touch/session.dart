@@ -66,6 +66,77 @@ enum SessionStatus { running, paused, completed, stopped }
 
 enum TrialStatus { active, completed, interrupted, unfinished }
 
+enum ActionOutcome { pop, miss, overlappingTouch }
+
+enum TouchKind { finger, stylus, mouse }
+
+/// A pointer event as the play area reports it; [position] is in logical
+/// pixels from the play area's top-left.
+typedef TouchInput = ({
+  Duration timeStamp,
+  Offset position,
+  double pressure,
+  TouchKind kind,
+});
+
+/// One raw recorded point within an Action.
+class TouchSample {
+  const TouchSample({
+    required this.sequence,
+    required this.time,
+    required this.position,
+    required this.pressure,
+    required this.kind,
+  });
+
+  final int sequence;
+  final DateTime time;
+  final Offset position;
+  final double pressure;
+  final TouchKind kind;
+}
+
+/// One continuous touch, from touchdown to lift-off, made during [trial].
+/// Only finished Actions are added to their Trial.
+class Action {
+  Action._(
+    this.trial,
+    this.touchdownAt,
+    this._downStamp, {
+    required this.overlapping,
+    required this.startedOnBody,
+  });
+
+  final id = randomId();
+  final Trial trial;
+  final DateTime touchdownAt;
+  final bool overlapping, startedOnBody;
+  final samples = <TouchSample>[];
+  late final DateTime liftOffAt;
+  late final ActionOutcome outcome;
+
+  // Event time stamps are precise but count from an arbitrary origin, so each
+  // sample's time is its offset from touchdown on the wall clock.
+  final Duration _downStamp;
+
+  void _add(TouchInput input) => samples.add(
+    TouchSample(
+      sequence: samples.length,
+      time: touchdownAt.add(input.timeStamp - _downStamp),
+      position: input.position,
+      pressure: input.pressure,
+      kind: input.kind,
+    ),
+  );
+}
+
+class Pause {
+  Pause(this.pausedAt);
+
+  final DateTime pausedAt;
+  DateTime? resumedAt;
+}
+
 /// One balloon. [center] is the body's centre within the exercise area.
 class Trial {
   Trial({
@@ -85,6 +156,7 @@ class Trial {
   final DateTime presentedAt;
   DateTime? completedAt;
   TrialStatus status = TrialStatus.active;
+  final actions = <Action>[];
 
   double get bodyHeight => bodyWidth * 1.25;
 }
@@ -99,6 +171,7 @@ class ExerciseRun {
   final id = randomId();
   final int balloonCount, difficultyLevel;
   final trials = <Trial>[];
+  final pauses = <Pause>[];
 
   /// The play area the balloons are placed in, in logical pixels.
   Size area = Size.zero;
@@ -130,8 +203,79 @@ class Session {
   DateTime? endedAt;
 
   /// Called after each change worth saving: a balloon shown or popped, a
-  /// pause, or the end of the Session.
+  /// pause or resume, or the end of the Session.
   final void Function(Session)? onChange;
+
+  /// Finished Actions not yet saved; whoever saves them clears it.
+  final unsavedActions = <Action>[];
+
+  /// Actions in progress, by pointer.
+  final _touches = <int, Action>{};
+
+  /// Whether the Action that could pop the balloon started on its body.
+  bool get pressingBalloon =>
+      _touches.values.any((a) => !a.overlapping && a.startedOnBody);
+
+  /// Starts an Action on the balloon showing; one that begins while another
+  /// is in progress is an Overlapping Touch.
+  void touchDown(int pointer, TouchInput input, {required bool onBody}) {
+    final trial = exerciseRun.activeTrial;
+    if (status != SessionStatus.running || trial == null) return;
+    _touches[pointer] = Action._(
+      trial,
+      DateTime.now(),
+      input.timeStamp,
+      overlapping: _touches.isNotEmpty,
+      startedOnBody: onBody,
+    ).._add(input);
+  }
+
+  void touchMove(int pointer, TouchInput input) =>
+      _touches[pointer]?._add(input);
+
+  /// Ends an Action: a Pop if it started and ends on the body and isn't an
+  /// Overlapping Touch, which completes its Trial; otherwise a Miss.
+  void touchUp(int pointer, TouchInput input, {required bool onBody}) {
+    final action = _touches.remove(pointer);
+    if (action == null) return;
+    action._add(input);
+    _finish(
+      action,
+      action.samples.last.time,
+      action.overlapping
+          ? ActionOutcome.overlappingTouch
+          : action.startedOnBody && onBody
+          ? ActionOutcome.pop
+          : ActionOutcome.miss,
+    );
+    if (action.outcome == ActionOutcome.pop) completeTrial(action.trial);
+  }
+
+  void _finish(Action action, DateTime liftOffAt, ActionOutcome outcome) {
+    action
+      ..liftOffAt = liftOffAt
+      ..outcome = outcome;
+    action.trial.actions.add(action);
+    unsavedActions.add(action);
+  }
+
+  /// Ends every touch still down at [at]. One cut off can't be a Pop: it is an
+  /// Overlapping Touch if [overlapping] or it was one, otherwise a Miss.
+  void _cutOffTouches(DateTime at, {bool overlapping = false}) {
+    for (final action in _touches.values) {
+      _finish(
+        action,
+        at,
+        overlapping || action.overlapping
+            ? ActionOutcome.overlappingTouch
+            : ActionOutcome.miss,
+      );
+    }
+    _touches.clear();
+  }
+
+  /// A cancelled touch is not an Action.
+  void touchCancel(int pointer) => _touches.remove(pointer);
 
   /// Shows the next balloon at a random spot inside [area] for the Difficulty
   /// Level, unless one is already showing, none remain, or the area is too small.
@@ -194,18 +338,29 @@ class Session {
     if (exerciseRun.completedTrials >= exerciseRun.balloonCount) {
       status = SessionStatus.completed;
       endedAt = now;
+      // Any touch still down began during the pop, so it is an Overlapping
+      // Touch; it is cut off here, as the run is over.
+      _cutOffTouches(now, overlapping: true);
     }
     onChange?.call(this);
   }
 
+  /// Pauses the run, cutting off any touch in progress so a hold from before
+  /// the pause can't pop the balloon after it.
   void pause() {
     if (status != SessionStatus.running) return;
     status = SessionStatus.paused;
+    final now = DateTime.now();
+    exerciseRun.pauses.add(Pause(now));
+    _cutOffTouches(now);
     onChange?.call(this);
   }
 
   void resume() {
-    if (status == SessionStatus.paused) status = SessionStatus.running;
+    if (status != SessionStatus.paused) return;
+    status = SessionStatus.running;
+    exerciseRun.pauses.last.resumedAt = DateTime.now();
+    onChange?.call(this);
   }
 
   /// Ends the Session early; the balloon showing, if any, becomes unfinished.
@@ -213,9 +368,11 @@ class Session {
     if (status != SessionStatus.running && status != SessionStatus.paused) {
       return;
     }
+    final now = DateTime.now();
+    _cutOffTouches(now);
     exerciseRun.activeTrial?.status = TrialStatus.unfinished;
     status = SessionStatus.stopped;
-    endedAt = DateTime.now();
+    endedAt = now;
     onChange?.call(this);
   }
 }
