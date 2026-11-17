@@ -19,10 +19,12 @@ class SetupScreen extends StatefulWidget {
 
 class _SetupScreenState extends State<SetupScreen> {
   final _balloonCount = ValueNotifier(_minBalloons);
+  final _difficultyLevel = ValueNotifier(minDifficultyLevel);
 
   @override
   void dispose() {
     _balloonCount.dispose();
+    _difficultyLevel.dispose();
     super.dispose();
   }
 
@@ -31,17 +33,19 @@ class _SetupScreenState extends State<SetupScreen> {
     final session = Session(
       patientId: temporaryPatientId,
       balloonCount: _balloonCount.value,
+      difficultyLevel: _difficultyLevel.value,
     );
     Navigator.of(context).push(
       MaterialPageRoute<void>(builder: (_) => ExerciseScreen(session: session)),
     );
   }
 
-  // Quirk carried over: the sheet repeats the card's + and − control.
+  // Quirk carried over: the sheet repeats the card's + and − controls.
   void _showSettings() => showModalBottomSheet<void>(
     context: context,
     backgroundColor: HandsColors.warmCream,
-    builder: (sheetContext) => Padding(
+    // Scrolls when the sheet's 9/16 height cap is too short, as on small screens.
+    builder: (sheetContext) => SingleChildScrollView(
       padding: const EdgeInsets.all(32),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -54,7 +58,17 @@ class _SetupScreenState extends State<SetupScreen> {
               children: [
                 Text('Repetitions: $count', style: handsText(20)),
                 const Spacer(),
-                _CountButtons(_balloonCount),
+                _countButtons(_balloonCount),
+              ],
+            ),
+          ),
+          ValueListenableBuilder(
+            valueListenable: _difficultyLevel,
+            builder: (_, level, _) => Row(
+              children: [
+                Text('Difficulty Level: $level', style: handsText(20)),
+                const Spacer(),
+                _levelButtons(_difficultyLevel),
               ],
             ),
           ),
@@ -80,11 +94,15 @@ class _SetupScreenState extends State<SetupScreen> {
             final size = constraints.biggest;
             final sideBySide = size.width >= 700 && size.width > size.height;
             final cardHeight = sideBySide
-                ? (size.height - 210).clamp(320.0, 480.0)
-                : 340.0;
+                ? (size.height - 210).clamp(430.0, 590.0)
+                : 450.0;
             final cards = [
               _BalloonCard(height: cardHeight),
-              _CountCard(height: cardHeight, count: _balloonCount),
+              _CountCard(
+                height: cardHeight,
+                count: _balloonCount,
+                level: _difficultyLevel,
+              ),
             ];
 
             return SingleChildScrollView(
@@ -238,10 +256,14 @@ class _BalloonCard extends StatelessWidget {
 }
 
 class _CountCard extends StatelessWidget {
-  const _CountCard({required this.height, required this.count});
+  const _CountCard({
+    required this.height,
+    required this.count,
+    required this.level,
+  });
 
   final double height;
-  final ValueNotifier<int> count;
+  final ValueNotifier<int> count, level;
 
   @override
   Widget build(BuildContext context) {
@@ -288,7 +310,38 @@ class _CountCard extends StatelessWidget {
               color: HandsColors.warmCream,
               shape: StadiumBorder(),
             ),
-            child: _CountButtons(count),
+            child: _countButtons(count),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'Difficulty Level',
+            textAlign: TextAlign.center,
+            style: handsText(24),
+          ),
+          const SizedBox(height: 8),
+          // Not scaled to fit, so the buttons keep their full touch size.
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            spacing: 16,
+            children: [
+              ValueListenableBuilder(
+                valueListenable: level,
+                builder: (_, value, _) => Semantics(
+                  label: 'Difficulty Level $value',
+                  liveRegion: true,
+                  excludeSemantics: true,
+                  child: Text('$value', style: handsText(32)),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: const ShapeDecoration(
+                  color: HandsColors.warmCream,
+                  shape: StadiumBorder(),
+                ),
+                child: _levelButtons(level),
+              ),
+            ],
           ),
         ],
       ),
@@ -296,28 +349,40 @@ class _CountCard extends StatelessWidget {
   }
 }
 
-/// − and + buttons that keep [count] within 1–30.
-class _CountButtons extends StatelessWidget {
-  const _CountButtons(this.count);
+Widget _countButtons(ValueNotifier<int> count) =>
+    _StepButtons(count, _minBalloons, _maxBalloons, 'repetitions');
 
-  final ValueNotifier<int> count;
+Widget _levelButtons(ValueNotifier<int> level) => _StepButtons(
+  level,
+  minDifficultyLevel,
+  maxDifficultyLevel,
+  'Difficulty Level',
+);
+
+/// − and + buttons that keep [value] within [min] to [max].
+class _StepButtons extends StatelessWidget {
+  const _StepButtons(this.value, this.min, this.max, this.name);
+
+  final ValueNotifier<int> value;
+  final int min, max;
+  final String name;
 
   @override
   Widget build(BuildContext context) => ValueListenableBuilder(
-    valueListenable: count,
-    builder: (_, value, _) => Row(
+    valueListenable: value,
+    builder: (_, v, _) => Row(
       mainAxisSize: MainAxisSize.min,
       spacing: 16,
       children: [
-        _button(Icons.remove, 'Decrease repetitions', value > _minBalloons, -1),
-        _button(Icons.add, 'Increase repetitions', value < _maxBalloons, 1),
+        _button(Icons.remove, 'Decrease $name', v > min, -1),
+        _button(Icons.add, 'Increase $name', v < max, 1),
       ],
     ),
   );
 
   Widget _button(IconData icon, String label, bool enabled, int step) =>
       IconButton(
-        onPressed: enabled ? () => count.value += step : null,
+        onPressed: enabled ? () => value.value += step : null,
         tooltip: label,
         iconSize: 24,
         color: HandsColors.charcoal,

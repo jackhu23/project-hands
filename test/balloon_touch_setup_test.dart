@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hands/balloon_touch/balloon_illustration.dart';
+import 'package:hands/balloon_touch/exercise_screen.dart';
 import 'package:hands/main.dart';
 import 'package:hands/theme.dart';
 
@@ -19,6 +20,13 @@ Future<void> useScreen(WidgetTester tester, Size size) async {
 Text countText(WidgetTester tester) => tester.widget<Text>(
   find.descendant(
     of: find.bySemanticsLabel(RegExp(r'^\d+ repetitions$')),
+    matching: find.byType(Text),
+  ),
+);
+
+Text levelText(WidgetTester tester) => tester.widget<Text>(
+  find.descendant(
+    of: find.bySemanticsLabel(RegExp(r'^Difficulty Level \d$')),
     matching: find.byType(Text),
   ),
 );
@@ -105,6 +113,65 @@ void main() {
     expect(countText(tester).data, '29');
   });
 
+  testWidgets('Difficulty Level starts at 1 and stays within 1 to 4', (
+    tester,
+  ) async {
+    await openSetup(tester);
+
+    expect(find.text('Difficulty Level'), findsOneWidget);
+    expect(levelText(tester).data, '1');
+    expect(enabled(tester, 'Decrease Difficulty Level'), isFalse);
+    expect(enabled(tester, 'Increase Difficulty Level'), isTrue);
+
+    for (var i = 0; i < 3; i++) {
+      await tester.tap(find.byTooltip('Increase Difficulty Level'));
+      await tester.pump();
+    }
+    expect(levelText(tester).data, '4');
+    expect(enabled(tester, 'Increase Difficulty Level'), isFalse);
+    expect(enabled(tester, 'Decrease Difficulty Level'), isTrue);
+
+    await tester.tap(find.byTooltip('Decrease Difficulty Level'));
+    await tester.pump();
+    expect(levelText(tester).data, '3');
+  });
+
+  testWidgets('settings sheet changes the same Difficulty Level', (
+    tester,
+  ) async {
+    await openSetup(tester);
+    await tester.tap(find.byTooltip('Increase Difficulty Level'));
+    await tester.pump();
+
+    await tester.tap(find.byTooltip('Practice settings'));
+    await tester.pumpAndSettle();
+    expect(find.text('Difficulty Level: 2'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Increase Difficulty Level').last);
+    await tester.pump();
+    expect(find.text('Difficulty Level: 3'), findsOneWidget);
+
+    await tester.tap(find.text('Done'));
+    await tester.pumpAndSettle();
+    expect(levelText(tester).data, '3');
+  });
+
+  testWidgets('Start Now starts the Exercise Run at the chosen level', (
+    tester,
+  ) async {
+    await openSetup(tester);
+    await tester.tap(find.byTooltip('Increase Difficulty Level'));
+    await tester.pump();
+
+    await tester.ensureVisible(find.text('Start Now'));
+    await tester.tap(find.text('Start Now'));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    final screen = tester.widget<ExerciseScreen>(find.byType(ExerciseScreen));
+    expect(screen.session.exerciseRun.difficultyLevel, 2);
+  });
+
   testWidgets('settings sheet changes the same count', (tester) async {
     await openSetup(tester);
 
@@ -132,6 +199,7 @@ void main() {
     await tester.tap(find.byTooltip('Increase repetitions'));
     await tester.pump();
 
+    await tester.ensureVisible(find.text('Start Now'));
     await tester.tap(find.text('Start Now'));
     // The balloon pulses forever, so pump past the route transition instead.
     await tester.pump();
@@ -157,6 +225,7 @@ void main() {
     'iPad portrait': (Size(834, 1194), false),
     'Android tablet landscape': (Size(1280, 800), true),
     'Android tablet portrait': (Size(800, 1280), false),
+    'phone landscape': (Size(844, 390), true),
     // Edges of the rule: width >= 700 and wider than tall.
     'exactly 700 wide': (Size(700, 500), true),
     'wide but under 700': (Size(690, 500), false),
@@ -177,6 +246,20 @@ void main() {
         } else {
           expect(count.dy, greaterThan(balloon.dy));
           expect(count.dx, closeTo(balloon.dx, 1));
+        }
+        // getRect, unlike getSize, includes any scaling, as drawn on screen.
+        for (final tooltip in [
+          'Decrease Difficulty Level',
+          'Increase Difficulty Level',
+        ]) {
+          final button = tester.getRect(
+            find.ancestor(
+              of: find.byTooltip(tooltip),
+              matching: find.byType(IconButton),
+            ),
+          );
+          expect(button.width, greaterThanOrEqualTo(60), reason: tooltip);
+          expect(button.height, greaterThanOrEqualTo(50), reason: tooltip);
         }
       },
     );

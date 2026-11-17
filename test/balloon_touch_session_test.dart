@@ -6,16 +6,21 @@ import 'package:hands/balloon_touch/session.dart';
 
 void main() {
   test('every balloon fits inside the area at the largest pulse', () {
-    for (final area in const [
-      Size(1100, 600),
-      Size(700, 1000),
-      Size(400, 400),
-      // Just over the minimum: 2 × 85.8 wide and 2 × 111.75 tall.
-      Size(172, 224),
+    for (final (area, level) in [
+      for (final level in [1, 2, 3, 4])
+        for (final area in const [
+          Size(1100, 600),
+          Size(700, 1000),
+          Size(400, 400),
+          // Just over the minimum: 2 × 85.8 wide and 2 × 111.75 tall.
+          Size(172, 224),
+        ])
+          (area, level),
     ]) {
       final session = Session(
         patientId: 'p',
         balloonCount: 30,
+        difficultyLevel: level,
         random: Random(7),
       );
       for (var i = 0; i < 30; i++) {
@@ -30,7 +35,7 @@ void main() {
         expect(
           (Offset.zero & area).intersect(reach),
           reach,
-          reason: '$area #$i',
+          reason: '$area level $level #$i',
         );
         session.completeTrial(trial);
       }
@@ -38,10 +43,11 @@ void main() {
     }
   });
 
-  test('balloons land at different spots across the area', () {
+  test('balloons land at different spots across the area at Level 4', () {
     final session = Session(
       patientId: 'p',
       balloonCount: 30,
+      difficultyLevel: 4,
       random: Random(1),
     );
     final xs = <double>[];
@@ -52,6 +58,60 @@ void main() {
     }
     expect(xs.reduce(min), lessThan(300));
     expect(xs.reduce(max), greaterThan(700));
+  });
+
+  test('Zones are nested ellipses that scale with the area', () {
+    for (final area in const [Size(1200, 800), Size(800, 1200)]) {
+      final c = area.center(Offset.zero);
+      Offset along(double fraction, {bool vertical = false}) => vertical
+          ? c + Offset(0, area.height / 2 * fraction)
+          : c + Offset(area.width / 2 * fraction, 0);
+      expect(zoneOf(c, area), 1);
+      for (final vertical in [false, true]) {
+        for (final (i, span) in zoneEllipseSpans.indexed) {
+          expect(zoneOf(along(span - 0.01, vertical: vertical), area), i + 1);
+          expect(zoneOf(along(span + 0.01, vertical: vertical), area), i + 2);
+        }
+      }
+      expect(zoneOf(Offset.zero, area), 4, reason: 'corner');
+    }
+  });
+
+  test('at Level 1 every balloon centre is in Zone 1 and Trials say so', () {
+    for (final area in const [Size(1194, 834), Size(834, 1194)]) {
+      final session = Session(
+        patientId: 'p',
+        balloonCount: 30,
+        random: Random(3),
+      );
+      expect(session.exerciseRun.difficultyLevel, 1, reason: 'default');
+      for (var i = 0; i < 30; i++) {
+        session.presentNextTrial(area);
+        final trial = session.exerciseRun.activeTrial!;
+        expect(zoneOf(trial.center, area), 1, reason: '$area #$i');
+        expect(trial.zone, 1);
+        session.completeTrial(trial);
+      }
+    }
+  });
+
+  test('each Trial reports the Zone its centre is in', () {
+    const area = Size(1194, 834);
+    final session = Session(
+      patientId: 'p',
+      balloonCount: 30,
+      difficultyLevel: 4,
+      random: Random(5),
+    );
+    final zones = <int>{};
+    for (var i = 0; i < 30; i++) {
+      session.presentNextTrial(area);
+      final trial = session.exerciseRun.activeTrial!;
+      expect(trial.zone, zoneOf(trial.center, area));
+      zones.add(trial.zone);
+      session.completeTrial(trial);
+    }
+    expect(zones.length, greaterThan(1));
   });
 
   test('no balloon while the area is too small or one is showing', () {
