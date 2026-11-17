@@ -9,12 +9,12 @@ void main() {
     for (final (area, level) in [
       for (final level in [1, 2, 3, 4])
         for (final area in const [
-      Size(1100, 600),
-      Size(700, 1000),
-      Size(400, 400),
-      // Just over the minimum: 2 × 85.8 wide and 2 × 111.75 tall.
-      Size(172, 224),
-    ])
+          Size(1100, 600),
+          Size(700, 1000),
+          Size(400, 400),
+          // Just over the minimum: 2 × 85.8 wide and 2 × 111.75 tall.
+          Size(172, 224),
+        ])
           (area, level),
     ]) {
       final session = Session(

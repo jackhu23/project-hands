@@ -14,9 +14,7 @@ const zoneEllipseSpans = [0.25, 0.55, 0.90];
 int zoneOf(Offset point, Size area) {
   final x = (point.dx - area.width / 2) / (area.width / 2);
   final y = (point.dy - area.height / 2) / (area.height / 2);
-  final i = zoneEllipseSpans.indexWhere(
-    (span) => x * x + y * y <= span * span,
-  );
+  final i = zoneEllipseSpans.indexWhere((span) => x * x + y * y <= span * span);
   return i == -1 ? zoneEllipseSpans.length + 1 : i + 1;
 }
 
@@ -78,7 +76,7 @@ class Session {
     int difficultyLevel = minDifficultyLevel,
     Random? random,
   }) : exerciseRun = ExerciseRun(balloonCount, difficultyLevel),
-      _random = random ?? Random();
+       _random = random ?? Random();
 
   final id = randomId();
   final String patientId;
