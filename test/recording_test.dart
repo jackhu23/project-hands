@@ -304,16 +304,13 @@ void main() {
 
     await tapAndSettle(tester, find.text('View history'));
 
-    expect(find.text('Level 2'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(ListTile),
+        matching: find.text('Level 2'),
+      ),
+      findsOneWidget,
+    );
     expect(find.text('Accuracy 50%'), findsOneWidget);
   });
-
-  test(
-    'Accuracy is Pops over Pops and Misses, ignoring Overlapping Touches',
-    () {
-      expect(accuracy(pops: 3, misses: 1), 0.75);
-      expect(accuracy(pops: 0, misses: 2), 0);
-      expect(accuracy(pops: 0, misses: 0), isNull);
-    },
-  );
 }

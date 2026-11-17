@@ -108,7 +108,7 @@ void main() {
     );
   });
 
-  test('history lists ended runs newest first', () async {
+  test('runs lists ended runs newest first', () async {
     final db = openTestDatabase();
     final patient = await db.launch();
     final older = playedSession(patient)..stop();
@@ -120,18 +120,45 @@ void main() {
       await db.saveSession(s);
     }
 
-    final rows = await db.history();
+    final records = await db.runs();
 
-    expect(rows.map((r) => r.startedAt), [newer.startedAt, older.startedAt]);
-    expect(
-      (rows[0].popped, rows[0].balloonCount, rows[0].stopped),
-      (1, 1, false),
+    expect(records.map((r) => r.run.id), [
+      newer.exerciseRun.id,
+      older.exerciseRun.id,
+    ]);
+    final o = records[1];
+    expect(o.run.outcome, RunOutcome.stopped);
+    expect(o.trials.map((t) => t.number), [1, 2]);
+    expect(o.actions, isEmpty);
+    expect(o.pauses, isEmpty);
+  });
+
+  test('runs carry their Actions and pauses', () async {
+    final db = openTestDatabase();
+    final session = Session(patientId: await db.launch(), balloonCount: 1)
+      ..presentNextTrial(const Size(1000, 800));
+    const input = (
+      timeStamp: Duration.zero,
+      position: Offset.zero,
+      pressure: 1.0,
+      kind: TouchKind.finger,
     );
-    expect(
-      (rows[1].popped, rows[1].balloonCount, rows[1].stopped),
-      (1, 3, true),
-    );
-    expect(rows[1].duration, older.endedAt!.difference(older.startedAt));
+    session
+      ..touchDown(1, input, onBody: false)
+      ..touchUp(1, input, onBody: false)
+      ..pause()
+      ..resume()
+      ..touchDown(1, input, onBody: true)
+      ..touchUp(1, input, onBody: true);
+    await db.saveSession(session);
+
+    final record = (await db.runs()).single;
+
+    expect(record.actions.map((a) => a.outcome), [
+      ActionOutcome.miss,
+      ActionOutcome.pop,
+    ]);
+    expect(record.pauses.single.resumedAt, isNotNull);
   });
 
   test('Actions from a failed save are kept for the next one', () async {
@@ -166,7 +193,7 @@ void main() {
 
     await db.saveSession(playedSession(await db.launch())..stop());
 
-    expect(await db.history(), hasLength(1));
+    expect(await db.runs(), hasLength(1));
   });
 
   test('clearAll deletes every row, including the Patient', () async {
@@ -176,7 +203,7 @@ void main() {
 
     await db.clearAll();
 
-    expect(await db.history(), isEmpty);
+    expect(await db.runs(), isEmpty);
     expect(await db.select(db.patients).get(), isEmpty);
     expect(await db.select(db.trials).get(), isEmpty);
   });
