@@ -22,6 +22,17 @@ int zoneOf(Offset point, Size area) {
   return i == -1 ? zoneEllipseSpans.length + 1 : i + 1;
 }
 
+/// Where a balloon's centre may go in [area] so that, at full pulse plus the
+/// edge margin, it isn't clipped; null when the area is too small.
+Rect? usableArea(Size area) {
+  const w = balloonBodyWidth, knot = w * 0.085;
+  const dx = w / 2 * maxPulseScale + edgeMargin;
+  // The knot's height is reserved on both vertical edges, as in the demo.
+  const dy = (w * 1.25 / 2 + knot) * maxPulseScale + edgeMargin;
+  if (area.width <= dx * 2 || area.height <= dy * 2) return null;
+  return Rect.fromLTRB(dx, dy, area.width - dx, area.height - dy);
+}
+
 final _secure = Random.secure();
 
 /// A random 128-bit hex ID, standing in for the demo's UUIDs.
@@ -110,47 +121,44 @@ class Session {
         run.completedTrials >= run.balloonCount) {
       return;
     }
-    const w = balloonBodyWidth, h = w * 1.25, knot = w * 0.085;
-    const dx = w / 2 * maxPulseScale + edgeMargin;
-    // The knot's height is reserved on both vertical edges, as in the demo.
-    const dy = (h / 2 + knot) * maxPulseScale + edgeMargin;
-    if (area.width <= dx * 2 || area.height <= dy * 2) return;
+    final usable = usableArea(area);
+    if (usable == null) return;
     run.area = area;
 
-    final usable = Rect.fromLTRB(dx, dy, area.width - dx, area.height - dy);
-    final level = run.difficultyLevel;
-    // Otherwise uniform over Zones 1 to N−1, so each gets a share by its area.
-    var own = level == 1 || _random.nextDouble() < ownZoneShare;
+    // The usable corner is the furthest point out, so its Zone is the
+    // outermost one with room; on a phone that can be below the level.
+    final top = min(run.difficultyLevel, zoneOf(usable.topLeft, area));
+    // Otherwise uniform over Zones 1 to top−1, so each gets a share by its area.
+    final own = top == 1 || _random.nextDouble() < ownZoneShare;
+    final outermost = own ? top : top - 1;
+    // Rejection sampling within the box around the outermost allowed Zone.
+    final bounds = outermost > zoneEllipseSpans.length
+        ? usable
+        : usable.intersect(
+            Rect.fromCenter(
+              center: area.center(Offset.zero),
+              width: area.width * zoneEllipseSpans[outermost - 1],
+              height: area.height * zoneEllipseSpans[outermost - 1],
+            ),
+          );
     Offset center;
-    for (var tries = 1; ; tries++) {
-      // On a small screen the insets can cover all of Zone N; Zone 1, holding
-      // the centre, always has room.
-      if (tries > 1000) own = false;
-      final outermost = own ? level : level - 1;
-      // Rejection sampling within the box around the outermost allowed Zone.
-      final bounds = outermost > zoneEllipseSpans.length
-          ? usable
-          : usable.intersect(
-              Rect.fromCenter(
-                center: area.center(Offset.zero),
-                width: area.width * zoneEllipseSpans[outermost - 1],
-                height: area.height * zoneEllipseSpans[outermost - 1],
-              ),
-            );
+    int zone;
+    // shortcut: a thin sliver of Zone N can take many draws; cap it if a real
+    // screen ever stalls.
+    do {
       center = Offset(
         bounds.left + _random.nextDouble() * bounds.width,
         bounds.top + _random.nextDouble() * bounds.height,
       );
-      final zone = zoneOf(center, area);
-      if (own ? zone == level : zone < level) break;
-    }
+      zone = zoneOf(center, area);
+    } while (own ? zone != top : zone >= top);
 
     run.trials.add(
       Trial(
         number: run.completedTrials + 1,
         center: center,
-        zone: zoneOf(center, area),
-        bodyWidth: w,
+        zone: zone,
+        bodyWidth: balloonBodyWidth,
       ),
     );
     onChange?.call(this);
