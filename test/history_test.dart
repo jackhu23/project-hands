@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hands/balloon_touch/history_screen.dart';
 import 'package:hands/database.dart';
+import 'package:hands/main.dart';
 
 import 'test_app.dart';
 
@@ -32,8 +33,16 @@ Future<void> popBalloon(WidgetTester tester) async {
   await settle(tester);
 }
 
-Future<void> openHistoryFromHome(WidgetTester tester) async {
-  await tapAndSettle(tester, find.text('History'));
+/// Opens history over the current screen. Home has no way there until My
+/// progress lands; only "View history" after a run does.
+Future<void> openHistory(WidgetTester tester) async {
+  final db = tester.widget<HandsApp>(find.byType(HandsApp)).database;
+  tester
+      .state<NavigatorState>(find.byType(Navigator))
+      .push(
+        MaterialPageRoute<void>(builder: (_) => HistoryScreen(database: db)),
+      );
+  await settle(tester);
 }
 
 /// Closes the app and launches it again on the same database.
@@ -47,7 +56,7 @@ final row = find.byType(ListTile);
 void main() {
   testWidgets('history shows an empty state before any runs', (tester) async {
     await pumpApp(tester);
-    await openHistoryFromHome(tester);
+    await openHistory(tester);
 
     expect(find.text('No Exercise Runs yet'), findsOneWidget);
     expect(row, findsNothing);
@@ -80,7 +89,7 @@ void main() {
     await tapAndSettle(tester, find.text('Start New Session'));
     await tapAndSettle(tester, find.byTooltip('Back'));
 
-    await openHistoryFromHome(tester);
+    await openHistory(tester);
 
     expect(find.text('0 of 1 balloons popped'), findsOneWidget);
     expect(find.text('Stopped'), findsOneWidget);
@@ -95,7 +104,7 @@ void main() {
     await settle(tester);
     await tapAndSettle(tester, find.byTooltip('Back'));
 
-    await openHistoryFromHome(tester);
+    await openHistory(tester);
 
     expect(find.text('Stopped'), findsOneWidget);
   });
@@ -109,7 +118,7 @@ void main() {
     await startRun(tester);
     await restart(tester, db);
 
-    await openHistoryFromHome(tester);
+    await openHistory(tester);
 
     expect(row, findsNWidgets(2));
     expect(find.text('Stopped'), findsOneWidget);
@@ -118,13 +127,29 @@ void main() {
     expect(stoppedY, lessThan(completedY));
   });
 
-  testWidgets('Clear all data empties the history', (tester) async {
+  testWidgets('history no longer offers Clear all data', (tester) async {
     await pumpApp(tester);
     await startRun(tester);
     await popBalloon(tester);
+
     await tapAndSettle(tester, find.text('View history'));
 
+    expect(row, findsOneWidget);
+    expect(find.text('Clear all data'), findsNothing);
+  });
+
+  testWidgets('Clear all data on the Therapist screen empties the history', (
+    tester,
+  ) async {
+    await pumpApp(tester);
+    await startRun(tester);
+    await popBalloon(tester);
+    await tapAndSettle(tester, find.text('Start New Session'));
+    await tapAndSettle(tester, find.byTooltip('Back'));
+
+    await tapAndSettle(tester, find.text('Therapist'));
     await tapAndSettle(tester, find.text('Clear all data'));
+    await openHistory(tester);
 
     expect(find.text('No Exercise Runs yet'), findsOneWidget);
     expect(row, findsNothing);
@@ -142,7 +167,7 @@ void main() {
     await tapAndSettle(tester, find.text('Start New Session'));
     await tapAndSettle(tester, find.byTooltip('Back'));
 
-    await openHistoryFromHome(tester);
+    await openHistory(tester);
 
     for (final column in ['Overall', 'Level 1']) {
       expect(find.bySemanticsLabel('Runs, $column: 2'), findsOneWidget);

@@ -137,7 +137,7 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
         if (didPop) _session.stop();
       },
       child: Scaffold(
-        backgroundColor: HandsColors.warmCream,
+        backgroundColor: HandsColors.white,
         body: SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(56),
@@ -148,7 +148,7 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
                 Expanded(
                   child: DecoratedBox(
                     decoration: BoxDecoration(
-                      color: HandsColors.warmCream,
+                      color: HandsColors.white,
                       borderRadius: BorderRadius.circular(28),
                     ),
                     // Only touches in the play area are Actions, and their
@@ -202,7 +202,7 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
   Widget _pausedPanel() => Container(
     padding: const EdgeInsets.all(32),
     decoration: BoxDecoration(
-      color: HandsColors.ivory,
+      color: HandsColors.panel,
       borderRadius: BorderRadius.circular(28),
     ),
     child: Center(
@@ -210,14 +210,17 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
         mainAxisSize: MainAxisSize.min,
         spacing: 24,
         children: [
-          Text('Paused', style: handsText(28, HandsColors.forestSage)),
+          Text('Paused', style: HandsText.sectionTitle),
           FilledButton(
             onPressed: _resume,
             style: FilledButton.styleFrom(
-              backgroundColor: HandsColors.oliveGreen,
+              backgroundColor: HandsColors.tealMid,
               minimumSize: const Size(140, 56),
             ),
-            child: Text('Resume', style: handsText(22, HandsColors.ivory)),
+            child: Text(
+              'Resume',
+              style: HandsText.buttonSmall.copyWith(color: HandsColors.white),
+            ),
           ),
         ],
       ),
@@ -233,7 +236,7 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
           'H.A.N.D.S',
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: handsText(24, HandsColors.forestSage),
+          style: HandsText.sectionTitle,
         ),
       ),
       SizedBox(
@@ -248,20 +251,20 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
                     'Your progress',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: handsText(17),
+                    style: HandsText.body,
                   ),
                 ),
                 const Spacer(),
                 Text(
                   '${run.completedTrials} / ${run.balloonCount}',
-                  style: handsText(17),
+                  style: HandsText.body,
                 ),
               ],
             ),
             LinearProgressIndicator(
               value: run.completedTrials / run.balloonCount,
-              color: HandsColors.forestSage,
-              backgroundColor: HandsColors.sandBeige,
+              color: HandsColors.tealHeading,
+              backgroundColor: HandsColors.panel,
               borderRadius: BorderRadius.circular(2),
             ),
           ],
@@ -271,30 +274,30 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
       FilledButton.tonal(
         onPressed: _leave,
         style: FilledButton.styleFrom(
-          backgroundColor: HandsColors.oliveGreen.withValues(alpha: 0.15),
-          minimumSize: const Size(0, 44),
+          backgroundColor: HandsColors.tealMid.withValues(alpha: 0.15),
+          minimumSize: const Size(0, HandsSizes.minTouch),
         ),
-        child: Text('Finish', style: handsText(17, HandsColors.oliveGreen)),
+        child: Text('Finish', style: HandsText.link),
       ),
       IconButton(
         onPressed: _leave,
         tooltip: 'Home',
         iconSize: 24,
-        color: HandsColors.oliveGreen,
+        color: HandsColors.tealMid,
         style: IconButton.styleFrom(fixedSize: const Size.square(48)),
         icon: const Icon(Icons.home),
       ),
       IconButton(
         onPressed: _paused ? null : _pause,
         tooltip: 'Pause',
-        color: HandsColors.oliveGreen,
+        color: HandsColors.tealMid,
         style: IconButton.styleFrom(minimumSize: const Size.square(44)),
         icon: const Icon(Icons.pause),
       ),
       IconButton(
         onPressed: () {},
         tooltip: 'Settings',
-        color: HandsColors.oliveGreen,
+        color: HandsColors.tealMid,
         icon: const Icon(Icons.settings),
       ),
     ],

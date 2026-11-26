@@ -6,16 +6,13 @@ import 'package:hands/theme.dart';
 
 import 'test_app.dart';
 
-Future<void> openSetup(WidgetTester tester) async {
-  await pumpApp(tester);
+Future<void> openSetup(
+  WidgetTester tester, [
+  Size size = const Size(1280, 800),
+]) async {
+  await pumpApp(tester, null, size);
   await tester.tap(find.text('Balloon Touch'));
   await tester.pumpAndSettle();
-}
-
-Future<void> useScreen(WidgetTester tester, Size size) async {
-  tester.view.physicalSize = size;
-  tester.view.devicePixelRatio = 1;
-  addTearDown(tester.view.reset);
 }
 
 Text countText(WidgetTester tester) => tester.widget<Text>(
@@ -44,25 +41,6 @@ bool enabled(WidgetTester tester, String tooltip) =>
     null;
 
 void main() {
-  testWidgets('home screen shows one square Balloon Touch button top-left', (
-    tester,
-  ) async {
-    await pumpApp(tester);
-
-    final scaffold = tester.widget<Scaffold>(find.byType(Scaffold));
-    expect(scaffold.backgroundColor, Colors.white);
-    final button = find.ancestor(
-      of: find.text('Balloon Touch'),
-      matching: find.byType(OutlinedButton),
-    );
-    expect(button, findsOneWidget);
-    final rect = tester.getRect(button);
-    expect(rect.width, rect.height);
-    expect(rect.width, greaterThanOrEqualTo(200));
-    expect(rect.left, lessThan(100));
-    expect(rect.top, lessThan(100));
-  });
-
   testWidgets('setup shows the demo layout and the back button returns home', (
     tester,
   ) async {
@@ -216,8 +194,8 @@ void main() {
     await openSetup(tester);
 
     final style = tester.widget<Text>(find.text('Start Now')).style!;
-    expect(style.fontFamily, handsFont);
-    expect(style.color, HandsColors.ivory);
+    expect(style.fontFamily, HandsText.font);
+    expect(style.color, HandsColors.white);
   });
 
   // iPad Pro 11" and Pixel Tablet, in logical pixels.
@@ -237,8 +215,7 @@ void main() {
     testWidgets(
       '$name lays the cards out ${sideBySide ? 'side by side' : 'stacked'}',
       (tester) async {
-        await useScreen(tester, size);
-        await openSetup(tester);
+        await openSetup(tester, size);
 
         final balloon = tester.getCenter(find.text('Touch the balloon'));
         final count = tester.getCenter(find.text('Number of repetitions'));

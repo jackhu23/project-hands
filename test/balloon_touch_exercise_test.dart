@@ -257,10 +257,7 @@ void main() {
     Size(800, 1280),
   ]) {
     testWidgets('Exercise and progress pages fit $size', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.reset);
-      await pumpApp(tester);
+      await pumpApp(tester, null, size);
       await tester.tap(find.text('Balloon Touch'));
       await settle(tester);
       await tester.tap(find.text('Start Now'));
@@ -287,12 +284,12 @@ void main() {
 
   group('pause', () {
     final pauseButton = find.widgetWithIcon(IconButton, Icons.pause);
-    final ivoryPanel = find.ancestor(
+    final pausedPanel = find.ancestor(
       of: find.text('Paused'),
       matching: find.byWidgetPredicate(
         (w) =>
             w is Container &&
-            (w.decoration as BoxDecoration?)?.color == HandsColors.ivory,
+            (w.decoration as BoxDecoration?)?.color == HandsColors.panel,
       ),
     );
 
@@ -302,7 +299,7 @@ void main() {
     }
 
     void expectPausedPanel(WidgetTester tester) {
-      expect(ivoryPanel, findsOneWidget);
+      expect(pausedPanel, findsOneWidget);
       expect(find.text('Resume'), findsOneWidget);
       expect(balloon, findsNothing);
       expect(tester.widget<IconButton>(pauseButton).onPressed, isNull);

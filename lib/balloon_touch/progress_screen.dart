@@ -27,7 +27,7 @@ class ProgressScreen extends StatelessWidget {
     final done = run.completedTrials, planned = run.balloonCount;
     final canResume = session.status == SessionStatus.paused;
     return Scaffold(
-      backgroundColor: HandsColors.warmCream,
+      backgroundColor: HandsColors.white,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -49,14 +49,14 @@ class ProgressScreen extends StatelessWidget {
                               children: [
                                 Text(
                                   'H.A.N.D.S',
-                                  style: handsText(30, HandsColors.forestSage),
+                                  style: HandsText.sectionTitle,
                                 ),
                                 const Spacer(),
                                 const ExcludeSemantics(
                                   child: Icon(
                                     Icons.settings,
                                     size: 32,
-                                    color: HandsColors.forestSage,
+                                    color: HandsColors.tealHeading,
                                   ),
                                 ),
                               ],
@@ -66,7 +66,7 @@ class ProgressScreen extends StatelessWidget {
                             height: max(400, min(510, h * 0.6)),
                             padding: const EdgeInsets.all(24),
                             decoration: BoxDecoration(
-                              color: HandsColors.ivory,
+                              color: HandsColors.panel,
                               borderRadius: BorderRadius.circular(30),
                             ),
                             child: Column(
@@ -76,18 +76,12 @@ class ProgressScreen extends StatelessWidget {
                                   children: [
                                     Text(
                                       'Your progress',
-                                      style: handsText(
-                                        24,
-                                        HandsColors.forestSage,
-                                      ),
+                                      style: HandsText.sectionTitle,
                                     ),
                                     const Spacer(),
                                     Text(
                                       '$done/$planned',
-                                      style: handsText(
-                                        24,
-                                        HandsColors.forestSage,
-                                      ),
+                                      style: HandsText.sectionTitle,
                                     ),
                                   ],
                                 ),
@@ -97,8 +91,8 @@ class ProgressScreen extends StatelessWidget {
                                   child: LinearProgressIndicator(
                                     value: done / planned,
                                     minHeight: 14,
-                                    color: HandsColors.forestSage,
-                                    backgroundColor: HandsColors.sandBeige,
+                                    color: HandsColors.tealHeading,
+                                    backgroundColor: HandsColors.panel,
                                     borderRadius: BorderRadius.circular(7),
                                   ),
                                 ),
@@ -115,12 +109,14 @@ class ProgressScreen extends StatelessWidget {
                                   canResume
                                       ? 'Session paused'
                                       : 'Session finished',
-                                  style: handsText(25, HandsColors.forestSage),
+                                  style: HandsText.sectionTitle,
                                 ),
                                 Text(
                                   'You completed $done of $planned balloons.',
                                   textAlign: TextAlign.center,
-                                  style: handsText(17, HandsColors.forestSage),
+                                  style: HandsText.body.copyWith(
+                                    color: HandsColors.tealHeading,
+                                  ),
                                 ),
                               ],
                             ),
@@ -136,18 +132,20 @@ class ProgressScreen extends StatelessWidget {
                                     Navigator.of(context).pop();
                                   },
                                   style: FilledButton.styleFrom(
-                                    backgroundColor: HandsColors.oliveGreen,
+                                    backgroundColor: HandsColors.tealMid,
                                     minimumSize: const Size.fromHeight(50),
                                     shape: const StadiumBorder(
                                       side: BorderSide(
-                                        color: HandsColors.ivory,
+                                        color: HandsColors.panel,
                                         width: 2,
                                       ),
                                     ),
                                   ),
                                   child: Text(
                                     'Resume Session',
-                                    style: handsText(22, HandsColors.ivory),
+                                    style: HandsText.buttonSmall.copyWith(
+                                      color: HandsColors.white,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -165,13 +163,15 @@ class ProgressScreen extends StatelessWidget {
                                   minimumSize: const Size.fromHeight(50),
                                   shape: const StadiumBorder(),
                                   side: const BorderSide(
-                                    color: HandsColors.oliveGreen,
+                                    color: HandsColors.tealMid,
                                     width: 2,
                                   ),
                                 ),
                                 child: Text(
                                   'Start New Session',
-                                  style: handsText(22, HandsColors.forestSage),
+                                  style: HandsText.body.copyWith(
+                                    color: HandsColors.tealHeading,
+                                  ),
                                 ),
                               ),
                             ),
@@ -184,12 +184,9 @@ class ProgressScreen extends StatelessWidget {
                               ),
                             ),
                             style: TextButton.styleFrom(
-                              minimumSize: const Size(140, 50),
+                              minimumSize: const Size(140, HandsSizes.minTouch),
                             ),
-                            child: Text(
-                              'View history',
-                              style: handsText(20, HandsColors.oliveGreen),
-                            ),
+                            child: Text('View history', style: HandsText.link),
                           ),
                         ],
                       ),

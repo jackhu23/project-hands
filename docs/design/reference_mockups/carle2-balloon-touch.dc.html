@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>HANDS · Balloon Touch (Carle colour)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#00546B}a:hover{color:#003A4E}
+</style>
+</helmet>
+<div style="width: 1280px; height: 800px; box-sizing: border-box; background: #FFFFFF; font-family: Nunito, system-ui, sans-serif; color: #0B2D3C; display: flex; flex-direction: column">
+  <header style="background: linear-gradient(105deg, #0A8199 0%, #00627C 45%, #003A4E 100%); color: #FFFFFF; padding: 24px 48px 22px; display: flex; flex-direction: column; gap: 18px">
+    <div style="display: flex; align-items: center; justify-content: space-between">
+      <div style="display: flex; align-items: center; gap: 18px">
+        <a href="carle2-home.dc.html" aria-label="Back to exercises" style="width: 56px; height: 56px; border-radius: 28px; background: rgba(255,255,255,0.16); border: 1px solid rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; color: #FFFFFF">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"></path></svg>
+        </a>
+        <div style="display: flex; flex-direction: column">
+          <span style="font-size: 14px; font-weight: 800; letter-spacing: 1.5px; color: #FFC9D2">EXERCISE</span>
+          <h1 style="margin: 0; font-size: 38px; font-weight: 900">Balloon Touch</h1>
+        </div>
+      </div>
+      <img src="../../../assets/logos/carle-health-white.png" alt="Carle Health" style="height: 34px; width: auto">
+    </div>
+    <nav style="display: flex; gap: 10px; padding-left: 74px" aria-label="Balloon Touch sections">
+      <a href="carle2-balloon-touch.dc.html" style="height: 50px; padding: 0 26px; border-radius: 25px; background: #FFFFFF; color: #003A4E; text-decoration: none; font-size: 18px; font-weight: 800; display: flex; align-items: center">Practice</a>
+      <a href="carle2-progress.dc.html" style="height: 50px; padding: 0 26px; border-radius: 25px; border: 1.5px solid rgba(255,255,255,0.5); color: #FFFFFF; text-decoration: none; font-size: 18px; font-weight: 800; display: flex; align-items: center">My progress</a>
+    </nav>
+  </header>
+
+  <main style="flex-grow: 1; padding: 30px 48px 34px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; min-height: 0">
+    <section style="background: #E5EBEE; border-radius: 12px; padding: 28px; display: flex; flex-direction: column; gap: 14px" aria-label="Watch how">
+      <span style="font-size: 16px; font-weight: 800; letter-spacing: 1.5px; color: #C8102E">STEP 1 · WATCH HOW</span>
+      <div style="flex-grow: 1; border-radius: 12px; background: linear-gradient(135deg, #0A8199 0%, #003A4E 100%); position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden">
+        <svg width="150" height="200" viewBox="0 0 120 160" aria-hidden="true" style="position: absolute; right: 36px; bottom: -10px; opacity: 0.25"><ellipse cx="60" cy="62" rx="46" ry="56" fill="#FFFFFF"></ellipse><path d="M54 117 L60 126 L66 117 Z" fill="#FFFFFF"></path></svg>
+        <button aria-label="Play demonstration video" style="width: 100px; height: 100px; border-radius: 50px; border: none; background: #C8102E; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 28px rgba(200,16,46,0.45)">
+          <svg width="42" height="42" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" fill="#FFFFFF"></path></svg>
+        </button>
+        <span style="position: absolute; left: 20px; bottom: 16px; font-size: 16px; font-weight: 800; color: #FFFFFF">[DEMO VIDEO] · 0:30</span>
+      </div>
+      <label style="display: flex; align-items: center; justify-content: space-between; min-height: 52px; font-size: 18px; font-weight: 800">
+        Show before every run
+        <span style="width: 64px; height: 36px; border-radius: 18px; background: #00627C; position: relative; display: block">
+          <span style="position: absolute; right: 4px; top: 4px; width: 28px; height: 28px; border-radius: 14px; background: #FFFFFF; display: block"></span>
+        </span>
+      </label>
+    </section>
+
+    <section style="background: #FFFFFF; border: 1.5px solid #D4DEE3; border-radius: 12px; padding: 28px; display: flex; flex-direction: column; gap: 18px" aria-label="Run setup">
+      <span style="font-size: 16px; font-weight: 800; letter-spacing: 1.5px; color: #C8102E">STEP 2 · SET UP YOUR RUN</span>
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <h2 style="margin: 0; font-size: 24px; font-weight: 800; color: #00657F">Difficulty Level</h2>
+        <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px">
+          <sc-for list="{{ levels }}" as="lv" hint-placeholder-count="4">
+            <button onClick="{{ lv.pick }}" aria-pressed="{{ lv.pressed }}" style="{{ lv.style }}">
+              <svg width="56" height="38" viewBox="0 0 56 40" aria-hidden="true"><ellipse cx="28" cy="20" rx="26" ry="18" fill="none" stroke="currentColor" stroke-width="1.6" opacity="{{ lv.o4 }}"></ellipse><ellipse cx="28" cy="20" rx="18" ry="12.5" fill="none" stroke="currentColor" stroke-width="1.6" opacity="{{ lv.o3 }}"></ellipse><ellipse cx="28" cy="20" rx="10" ry="7" fill="none" stroke="currentColor" stroke-width="1.6" opacity="{{ lv.o2 }}"></ellipse><ellipse cx="28" cy="20" rx="4" ry="3" fill="currentColor"></ellipse></svg>
+              <span style="font-size: 24px; font-weight: 900">{{ lv.n }}</span>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; justify-content: space-between">
+        <div style="display: flex; flex-direction: column">
+          <h2 style="margin: 0; font-size: 24px; font-weight: 800; color: #00657F">Balloons</h2>
+          <span style="font-size: 16px; color: #3F5966">Finger: Index · set by your therapist</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px">
+          <button onClick="{{ dec }}" aria-label="Fewer balloons" style="width: 62px; height: 62px; border-radius: 31px; border: 2px solid #8FA9B4; background: #FFFFFF; font-family: inherit; font-size: 30px; font-weight: 800; color: #00546B">−</button>
+          <span style="width: 80px; text-align: center; font-size: 42px; font-weight: 900">{{ count }}</span>
+          <button onClick="{{ inc }}" aria-label="More balloons" style="width: 62px; height: 62px; border-radius: 31px; border: 2px solid #8FA9B4; background: #FFFFFF; font-family: inherit; font-size: 30px; font-weight: 800; color: #00546B">+</button>
+        </div>
+      </div>
+      <a href="carle2-run-stage.dc.html" style="margin-top: auto; height: 84px; border-radius: 12px; background: linear-gradient(105deg, #0A8199 0%, #003A4E 100%); color: #FFFFFF; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 14px; font-size: 30px; font-weight: 900; box-shadow: 0 10px 24px rgba(0,58,78,0.30)">
+        Start
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+      </a>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { level: 2, count: 10 }; }
+  renderVals() {
+    const L = this.state.level;
+    const levels = [1, 2, 3, 4].map((n) => {
+      const on = n === L;
+      return {
+        n, pressed: on ? 'true' : 'false',
+        o2: n >= 2 ? 1 : 0.25, o3: n >= 3 ? 1 : 0.25, o4: n >= 4 ? 1 : 0.25,
+        style: 'height: 100px; border-radius: 12px; font-family: inherit; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; ' +
+          (on ? 'background: linear-gradient(135deg, #0A8199 0%, #003A4E 100%); color: #FFFFFF; border: 2px solid #003A4E; box-shadow: 0 6px 16px rgba(0,58,78,0.28)' : 'background: #FFFFFF; color: #00546B; border: 2px solid #C5D3DA'),
+        pick: () => this.setState({ level: n })
+      };
+    });
+    return {
+      levels, count: this.state.count,
+      dec: () => this.setState({ count: Math.max(1, this.state.count - 1) }),
+      inc: () => this.setState({ count: Math.min(30, this.state.count + 1) })
+    };
+  }
+}
+</script>
+</body>
+</html>

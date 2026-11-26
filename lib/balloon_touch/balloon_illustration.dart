@@ -92,7 +92,7 @@ class _BalloonPainter extends CustomPainter {
       canvas.drawCircle(
         center,
         w * 1.65 / 2,
-        Paint()..color = HandsColors.warmCream,
+        Paint()..color = HandsColors.panel,
       );
       canvas.drawCircle(
         center,
@@ -100,7 +100,7 @@ class _BalloonPainter extends CustomPainter {
         Paint()
           ..style = PaintingStyle.stroke
           ..strokeWidth = 2
-          ..color = HandsColors.oliveGreen.withValues(alpha: 0.10),
+          ..color = HandsColors.tealMid.withValues(alpha: 0.10),
       );
     }
 
@@ -112,7 +112,7 @@ class _BalloonPainter extends CustomPainter {
     canvas.drawPath(
       bodyPath.shift(Offset(0, pressed ? 2 : 6)),
       Paint()
-        ..color = HandsColors.charcoal.withValues(alpha: pressed ? 0.08 : 0.16)
+        ..color = HandsColors.ink.withValues(alpha: pressed ? 0.08 : 0.16)
         ..maskFilter = MaskFilter.blur(
           BlurStyle.normal,
           Shadow.convertRadiusToSigma(pressed ? 3 : 9),
@@ -120,26 +120,25 @@ class _BalloonPainter extends CustomPainter {
     );
     canvas.drawPath(
       bodyPath,
-      Paint()
-        ..color = pressed ? HandsColors.oliveGreen : HandsColors.forestSage,
+      Paint()..color = pressed ? HandsColors.redShadow : HandsColors.red,
     );
     canvas.drawPath(
       _highlightPath(body),
       Paint()
         ..color = pressed
-            ? HandsColors.ivory.withValues(alpha: 0.22)
-            : HandsColors.oliveGreen,
+            ? HandsColors.white.withValues(alpha: 0.22)
+            : HandsColors.redLight,
     );
     canvas.drawPath(
       bodyPath,
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = pressed ? 3 : 1
-        ..color = HandsColors.forestSage,
+        ..color = HandsColors.redShadow,
     );
     canvas.drawPath(
       _knotPath(Rect.fromLTWH(center.dx - knot / 2, body.bottom, knot, knot)),
-      Paint()..color = HandsColors.forestSage,
+      Paint()..color = HandsColors.redShadow,
     );
   }
 
