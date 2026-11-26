@@ -7,10 +7,16 @@ environment:
   sdk: ^3.13.7
 
 dependencies:
+  animations: ^3.0.0
   drift: ^2.35.4
   drift_flutter: ^0.3.1
   flutter:
     sdk: flutter
+  flutter_animate: ^4.5.2
+  flutter_svg: ^2.5.1
+  intl: ^0.20.3
+  skeletonizer: ^3.0.0
+  wakelock_plus: ^1.8.2
 
 dev_dependencies:
   flutter_test:
@@ -22,8 +28,16 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/logos/
   fonts:
-    # Paytone One, SIL Open Font License 1.1 (assets/fonts/PaytoneOne-OFL.txt).
-    - family: PaytoneOne
+    # Nunito, SIL Open Font License 1.1 (assets/fonts/Nunito-OFL.txt).
+    - family: Nunito
       fonts:
-        - asset: assets/fonts/PaytoneOne-Regular.ttf
+        - asset: assets/fonts/Nunito-Regular.ttf
+        - asset: assets/fonts/Nunito-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Nunito-ExtraBold.ttf
+          weight: 800
+        - asset: assets/fonts/Nunito-Black.ttf
+          weight: 900

@@ -68,7 +68,7 @@ class _SetupScreenState extends State<SetupScreen> {
   // Quirk carried over: the sheet repeats the card's + and − controls.
   void _showSettings() => showModalBottomSheet<void>(
     context: context,
-    backgroundColor: HandsColors.warmCream,
+    backgroundColor: HandsColors.white,
     // Scrolls when the sheet's 9/16 height cap is too short, as on small screens.
     builder: (sheetContext) => SingleChildScrollView(
       padding: const EdgeInsets.all(32),
@@ -76,12 +76,12 @@ class _SetupScreenState extends State<SetupScreen> {
         mainAxisSize: MainAxisSize.min,
         spacing: 28,
         children: [
-          Text('Practice settings', style: handsText(28)),
+          Text('Practice settings', style: HandsText.sectionTitle),
           ValueListenableBuilder(
             valueListenable: _balloonCount,
             builder: (_, count, _) => Row(
               children: [
-                Text('Repetitions: $count', style: handsText(20)),
+                Text('Repetitions: $count', style: HandsText.body),
                 const Spacer(),
                 _countButtons(_balloonCount),
               ],
@@ -91,7 +91,7 @@ class _SetupScreenState extends State<SetupScreen> {
             valueListenable: _difficultyLevel,
             builder: (_, level, _) => Row(
               children: [
-                Text('Difficulty Level: $level', style: handsText(20)),
+                Text('Difficulty Level: $level', style: HandsText.body),
                 const Spacer(),
                 _levelButtons(_difficultyLevel),
               ],
@@ -100,10 +100,13 @@ class _SetupScreenState extends State<SetupScreen> {
           FilledButton(
             onPressed: () => Navigator.of(sheetContext).pop(),
             style: FilledButton.styleFrom(
-              backgroundColor: HandsColors.oliveGreen,
+              backgroundColor: HandsColors.tealMid,
               minimumSize: const Size(120, 52),
             ),
-            child: Text('Done', style: handsText(20, HandsColors.ivory)),
+            child: Text(
+              'Done',
+              style: HandsText.buttonSmall.copyWith(color: HandsColors.white),
+            ),
           ),
         ],
       ),
@@ -165,19 +168,16 @@ class _SetupScreenState extends State<SetupScreen> {
                             child: FilledButton(
                               onPressed: _start,
                               style: FilledButton.styleFrom(
-                                backgroundColor: HandsColors.oliveGreen,
+                                backgroundColor: HandsColors.tealMid,
                                 minimumSize: const Size.fromHeight(58),
                                 shape: const StadiumBorder(
                                   side: BorderSide(
-                                    color: HandsColors.ivory,
+                                    color: HandsColors.panel,
                                     width: 2,
                                   ),
                                 ),
                               ),
-                              child: Text(
-                                'Start Now',
-                                style: handsText(28, HandsColors.ivory),
-                              ),
+                              child: Text('Start Now', style: HandsText.button),
                             ),
                           ),
                         ),
@@ -200,7 +200,7 @@ class _SetupScreenState extends State<SetupScreen> {
         onPressed: () => Navigator.of(context).maybePop(),
         tooltip: 'Back',
         iconSize: 36,
-        color: HandsColors.forestSage,
+        color: HandsColors.tealHeading,
         icon: const Icon(Icons.arrow_back),
       ),
       const SizedBox(width: 8),
@@ -208,8 +208,8 @@ class _SetupScreenState extends State<SetupScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         spacing: 4,
         children: [
-          Text('H.A.N.D.S', style: handsText(30, HandsColors.forestSage)),
-          Text('Balloon Practice', style: handsText(24)),
+          Text('H.A.N.D.S', style: HandsText.sectionTitle),
+          Text('Balloon Practice', style: HandsText.sectionTitle),
         ],
       ),
       const Spacer(),
@@ -217,7 +217,7 @@ class _SetupScreenState extends State<SetupScreen> {
         onPressed: _showSettings,
         tooltip: 'Practice settings',
         iconSize: 44,
-        color: HandsColors.forestSage,
+        color: HandsColors.tealHeading,
         icon: const Icon(Icons.settings),
       ),
     ],
@@ -240,7 +240,7 @@ class _Card extends StatelessWidget {
     width: double.infinity,
     padding: EdgeInsets.all(padding),
     decoration: BoxDecoration(
-      color: HandsColors.ivory,
+      color: HandsColors.panel,
       borderRadius: BorderRadius.circular(32),
     ),
     child: child,
@@ -272,7 +272,7 @@ class _BalloonCard extends StatelessWidget {
           child: Text(
             'Touch the balloon',
             textAlign: TextAlign.center,
-            style: handsText(24, HandsColors.forestSage),
+            style: HandsText.sectionTitle,
           ),
         ),
       ],
@@ -302,7 +302,7 @@ class _CountCard extends StatelessWidget {
           Text(
             'Number of repetitions',
             textAlign: TextAlign.center,
-            style: handsText(24),
+            style: HandsText.sectionTitle,
           ),
           const SizedBox(height: 20),
           Flexible(
@@ -315,14 +315,14 @@ class _CountCard extends StatelessWidget {
                   height: box,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: HandsColors.warmCream,
+                    color: HandsColors.white,
                     borderRadius: BorderRadius.circular(28),
                   ),
                   child: Semantics(
                     label: '$value repetitions',
                     liveRegion: true,
                     excludeSemantics: true,
-                    child: Text('$value', style: handsText(48)),
+                    child: Text('$value', style: HandsText.metric),
                   ),
                 ),
               ),
@@ -332,7 +332,7 @@ class _CountCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             decoration: const ShapeDecoration(
-              color: HandsColors.warmCream,
+              color: HandsColors.white,
               shape: StadiumBorder(),
             ),
             child: _countButtons(count),
@@ -341,7 +341,7 @@ class _CountCard extends StatelessWidget {
           Text(
             'Difficulty Level',
             textAlign: TextAlign.center,
-            style: handsText(24),
+            style: HandsText.sectionTitle,
           ),
           const SizedBox(height: 8),
           // Not scaled to fit, so the buttons keep their full touch size.
@@ -355,13 +355,13 @@ class _CountCard extends StatelessWidget {
                   label: 'Difficulty Level $value',
                   liveRegion: true,
                   excludeSemantics: true,
-                  child: Text('$value', style: handsText(32)),
+                  child: Text('$value', style: HandsText.metric),
                 ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 decoration: const ShapeDecoration(
-                  color: HandsColors.warmCream,
+                  color: HandsColors.white,
                   shape: StadiumBorder(),
                 ),
                 child: _levelButtons(level),
@@ -410,8 +410,8 @@ class _StepButtons extends StatelessWidget {
         onPressed: enabled ? () => value.value += step : null,
         tooltip: label,
         iconSize: 24,
-        color: HandsColors.charcoal,
-        disabledColor: HandsColors.charcoal.withValues(alpha: 0.3),
+        color: HandsColors.ink,
+        disabledColor: HandsColors.ink.withValues(alpha: 0.3),
         style: IconButton.styleFrom(
           fixedSize: const Size(60, 50),
           shape: const RoundedRectangleBorder(),

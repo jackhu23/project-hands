@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../database.dart';
@@ -39,10 +38,9 @@ Widget _table(List<String> columns, List<(String, List<String>)> rows) {
     child: Text(
       text,
       semanticsLabel: label,
-      style: handsText(
-        17,
-        header ? HandsColors.forestSage : HandsColors.charcoal,
-      ),
+      style: header
+          ? HandsText.body.copyWith(color: HandsColors.tealHeading)
+          : HandsText.body,
     ),
   );
   return Table(
@@ -78,34 +76,15 @@ class HistoryScreen extends StatefulWidget {
 }
 
 class _HistoryScreenState extends State<HistoryScreen> {
-  late var _runs = widget.database.runs();
-
-  Future<void> _clearAll() async {
-    await widget.database.clearAll();
-    if (!mounted) return;
-    setState(() {
-      _runs = widget.database.runs();
-    });
-  }
+  late final _runs = widget.database.runs();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: HandsColors.warmCream,
+      backgroundColor: HandsColors.white,
       appBar: AppBar(
-        backgroundColor: HandsColors.warmCream,
-        title: Text('History', style: handsText(28, HandsColors.forestSage)),
-        actions: [
-          // Compiled out of release builds, so a Patient can't wipe history.
-          if (kDebugMode)
-            TextButton(
-              onPressed: _clearAll,
-              child: Text(
-                'Clear all data',
-                style: handsText(17, HandsColors.oliveGreen),
-              ),
-            ),
-        ],
+        backgroundColor: HandsColors.white,
+        title: Text('History', style: HandsText.sectionTitle),
       ),
       body: FutureBuilder(
         future: _runs,
@@ -116,7 +95,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             return Center(
               child: Text(
                 'No Exercise Runs yet',
-                style: handsText(24, HandsColors.forestSage),
+                style: HandsText.sectionTitle,
               ),
             );
           }
@@ -125,7 +104,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             children: [
               Text(
                 'Summary of completed runs',
-                style: handsText(22, HandsColors.forestSage),
+                style: HandsText.body.copyWith(color: HandsColors.tealHeading),
               ),
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
@@ -176,30 +155,30 @@ class _HistoryScreenState extends State<HistoryScreen> {
           builder: (_) => RunDetailScreen(record: record),
         ),
       ),
-      title: Text(formatRunTime(run.startedAt), style: handsText(20)),
+      title: Text(formatRunTime(run.startedAt), style: HandsText.body),
       subtitle: Text(
         '$popped of ${run.balloonCount} balloons popped',
-        style: handsText(17, HandsColors.forestSage),
+        style: HandsText.body.copyWith(color: HandsColors.tealHeading),
       ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         spacing: 24,
         children: [
           if (run.outcome == RunOutcome.stopped)
-            Text('Stopped', style: handsText(17)),
+            Text('Stopped', style: HandsText.body),
           Text(
             'Level ${run.difficultyLevel}',
             semanticsLabel: 'Difficulty Level ${run.difficultyLevel}',
-            style: handsText(17),
+            style: HandsText.body,
           ),
           Text(
             'Accuracy ${_accuracyOf(countOutcomes(record.actions))}',
-            style: handsText(17),
+            style: HandsText.body,
           ),
           Text(
             duration,
             semanticsLabel: 'Duration $duration',
-            style: handsText(20),
+            style: HandsText.body,
           ),
         ],
       ),
@@ -226,12 +205,12 @@ class RunDetailScreen extends StatelessWidget {
       _accuracyOf(c),
     ];
     return Scaffold(
-      backgroundColor: HandsColors.warmCream,
+      backgroundColor: HandsColors.white,
       appBar: AppBar(
-        backgroundColor: HandsColors.warmCream,
+        backgroundColor: HandsColors.white,
         title: Text(
           '${formatRunTime(run.startedAt)}, Level ${run.difficultyLevel}',
-          style: handsText(28, HandsColors.forestSage),
+          style: HandsText.sectionTitle,
         ),
       ),
       body: SingleChildScrollView(
