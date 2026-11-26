@@ -69,7 +69,7 @@ void main() {
     await tester.tap(find.text('Balloon Touch'));
     await settle(tester);
 
-    expect(find.text('Start Now'), findsOneWidget);
+    expect(find.text('STEP 2 · SET UP YOUR RUN'), findsOneWidget);
   });
 
   testWidgets('the Tracing and Coming in spring cards do nothing', (

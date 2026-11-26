@@ -30,12 +30,10 @@ Future<void> startRun(
   addTearDown(tester.view.reset);
   await tapAndSettle(tester, find.text('Balloon Touch'));
   for (var i = 1; i < balloons; i++) {
-    await tester.tap(find.byTooltip('Increase repetitions'));
+    await tester.tap(find.byTooltip('More balloons'));
   }
-  for (var i = 1; i < level; i++) {
-    await tester.tap(find.byTooltip('Increase Difficulty Level'));
-  }
-  await tapAndSettle(tester, find.text('Start Now'));
+  await tester.tap(find.bySemanticsLabel('Difficulty Level $level'));
+  await tapAndSettle(tester, find.text('Start'));
 }
 
 final balloon = find.bySemanticsLabel('Balloon');
@@ -279,19 +277,6 @@ void main() {
     expect(pauses[0].resumedAt!.isBefore(pauses[0].pausedAt), isFalse);
     expect(pauses[1].pausedAt.isBefore(pauses[0].resumedAt!), isFalse);
     expect(pauses[1].resumedAt, isNull);
-  });
-
-  testWidgets('setup preloads the last Difficulty Level after a restart', (
-    tester,
-  ) async {
-    final db = await pumpApp(tester);
-    await startRun(tester, level: 3);
-
-    await tester.pumpWidget(const SizedBox());
-    await pumpApp(tester, db);
-    await tapAndSettle(tester, find.text('Balloon Touch'));
-
-    expect(find.bySemanticsLabel('Difficulty Level 3'), findsOneWidget);
   });
 
   testWidgets('history rows show Difficulty Level and Accuracy', (

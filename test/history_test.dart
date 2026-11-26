@@ -24,7 +24,7 @@ Future<void> startRun(WidgetTester tester) async {
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   await tapAndSettle(tester, find.text('Balloon Touch'));
-  await tapAndSettle(tester, find.text('Start Now'));
+  await tapAndSettle(tester, find.text('Start'));
 }
 
 /// Pops the only balloon, which completes the run.
@@ -162,7 +162,7 @@ void main() {
     await startRun(tester);
     await popBalloon(tester);
     await tapAndSettle(tester, find.text('Start New Session'));
-    await tapAndSettle(tester, find.text('Start Now'));
+    await tapAndSettle(tester, find.text('Start'));
     await tapAndSettle(tester, find.byTooltip('Home'));
     await tapAndSettle(tester, find.text('Start New Session'));
     await tapAndSettle(tester, find.byTooltip('Back'));
