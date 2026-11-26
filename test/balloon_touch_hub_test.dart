@@ -1,5 +1,9 @@
+import 'dart:async';
+
+import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hands/database.dart';
 import 'package:hands/balloon_touch/exercise_screen.dart';
 import 'package:hands/balloon_touch/hub_screen.dart';
 import 'package:hands/theme.dart';
@@ -54,6 +58,28 @@ bool enabled(WidgetTester tester, String tooltip) =>
         )
         .onPressed !=
     null;
+
+bool startEnabled(WidgetTester tester) =>
+    tester
+        .widget<InkWell>(
+          find.ancestor(of: find.text('Start'), matching: find.byType(InkWell)),
+        )
+        .onTap !=
+    null;
+
+/// A database whose remembered Difficulty Level arrives only when the test
+/// completes [levels], one Completer per load.
+class SlowDatabase extends HandsDatabase {
+  SlowDatabase() : super(NativeDatabase.memory());
+
+  final levels = <Completer<int?>>[];
+
+  @override
+  Future<int?> lastDifficultyLevel() {
+    levels.add(Completer());
+    return levels.last.future;
+  }
+}
 
 Future<void> start(WidgetTester tester) async {
   await tester.tap(find.text('Start'));
@@ -125,7 +151,8 @@ void main() {
     expect(selected(tester, 1), isTrue);
     expect(levelGradient(tester, 1), HandsGradients.brandButton);
 
-    await tester.tap(level(3));
+    // Through the semantics tree, as a screen reader would.
+    tester.semantics.tap(find.semantics.byLabel('Difficulty Level 3'));
     await tester.pump();
 
     expect(selected(tester, 3), isTrue);
@@ -212,6 +239,37 @@ void main() {
     await settle(tester);
 
     expect(selected(tester, 4), isTrue);
+  });
+
+  testWidgets('Start waits for the remembered Difficulty Level to load', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final db = SlowDatabase();
+    addTearDown(db.close);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: BalloonTouchHub(database: db, patientId: 'P-test'),
+      ),
+    );
+
+    expect(startEnabled(tester), isFalse, reason: 'while loading');
+
+    await tester.pump(const Duration(seconds: 10));
+    expect(find.text("Couldn't load this"), findsOneWidget);
+    db.levels.first.complete(3);
+    await tester.pump();
+    expect(startEnabled(tester), isFalse, reason: 'a load that ended late');
+
+    await tester.tap(find.text('Try again'));
+    await tester.pump();
+    db.levels.last.complete(3);
+    await tester.pump();
+    await tester.pump();
+    expect(startEnabled(tester), isTrue);
+    expect(selected(tester, 3), isTrue);
   });
 
   testWidgets('the Practice tab fits every tablet size', (tester) async {

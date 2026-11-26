@@ -72,22 +72,26 @@ void main() {
     expect(failure, findsNothing);
   });
 
-  testWidgets('Try again loads again', (tester) async {
+  testWidgets('Try again shows the skeleton, then loads again', (tester) async {
+    final retry = Completer<String>();
     var calls = 0;
     await pumpSection(tester, () async {
       calls++;
       if (calls == 1) throw StateError('offline');
-      return 'loaded';
+      return retry.future;
     });
     await tester.pump();
     expect(failure, findsOneWidget);
 
     await tester.tap(find.text('Try again'));
     await tester.pump();
-    await tester.pump();
-
     expect(calls, 2);
-    expect(find.text('loaded'), findsOneWidget);
+    expect(skeleton, findsOneWidget);
     expect(failure, findsNothing);
+
+    retry.complete('loaded');
+    await tester.pump();
+    expect(find.text('loaded'), findsOneWidget);
+    expect(skeleton, findsNothing);
   });
 }

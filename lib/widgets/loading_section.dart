@@ -14,6 +14,7 @@ class LoadingSection<T> extends StatefulWidget {
     required this.load,
     required this.placeholder,
     required this.builder,
+    this.onLoaded,
   });
 
   static const timeout = Duration(seconds: 10);
@@ -22,6 +23,10 @@ class LoadingSection<T> extends StatefulWidget {
   final T placeholder;
   final Widget Function(BuildContext context, T value) builder;
 
+  /// Called with the value only when it loads in time; a load that ends
+  /// after the timeout is dropped.
+  final ValueChanged<T>? onLoaded;
+
   @override
   State<LoadingSection<T>> createState() => _LoadingSectionState<T>();
 }
@@ -29,7 +34,11 @@ class LoadingSection<T> extends StatefulWidget {
 class _LoadingSectionState<T> extends State<LoadingSection<T>> {
   late Future<T> _future = _start();
 
-  Future<T> _start() => widget.load().timeout(LoadingSection.timeout);
+  Future<T> _start() =>
+      widget.load().timeout(LoadingSection.timeout).then((value) {
+        if (mounted) widget.onLoaded?.call(value);
+        return value;
+      });
 
   @override
   Widget build(BuildContext context) => FutureBuilder<T>(

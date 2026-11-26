@@ -32,12 +32,8 @@ class _BalloonTouchHubState extends State<BalloonTouchHub> {
   int? _level;
   int _balloons = _minBalloons;
 
-  Future<int> _loadLevel() async {
-    final level =
-        await widget.database.lastDifficultyLevel() ?? minDifficultyLevel;
-    if (mounted) setState(() => _level = level);
-    return level;
-  }
+  Future<int> _loadLevel() async =>
+      await widget.database.lastDifficultyLevel() ?? minDifficultyLevel;
 
   void _start() {
     // Created once here, not in the route builder, which can run again.
@@ -107,6 +103,7 @@ class _BalloonTouchHubState extends State<BalloonTouchHub> {
         LoadingSection<int>(
           load: _loadLevel,
           placeholder: minDifficultyLevel,
+          onLoaded: (level) => setState(() => _level = level),
           builder: (_, _) => _LevelPicker(
             selected: _level ?? minDifficultyLevel,
             onChanged: (level) => setState(() => _level = level),
@@ -201,6 +198,7 @@ class _LevelPicker extends StatelessWidget {
       button: true,
       selected: on,
       label: 'Difficulty Level $n',
+      onTap: () => onChanged(n),
       excludeSemantics: true,
       child: DecoratedBox(
         decoration: BoxDecoration(
