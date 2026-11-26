@@ -184,7 +184,7 @@ class ProgressScreen extends StatelessWidget {
                               ),
                             ),
                             style: TextButton.styleFrom(
-                              minimumSize: const Size(140, 50),
+                              minimumSize: const Size(140, HandsSizes.minTouch),
                             ),
                             child: Text('View history', style: HandsText.link),
                           ),

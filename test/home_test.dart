@@ -37,11 +37,11 @@ void main() {
   testWidgets('Home shows the logo, Patient ID, today and Today\'s plan', (
     tester,
   ) async {
+    final now = DateTime.now();
     final db = await pumpApp(tester);
     final patientId = await db.launch();
     await settle(tester);
 
-    final now = DateTime.now();
     expect(find.bySemanticsLabel('Carle Health'), findsOneWidget);
     expect(find.text('Patient $patientId'), findsOneWidget);
     expect(

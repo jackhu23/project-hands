@@ -275,7 +275,7 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
         onPressed: _leave,
         style: FilledButton.styleFrom(
           backgroundColor: HandsColors.tealMid.withValues(alpha: 0.15),
-          minimumSize: const Size(0, 44),
+          minimumSize: const Size(0, HandsSizes.minTouch),
         ),
         child: Text('Finish', style: HandsText.link),
       ),

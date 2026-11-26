@@ -389,7 +389,10 @@ class _ExerciseCard extends StatelessWidget {
         ],
       ),
       child: placeholder
-          ? CustomPaint(foregroundPainter: _DashedBorder(), child: content)
+          ? CustomPaint(
+              foregroundPainter: _DashedBorder(),
+              child: Semantics(hint: 'Not available yet', child: content),
+            )
           : Material(
               type: MaterialType.transparency,
               child: InkWell(

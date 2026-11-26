@@ -101,7 +101,7 @@ class _SetupScreenState extends State<SetupScreen> {
             onPressed: () => Navigator.of(sheetContext).pop(),
             style: FilledButton.styleFrom(
               backgroundColor: HandsColors.tealMid,
-              minimumSize: const Size(120, 52),
+              minimumSize: const Size(120, HandsSizes.minTouch),
             ),
             child: Text(
               'Done',
