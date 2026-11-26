@@ -106,19 +106,12 @@ class TouchSamples extends Table {
   Set<Column> get primaryKey => {actionId, sequence};
 }
 
-/// Pops ÷ (Pops + Misses); null when there are neither.
-double? accuracy({required int pops, required int misses}) =>
-    pops + misses == 0 ? null : pops / (pops + misses);
-
-/// One row of the history page.
-typedef HistoryRow = ({
-  DateTime startedAt,
-  int difficultyLevel,
-  Duration duration,
-  double? accuracy,
-  int popped,
-  int balloonCount,
-  bool stopped,
+/// An ended Exercise Run with its Trials (by number), Actions and pauses.
+typedef RunRecord = ({
+  ExerciseRunRow run,
+  List<TrialRow> trials,
+  List<ActionRow> actions,
+  List<PauseRow> pauses,
 });
 
 /// The on-device database (ADR 0002).
@@ -314,7 +307,7 @@ class HandsDatabase extends _$HandsDatabase {
   /// The Difficulty Level of the newest Exercise Run, if any.
   Future<int?> lastDifficultyLevel() async {
     final runs = await select(exerciseRuns).get();
-    // Compared in Dart, as in history.
+    // Compared in Dart, as in runs.
     return runs.isEmpty
         ? null
         : runs
@@ -322,52 +315,42 @@ class HandsDatabase extends _$HandsDatabase {
               .difficultyLevel;
   }
 
-  /// Ended Exercise Runs, newest first.
-  Future<List<HistoryRow>> history() async {
-    final popped = trials.id.count(
-      filter: trials.status.equalsValue(TrialStatus.completed),
-    );
-    final query =
-        select(exerciseRuns).join([
-            leftOuterJoin(
-              trials,
-              trials.exerciseRunId.equalsExp(exerciseRuns.id),
-            ),
-          ])
-          ..addColumns([popped])
-          ..where(exerciseRuns.outcome.isNotNull())
-          ..groupBy([exerciseRuns.id]);
-    final outcomeCount = actions.id.count();
-    final counts = <(String, ActionOutcome), int>{
-      for (final row
-          in await (select(actions).join([
-                  innerJoin(trials, trials.id.equalsExp(actions.trialId)),
-                ])
-                ..addColumns([outcomeCount])
-                ..groupBy([trials.exerciseRunId, actions.outcome]))
-              .get())
-        (row.readTable(trials).exerciseRunId, row.readTable(actions).outcome):
-            row.read(outcomeCount)!,
-    };
-    return (await query.get()).map((row) {
-        final run = row.readTable(exerciseRuns);
-        return (
-          startedAt: run.startedAt,
-          difficultyLevel: run.difficultyLevel,
-          accuracy: accuracy(
-            pops: counts[(run.id, ActionOutcome.pop)] ?? 0,
-            misses: counts[(run.id, ActionOutcome.miss)] ?? 0,
+  /// Ended Exercise Runs with their Trials, Actions and pauses, newest
+  /// first. Touch Samples are left in the database.
+  Future<List<RunRecord>> runs() async {
+    // shortcut: loads every Trial, Action and pause on the device; query
+    // per run once histories run to thousands of Exercise Runs.
+    final ended = await (select(
+      exerciseRuns,
+    )..where((r) => r.outcome.isNotNull())).get();
+    final trialsOf = <String, List<TrialRow>>{};
+    final runOfTrial = <String, String>{};
+    for (final t in await (select(
+      trials,
+    )..orderBy([(t) => OrderingTerm(expression: t.number)])).get()) {
+      (trialsOf[t.exerciseRunId] ??= []).add(t);
+      runOfTrial[t.id] = t.exerciseRunId;
+    }
+    final actionsOf = <String, List<ActionRow>>{};
+    for (final a in await select(actions).get()) {
+      (actionsOf[runOfTrial[a.trialId]!] ??= []).add(a);
+    }
+    final pausesOf = <String, List<PauseRow>>{};
+    for (final p in await select(pauses).get()) {
+      (pausesOf[p.exerciseRunId] ??= []).add(p);
+    }
+    return [
+        for (final run in ended)
+          (
+            run: run,
+            trials: trialsOf[run.id] ?? [],
+            actions: actionsOf[run.id] ?? [],
+            pauses: pausesOf[run.id] ?? [],
           ),
-          // shortcut: includes paused time, until pause times are saved.
-          duration: run.endedAt!.difference(run.startedAt),
-          popped: row.read(popped)!,
-          balloonCount: run.balloonCount,
-          stopped: run.outcome == RunOutcome.stopped,
-        );
-      }).toList()
+      ]
       // Sorted in Dart, which compares instants; the stored text follows the
       // wall clock, so a daylight-saving change could misorder it in SQL.
-      ..sort((a, b) => b.startedAt.compareTo(a.startedAt));
+      ..sort((a, b) => b.run.startedAt.compareTo(a.run.startedAt));
   }
 
   /// Deletes every row, including the Patient. Debug builds only.

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 
 import '../database.dart';
 import '../theme.dart';
+import 'metrics.dart';
+import 'session.dart';
 
 const _months = [
   'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', //
@@ -22,8 +24,50 @@ String formatAccuracy(double? accuracy) =>
 /// Minutes and seconds, for example "2:05".
 String formatDuration(Duration d) => '${d.inMinutes}:${_two(d.inSeconds % 60)}';
 
-/// Past Exercise Runs, newest first. The look is provisional until the
-/// design round.
+/// Seconds to two places, for example "1.23 s", or a dash.
+String formatSeconds(Duration? d) =>
+    d == null ? '–' : '${(d.inMicroseconds / 1e6).toStringAsFixed(2)} s';
+
+String _accuracyOf(OutcomeCounts c) =>
+    formatAccuracy(accuracy(pops: c.pops, misses: c.misses));
+
+/// A table with a header row. Each cell is read out with its row and column,
+/// such as "Accuracy, Overall: 75%".
+Widget _table(List<String> columns, List<(String, List<String>)> rows) {
+  Widget cell(String text, {String? label, bool header = false}) => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    child: Text(
+      text,
+      semanticsLabel: label,
+      style: handsText(
+        17,
+        header ? HandsColors.forestSage : HandsColors.charcoal,
+      ),
+    ),
+  );
+  return Table(
+    defaultColumnWidth: const IntrinsicColumnWidth(),
+    children: [
+      TableRow(
+        children: [
+          cell('', header: true),
+          for (final c in columns) cell(c, header: true),
+        ],
+      ),
+      for (final (name, values) in rows)
+        TableRow(
+          children: [
+            cell(name, header: true),
+            for (final (i, v) in values.indexed)
+              cell(v, label: v.isEmpty ? null : '$name, ${columns[i]}: $v'),
+          ],
+        ),
+    ],
+  );
+}
+
+/// Past Exercise Runs, newest first, under a summary of the completed ones.
+/// The look is provisional until the design round.
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key, required this.database});
 
@@ -34,13 +78,13 @@ class HistoryScreen extends StatefulWidget {
 }
 
 class _HistoryScreenState extends State<HistoryScreen> {
-  late var _rows = widget.database.history();
+  late var _runs = widget.database.runs();
 
   Future<void> _clearAll() async {
     await widget.database.clearAll();
     if (!mounted) return;
     setState(() {
-      _rows = widget.database.history();
+      _runs = widget.database.runs();
     });
   }
 
@@ -64,11 +108,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
         ],
       ),
       body: FutureBuilder(
-        future: _rows,
+        future: _runs,
         builder: (context, snapshot) {
-          final rows = snapshot.data;
-          if (rows == null) return const SizedBox.shrink();
-          if (rows.isEmpty) {
+          final runs = snapshot.data;
+          if (runs == null) return const SizedBox.shrink();
+          if (runs.isEmpty) {
             return Center(
               child: Text(
                 'No Exercise Runs yet',
@@ -79,43 +123,152 @@ class _HistoryScreenState extends State<HistoryScreen> {
           return ListView(
             padding: const EdgeInsets.all(24),
             children: [
-              for (final run in rows)
-                ListTile(
-                  title: Text(
-                    formatRunTime(run.startedAt),
-                    style: handsText(20),
-                  ),
-                  subtitle: Text(
-                    '${run.popped} of ${run.balloonCount} balloons popped',
-                    style: handsText(17, HandsColors.forestSage),
-                  ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    spacing: 24,
-                    children: [
-                      if (run.stopped) Text('Stopped', style: handsText(17)),
-                      Text(
-                        'Level ${run.difficultyLevel}',
-                        semanticsLabel:
-                            'Difficulty Level ${run.difficultyLevel}',
-                        style: handsText(17),
-                      ),
-                      Text(
-                        'Accuracy ${formatAccuracy(run.accuracy)}',
-                        style: handsText(17),
-                      ),
-                      Text(
-                        formatDuration(run.duration),
-                        semanticsLabel:
-                            'Duration ${formatDuration(run.duration)}',
-                        style: handsText(20),
-                      ),
-                    ],
-                  ),
-                ),
+              Text(
+                'Summary of completed runs',
+                style: handsText(22, HandsColors.forestSage),
+              ),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: _summary(runs),
+              ),
+              const SizedBox(height: 24),
+              for (final record in runs) _row(record),
             ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _summary(List<RunRecord> runs) {
+    final columns = <String, RunSummary>{
+      'Overall': summarize(runs),
+      for (final MapEntry(key: level, value: summary) in summarizeByLevel(
+        runs,
+      ).entries)
+        'Level $level': summary,
+    };
+    List<String> each(String Function(RunSummary) f) =>
+        columns.values.map(f).toList();
+    return _table(columns.keys.toList(), [
+      ('Runs', each((s) => '${s.runs}')),
+      ('Completed runs', each((s) => '${s.completed}')),
+      ('Stopped runs', each((s) => '${s.stopped}')),
+      ('Accuracy', each((s) => formatAccuracy(s.accuracy))),
+      (
+        'Overlapping Touches per run',
+        each((s) => s.overlappingPerRun?.toStringAsFixed(1) ?? '–'),
+      ),
+      ('Reaction Time', each((s) => formatSeconds(s.reactionTime))),
+      ('Pop touch duration', each((s) => formatSeconds(s.popDuration))),
+    ]);
+  }
+
+  Widget _row(RunRecord record) {
+    final run = record.run;
+    final popped = record.trials
+        .where((t) => t.status == TrialStatus.completed)
+        .length;
+    final duration = formatDuration(runDuration(record));
+    return ListTile(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => RunDetailScreen(record: record),
+        ),
+      ),
+      title: Text(formatRunTime(run.startedAt), style: handsText(20)),
+      subtitle: Text(
+        '$popped of ${run.balloonCount} balloons popped',
+        style: handsText(17, HandsColors.forestSage),
+      ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        spacing: 24,
+        children: [
+          if (run.outcome == RunOutcome.stopped)
+            Text('Stopped', style: handsText(17)),
+          Text(
+            'Level ${run.difficultyLevel}',
+            semanticsLabel: 'Difficulty Level ${run.difficultyLevel}',
+            style: handsText(17),
+          ),
+          Text(
+            'Accuracy ${_accuracyOf(countOutcomes(record.actions))}',
+            style: handsText(17),
+          ),
+          Text(
+            duration,
+            semanticsLabel: 'Duration $duration',
+            style: handsText(20),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// One Exercise Run: each Trial's Zone, Reaction Time and outcome counts,
+/// then the run's totals.
+class RunDetailScreen extends StatelessWidget {
+  const RunDetailScreen({super.key, required this.record});
+
+  final RunRecord record;
+
+  @override
+  Widget build(BuildContext context) {
+    final run = record.run;
+    final details = trialDetails(record);
+    final total = countOutcomes(record.actions);
+    List<String> counts(OutcomeCounts c) => [
+      '${c.pops}',
+      '${c.misses}',
+      '${c.overlapping}',
+      _accuracyOf(c),
+    ];
+    return Scaffold(
+      backgroundColor: HandsColors.warmCream,
+      appBar: AppBar(
+        backgroundColor: HandsColors.warmCream,
+        title: Text(
+          '${formatRunTime(run.startedAt)}, Level ${run.difficultyLevel}',
+          style: handsText(28, HandsColors.forestSage),
+        ),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        // Sideways too, so every column is reachable on a phone.
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: _table(
+            [
+              'Zone',
+              'Reaction Time',
+              'Pops',
+              'Misses',
+              'Overlapping Touches',
+              'Accuracy',
+            ],
+            [
+              for (final d in details)
+                (
+                  'Trial ${d.number}',
+                  [
+                    '${d.zone}',
+                    formatSeconds(d.reactionTime),
+                    ...counts(d.counts),
+                  ],
+                ),
+              (
+                'Total',
+                [
+                  '',
+                  'mean ${formatSeconds(mean([...details.map((d) => d.reactionTime).nonNulls]))}',
+                  ...counts(total),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
