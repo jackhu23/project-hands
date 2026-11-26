@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>HANDS · Progress (Carle colour)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#00546B}a:hover{color:#003A4E}
+</style>
+</helmet>
+<div style="width: 1280px; height: 800px; box-sizing: border-box; background: #FFFFFF; font-family: Nunito, system-ui, sans-serif; color: #0B2D3C; display: flex; flex-direction: column">
+  <header style="background: linear-gradient(105deg, #0A8199 0%, #00627C 45%, #003A4E 100%); color: #FFFFFF; padding: 24px 48px 22px; display: flex; flex-direction: column; gap: 18px">
+    <div style="display: flex; align-items: center; justify-content: space-between">
+      <div style="display: flex; align-items: center; gap: 18px">
+        <a href="carle2-home.dc.html" aria-label="Back to exercises" style="width: 56px; height: 56px; border-radius: 28px; background: rgba(255,255,255,0.16); border: 1px solid rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; color: #FFFFFF">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"></path></svg>
+        </a>
+        <div style="display: flex; flex-direction: column">
+          <span style="font-size: 14px; font-weight: 800; letter-spacing: 1.5px; color: #FFC9D2">EXERCISE</span>
+          <h1 style="margin: 0; font-size: 38px; font-weight: 900">Balloon Touch</h1>
+        </div>
+      </div>
+      <img src="../../../assets/logos/carle-health-white.png" alt="Carle Health" style="height: 34px; width: auto">
+    </div>
+    <nav style="display: flex; gap: 10px; padding-left: 74px" aria-label="Balloon Touch sections">
+      <a href="carle2-balloon-touch.dc.html" style="height: 50px; padding: 0 26px; border-radius: 25px; border: 1.5px solid rgba(255,255,255,0.5); color: #FFFFFF; text-decoration: none; font-size: 18px; font-weight: 800; display: flex; align-items: center">Practice</a>
+      <a href="carle2-progress.dc.html" style="height: 50px; padding: 0 26px; border-radius: 25px; background: #FFFFFF; color: #003A4E; text-decoration: none; font-size: 18px; font-weight: 800; display: flex; align-items: center">My progress</a>
+    </nav>
+  </header>
+
+  <main style="flex-grow: 1; padding: 24px 48px 30px; display: flex; flex-direction: column; gap: 20px; min-height: 0">
+    <div style="display: flex; align-items: center; justify-content: space-between">
+      <div style="display: flex; gap: 10px" role="group" aria-label="Filter by Difficulty Level">
+        <sc-for list="{{ filters }}" as="f" hint-placeholder-count="3">
+          <button onClick="{{ f.pick }}" aria-pressed="{{ f.pressed }}" style="{{ f.style }}">{{ f.label }}</button>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px">
+      <div style="background: linear-gradient(120deg, #0A8199 0%, #003A4E 100%); color: #FFFFFF; border-radius: 12px; padding: 20px 26px; display: flex; flex-direction: column; gap: 2px; box-shadow: 0 8px 20px rgba(0,58,78,0.22)">
+        <span style="font-size: 15px; font-weight: 800; letter-spacing: 1.5px; color: #FFC9D2">ACCURACY</span>
+        <span style="font-size: 50px; font-weight: 900">{{ acc }}</span>
+      </div>
+      <div style="background: #E5EBEE; border-radius: 12px; padding: 20px 26px; display: flex; flex-direction: column; gap: 2px">
+        <span style="font-size: 15px; font-weight: 800; letter-spacing: 1.5px; color: #C8102E">REACTION TIME</span>
+        <span style="font-size: 50px; font-weight: 900; color: #00546B">{{ rt }}</span>
+      </div>
+      <div style="background: #FFFFFF; border: 1.5px solid #D4DEE3; border-radius: 12px; padding: 20px 26px; display: flex; flex-direction: column; gap: 2px">
+        <span style="font-size: 15px; font-weight: 800; letter-spacing: 1.5px; color: #C8102E">RUNS COMPLETED</span>
+        <span style="font-size: 50px; font-weight: 900; color: #00546B">{{ runsN }}</span>
+      </div>
+    </div>
+
+    <div style="flex-grow: 1; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 20px; min-height: 0">
+      <section style="grid-column: span 3; border: 1.5px solid #D4DEE3; border-radius: 12px; padding: 20px 26px 14px; display: flex; flex-direction: column; gap: 10px" aria-label="Accuracy over time">
+        <h2 style="margin: 0; font-size: 22px; font-weight: 800; color: #00657F">Accuracy over time</h2>
+        <div style="flex-grow: 1; display: flex; align-items: flex-end; gap: 18px; border-bottom: 2px solid #D4DEE3; padding: 0 8px">
+          <sc-for list="{{ runs }}" as="r" hint-placeholder-count="5">
+            <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px">
+              <span style="font-size: 17px; font-weight: 900">{{ r.acc }}%</span>
+              <span style="{{ r.bar }}"></span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display: flex; gap: 18px; padding: 0 8px">
+          <sc-for list="{{ runs }}" as="r" hint-placeholder-count="5">
+            <span style="flex: 1; text-align: center; font-size: 14px; font-weight: 700; color: #3F5966">{{ r.short }} · L{{ r.lv }}</span>
+          </sc-for>
+        </div>
+      </section>
+
+      <section style="grid-column: span 2; display: flex; flex-direction: column; gap: 14px; min-height: 0">
+        <div style="background: #F9E6E9; border-radius: 12px; padding: 16px 20px; display: flex; gap: 14px; align-items: flex-start">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#C8102E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+          <div style="display: flex; flex-direction: column; gap: 2px">
+            <span style="font-size: 14px; font-weight: 800; letter-spacing: 1.5px; color: #A50D26">FROM YOUR THERAPIST</span>
+            <span style="font-size: 17px; color: #7A0A1C">[THERAPIST NOTE — e.g. try Level 3 next week]</span>
+          </div>
+        </div>
+        <div style="flex-grow: 1; border: 1.5px solid #D4DEE3; border-radius: 12px; padding: 14px 20px; display: flex; flex-direction: column; overflow: hidden; min-height: 0">
+          <h2 style="margin: 0 0 4px; font-size: 20px; font-weight: 800; color: #00657F">Recent runs</h2>
+          <sc-for list="{{ recent }}" as="r" hint-placeholder-count="4">
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid #E5EBEE">
+              <div style="display: flex; flex-direction: column">
+                <span style="font-size: 16px; font-weight: 800">{{ r.date }}</span>
+                <span style="font-size: 14px; color: #3F5966">Level {{ r.lv }} · {{ r.time }}</span>
+              </div>
+              <span style="font-size: 19px; font-weight: 900; color: #00546B">{{ r.acc }}%</span>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { f: 'all' }; }
+  renderVals() {
+    const all = [
+      { date: '17 Nov, 15:50', short: '17 Nov', lv: 2, acc: 56, time: '0:18' },
+      { date: '17 Nov, 15:50', short: '17 Nov', lv: 2, acc: 100, time: '0:06' },
+      { date: '17 Nov, 15:51', short: '17 Nov', lv: 2, acc: 12, time: '0:16' },
+      { date: '17 Nov, 16:16', short: '17 Nov', lv: 2, acc: 50, time: '0:13' },
+      { date: '26 Nov, 01:32', short: '26 Nov', lv: 4, acc: 63, time: '0:10' }
+    ];
+    const sums = { all: ['34%', '2.54 s', 5], l2: ['31%', '2.66 s', 4], l4: ['63%', '2.08 s', 1] };
+    const F = this.state.f;
+    const list = all.filter((r) => F === 'all' || (F === 'l2' && r.lv === 2) || (F === 'l4' && r.lv === 4));
+    const runs = list.map((r, i) => ({ ...r, bar: 'display: block; width: 100%; max-width: 70px; border-radius: 8px 8px 0 0; height: ' + Math.max(6, Math.round(r.acc * 1.9)) + 'px; background: ' +
+      (i === list.length - 1 ? 'linear-gradient(180deg, #F0566F 0%, #C8102E 100%)' : 'linear-gradient(180deg, #0A8199 0%, #003A4E 100%)') }));
+    const filters = [['all', 'All levels'], ['l2', 'Level 2'], ['l4', 'Level 4']].map(([id, label]) => ({
+      label, pressed: F === id ? 'true' : 'false',
+      style: 'height: 50px; padding: 0 22px; border-radius: 25px; font-family: inherit; font-size: 17px; font-weight: 800; ' +
+        (F === id ? 'background: #003A4E; color: #FFFFFF; border: 2px solid #003A4E' : 'background: #FFFFFF; color: #00546B; border: 2px solid #C5D3DA'),
+      pick: () => this.setState({ f: id })
+    }));
+    const s = sums[F];
+    return { filters, runs, recent: runs.slice().reverse().slice(0, 4), acc: s[0], rt: s[1], runsN: s[2] };
+  }
+}
+</script>
+</body>
+</html>
