@@ -91,10 +91,19 @@ void main() {
     await openHub(tester);
 
     expect(find.byType(BalloonTouchHub), findsOneWidget);
-    for (final text in ['EXERCISE', 'Balloon Touch', 'Practice']) {
+    for (final text in [
+      'EXERCISE',
+      'Balloon Touch',
+      'Practice',
+      'My progress',
+    ]) {
       expect(find.text(text), findsOneWidget);
     }
-    expect(find.text('My progress'), findsNothing, reason: 'a later issue');
+    expect(
+      isSemantics(isSelected: true)
+          .matches(tester.getSemantics(find.text('Practice')), {}),
+      isTrue,
+    );
     expect(find.bySemanticsLabel('Carle Health'), findsOneWidget);
   });
 

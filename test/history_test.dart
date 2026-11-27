@@ -33,14 +33,14 @@ Future<void> popBalloon(WidgetTester tester) async {
   await settle(tester);
 }
 
-/// Opens history over the current screen. Home has no way there until My
-/// progress lands; only "View history" after a run does.
+/// Opens All runs over the current screen; my_progress_test covers the way
+/// there through My progress.
 Future<void> openHistory(WidgetTester tester) async {
   final db = tester.widget<HandsApp>(find.byType(HandsApp)).database;
   tester
       .state<NavigatorState>(find.byType(Navigator))
       .push(
-        MaterialPageRoute<void>(builder: (_) => HistoryScreen(database: db)),
+        MaterialPageRoute<void>(builder: (_) => AllRunsScreen(database: db)),
       );
   await settle(tester);
 }

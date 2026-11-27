@@ -162,6 +162,34 @@ abstract final class HandsSizes {
   static const selectedShadowBlur = 16.0;
   static const selectedShadowDy = 6.0;
 
+  // My progress (progress mockup)
+  static const progressPadTop = 24.0;
+  static const progressPadBottom = 30.0;
+  static const progressGap = 20.0;
+  // Below this tab height the tab scrolls: padding, chips and stat cards
+  // take about 300 px, leaving progressLowerMinH for the chart.
+  static const progressMinH = 600.0;
+  static const progressLowerMinH = 300.0; // chart and Recent runs when it does
+  static const filterChipPadH = 22.0;
+  static const statPadH = 26.0;
+  static const statPadV = 20.0;
+  static const statShadowBlur = 20.0;
+  static const statShadowDy = 8.0;
+  static const chartPadTop = 20.0;
+  static const chartPadBottom = 14.0;
+  static const chartColumnGap = 18.0;
+  static const chartColumnMaxW = 70.0;
+  static const chartColumnMinW = 96.0; // a column and its gap, before scrolling
+  static const chartColumnMinH = 6.0;
+  static const chartValueH = 28.0; // value label above a column
+  static const chartRadius = 8.0;
+  static const chartAxisW = 2.0;
+  static const noteGap = 14.0;
+  static const sideCardPadH = 20.0; // therapist note and Recent runs
+  static const notePadV = 16.0;
+  static const noteIcon = 30.0;
+  static const rowPadV = 7.0;
+
   static const balloonW = 134.0;
   static const balloonH = 178.0; // includes string; hit area is the body only
 }
@@ -170,6 +198,7 @@ abstract final class HandsSizes {
 abstract final class HandsMotion {
   static const entrance = Duration(milliseconds: 300);
   static const stagger = Duration(milliseconds: 80);
+  static const countUp = Duration(milliseconds: 380); // numbers and columns
 }
 
 /// Text styles, in the bundled Nunito.
@@ -220,6 +249,19 @@ abstract final class HandsText {
   static final caption = _n(16, FontWeight.w400, HandsColors.inkMuted);
   static final tab = _n(18, FontWeight.w800, HandsColors.white);
   static final link = _n(20, FontWeight.w800, HandsColors.tealDeep);
+  static final filterChip = _n(17, FontWeight.w800, HandsColors.tealLink);
+  static final statLabel = _n(15, FontWeight.w800, HandsColors.red, ls: 1.5);
+  static final chartValue = _n(17, FontWeight.w900, HandsColors.ink);
+  static final chartLabel = _n(14, FontWeight.w700, HandsColors.inkMuted);
+  static final noteLabel = _n(
+    14,
+    FontWeight.w800,
+    HandsColors.redDeep,
+    ls: 1.5,
+  );
+  static final note = _n(17, FontWeight.w400, HandsColors.redDarkest);
+  static final rowTitle = _n(16, FontWeight.w800, HandsColors.ink);
+  static final rowValue = _n(19, FontWeight.w900, HandsColors.tealLink);
 }
 
 /// App-wide ThemeData. Screens still use the gradients and tokens above.

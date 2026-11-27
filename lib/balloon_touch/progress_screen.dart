@@ -180,7 +180,7 @@ class ProgressScreen extends StatelessWidget {
                             onPressed: () => Navigator.of(context).push(
                               MaterialPageRoute<void>(
                                 builder: (_) =>
-                                    HistoryScreen(database: database),
+                                    AllRunsScreen(database: database),
                               ),
                             ),
                             style: TextButton.styleFrom(

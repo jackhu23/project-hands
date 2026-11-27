@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../database.dart';
 import '../theme.dart';
+import '../widgets/gradient_header.dart';
+import '../widgets/loading_section.dart';
 import 'metrics.dart';
 import 'session.dart';
 
@@ -64,33 +66,48 @@ Widget _table(List<String> columns, List<(String, List<String>)> rows) {
   );
 }
 
-/// Past Exercise Runs, newest first, under a summary of the completed ones.
-/// The look is provisional until the design round.
-class HistoryScreen extends StatefulWidget {
-  const HistoryScreen({super.key, required this.database});
+/// A gradient-headed page under My progress with [child] below.
+Widget _page(String eyebrow, String title, Widget child) => Scaffold(
+  body: Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      GradientHeader(eyebrow: eyebrow, title: title),
+      Expanded(child: SafeArea(top: false, child: child)),
+    ],
+  ),
+);
+
+/// A bordered card, as on My progress.
+Widget _card(Widget child) => Container(
+  padding: const EdgeInsets.all(HandsSizes.panelPad),
+  decoration: BoxDecoration(
+    border: Border.all(color: HandsColors.border, width: HandsSizes.borderW),
+    borderRadius: BorderRadius.circular(HandsSizes.radiusCard),
+  ),
+  child: child,
+);
+
+/// Every ended Exercise Run, newest first, under a summary of the completed
+/// ones.
+class AllRunsScreen extends StatefulWidget {
+  const AllRunsScreen({super.key, required this.database});
 
   final HandsDatabase database;
 
   @override
-  State<HistoryScreen> createState() => _HistoryScreenState();
+  State<AllRunsScreen> createState() => _AllRunsScreenState();
 }
 
-class _HistoryScreenState extends State<HistoryScreen> {
-  late final _runs = widget.database.runs();
-
+class _AllRunsScreenState extends State<AllRunsScreen> {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: HandsColors.white,
-      appBar: AppBar(
-        backgroundColor: HandsColors.white,
-        title: Text('History', style: HandsText.sectionTitle),
-      ),
-      body: FutureBuilder(
-        future: _runs,
-        builder: (context, snapshot) {
-          final runs = snapshot.data;
-          if (runs == null) return const SizedBox.shrink();
+    return _page(
+      'BALLOON TOUCH',
+      'All runs',
+      LoadingSection<List<RunRecord>>(
+        load: widget.database.runs,
+        placeholder: const [],
+        builder: (context, runs) {
           if (runs.isEmpty) {
             return Center(
               child: Text(
@@ -100,17 +117,28 @@ class _HistoryScreenState extends State<HistoryScreen> {
             );
           }
           return ListView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.symmetric(
+              horizontal: HandsSizes.pagePadH,
+              vertical: HandsSizes.progressPadTop,
+            ),
             children: [
-              Text(
-                'Summary of completed runs',
-                style: HandsText.body.copyWith(color: HandsColors.tealHeading),
+              _card(
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  spacing: HandsSizes.controlGap,
+                  children: [
+                    Text(
+                      'Summary of completed runs',
+                      style: HandsText.sectionTitle,
+                    ),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: _summary(runs),
+                    ),
+                  ],
+                ),
               ),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: _summary(runs),
-              ),
-              const SizedBox(height: 24),
+              const SizedBox(height: HandsSizes.gap),
               for (final record in runs) _row(record),
             ],
           );
@@ -155,25 +183,40 @@ class _HistoryScreenState extends State<HistoryScreen> {
           builder: (_) => RunDetailScreen(record: record),
         ),
       ),
-      title: Text(formatRunTime(run.startedAt), style: HandsText.body),
+      minTileHeight: HandsSizes.minTouch + HandsSizes.gapS,
+      shape: const Border(bottom: BorderSide(color: HandsColors.panel)),
+      title: Text(formatRunTime(run.startedAt), style: HandsText.rowTitle),
       subtitle: Text(
         '$popped of ${run.balloonCount} balloons popped',
-        style: HandsText.body.copyWith(color: HandsColors.tealHeading),
+        style: HandsText.caption,
       ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         spacing: 24,
         children: [
           if (run.outcome == RunOutcome.stopped)
-            Text('Stopped', style: HandsText.body),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: HandsSizes.pillPadH,
+                vertical: HandsSizes.pillPadV,
+              ),
+              decoration: BoxDecoration(
+                color: HandsColors.panel,
+                borderRadius: BorderRadius.circular(HandsSizes.radiusPill),
+              ),
+              child: Text(
+                'Stopped',
+                style: HandsText.pill.copyWith(color: HandsColors.inkMuted),
+              ),
+            ),
           Text(
             'Level ${run.difficultyLevel}',
             semanticsLabel: 'Difficulty Level ${run.difficultyLevel}',
             style: HandsText.body,
           ),
           Text(
-            'Accuracy ${_accuracyOf(countOutcomes(record.actions))}',
-            style: HandsText.body,
+            'Accuracy ${formatAccuracy(runAccuracy(record))}',
+            style: HandsText.rowValue,
           ),
           Text(
             duration,
@@ -204,48 +247,47 @@ class RunDetailScreen extends StatelessWidget {
       '${c.overlapping}',
       _accuracyOf(c),
     ];
-    return Scaffold(
-      backgroundColor: HandsColors.white,
-      appBar: AppBar(
-        backgroundColor: HandsColors.white,
-        title: Text(
-          '${formatRunTime(run.startedAt)}, Level ${run.difficultyLevel}',
-          style: HandsText.sectionTitle,
+    return _page(
+      'RUN DETAIL',
+      '${formatRunTime(run.startedAt)}, Level ${run.difficultyLevel}',
+      SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(
+          horizontal: HandsSizes.pagePadH,
+          vertical: HandsSizes.progressPadTop,
         ),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        // Sideways too, so every column is reachable on a phone.
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: _table(
-            [
-              'Zone',
-              'Reaction Time',
-              'Pops',
-              'Misses',
-              'Overlapping Touches',
-              'Accuracy',
-            ],
-            [
-              for (final d in details)
+        child: _card(
+          // Sideways too, so every column is reachable on a narrow tablet.
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: _table(
+              [
+                'Zone',
+                'Reaction Time',
+                'Pops',
+                'Misses',
+                'Overlapping Touches',
+                'Accuracy',
+              ],
+              [
+                for (final d in details)
+                  (
+                    'Trial ${d.number}',
+                    [
+                      '${d.zone}',
+                      formatSeconds(d.reactionTime),
+                      ...counts(d.counts),
+                    ],
+                  ),
                 (
-                  'Trial ${d.number}',
+                  'Total',
                   [
-                    '${d.zone}',
-                    formatSeconds(d.reactionTime),
-                    ...counts(d.counts),
+                    '',
+                    'mean ${formatSeconds(mean([...details.map((d) => d.reactionTime).nonNulls]))}',
+                    ...counts(total),
                   ],
                 ),
-              (
-                'Total',
-                [
-                  '',
-                  'mean ${formatSeconds(mean([...details.map((d) => d.reactionTime).nonNulls]))}',
-                  ...counts(total),
-                ],
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
