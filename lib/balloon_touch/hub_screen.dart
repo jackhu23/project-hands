@@ -65,10 +65,19 @@ class _BalloonTouchHubState extends State<BalloonTouchHub> {
           onTab: (tab) => setState(() => _tab = tab),
         ),
         Expanded(
-          // My progress is built afresh each time, so it loads the latest runs.
-          child: _tab == 1
-              ? MyProgressTab(database: widget.database)
-              : _practice(),
+          // Practice stays mounted, so its level never reloads behind an
+          // enabled Start; My progress is built afresh to load the latest runs.
+          child: IndexedStack(
+            index: _tab,
+            sizing: StackFit.expand,
+            children: [
+              _practice(),
+              if (_tab == 1)
+                MyProgressTab(database: widget.database)
+              else
+                const SizedBox(),
+            ],
+          ),
         ),
       ],
     ),
@@ -111,8 +120,7 @@ class _BalloonTouchHubState extends State<BalloonTouchHub> {
         LoadingSection<int>(
           load: _loadLevel,
           placeholder: minDifficultyLevel,
-          // Coming back from My progress keeps the level the Patient chose.
-          onLoaded: (level) => setState(() => _level ??= level),
+          onLoaded: (level) => setState(() => _level = level),
           builder: (_, _) => _LevelPicker(
             selected: _level ?? minDifficultyLevel,
             onChanged: (level) => setState(() => _level = level),

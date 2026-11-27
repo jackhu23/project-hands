@@ -132,7 +132,7 @@ List<RunRecord> atLevel(Iterable<RunRecord> runs, int? level) => [
 /// One column of the Accuracy-over-time chart.
 typedef AccuracyPoint = ({DateTime startedAt, int level, double accuracy});
 
-/// A point per completed run, oldest first.
+/// A point per completed run with any Pops or Misses, oldest first.
 List<AccuracyPoint> accuracySeries(Iterable<RunRecord> runs) => [
   for (final r in runs)
     if (r.run.outcome == RunOutcome.completed)

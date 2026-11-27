@@ -115,6 +115,14 @@ void main() {
     await tapAndSettle(tester, find.text('Level 2'));
     expect(stat('Accuracy 50%'), findsOneWidget);
     expect(stat('Runs completed 1'), findsOneWidget);
+    expect(find.textContaining(RegExp(r'· L\d$')), findsOneWidget);
+    expect(find.text('$today · L2'), findsOneWidget, reason: 'the chart');
+    expect(
+      find.textContaining(RegExp(r'^Level \d · ')),
+      findsOneWidget,
+      reason: 'Recent runs',
+    );
+    expect(find.textContaining(RegExp(r'^Level 2 · ')), findsOneWidget);
 
     await tapAndSettle(tester, find.text('Level 3'));
     expect(stat('Accuracy –'), findsOneWidget);
@@ -148,15 +156,27 @@ void main() {
     tester,
   ) async {
     await openHub(tester);
-    for (var i = 0; i < 5; i++) {
-      await oneRun(tester);
+    for (final level in [1, 2, 3, 4]) {
+      await oneRun(tester, level: level);
     }
+    await oneRun(tester, stop: true);
     await openProgress(tester);
 
-    expect(
-      find.textContaining(RegExp(r'^Level 1 · \d+:\d\d$')),
-      findsNWidgets(4),
+    Finder recent(int level, [String end = '']) => find.textContaining(
+      RegExp(
+        '^Level $level · '
+        r'\d+:\d\d'
+        '$end'
+        r'$',
+      ),
     );
+    expect(recent(1), findsNothing, reason: 'the oldest of five');
+    final rows = [recent(1, ' · Stopped'), recent(4), recent(3), recent(2)];
+    for (final row in rows) {
+      expect(row, findsOneWidget);
+    }
+    final ys = [for (final row in rows) tester.getCenter(row).dy];
+    expect(ys, orderedEquals([...ys]..sort()), reason: 'newest first');
 
     await tapAndSettle(tester, find.text('See all runs →'));
     expect(find.text('All runs'), findsOneWidget);
