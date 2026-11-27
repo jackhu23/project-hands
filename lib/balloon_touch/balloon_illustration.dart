@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 
 import '../theme.dart';
@@ -26,16 +28,14 @@ Rect balloonBodyRect(Size size, double bodyWidth) => Rect.fromCenter(
   height: bodyWidth * 1.25,
 );
 
+/// The highlight stroke along the body's upper left, from the mockup.
 Path _highlightPath(Rect rect) {
   Offset p(double x, double y) =>
       Offset(rect.left + x * rect.width, rect.top + y * rect.height);
-  final start = p(0.53, 0.07), c1 = p(0.98, 0.14), c2 = p(0.99, 0.44);
-  final mid = p(0.8, 0.74), c3 = p(0.86, 0.43), c4 = p(0.77, 0.21);
+  final start = p(0.22, 0.30), c = p(0.28, 0.14), end = p(0.48, 0.11);
   return Path()
     ..moveTo(start.dx, start.dy)
-    ..cubicTo(c1.dx, c1.dy, c2.dx, c2.dy, mid.dx, mid.dy)
-    ..cubicTo(c3.dx, c3.dy, c4.dx, c4.dy, start.dx, start.dy)
-    ..close();
+    ..quadraticBezierTo(c.dx, c.dy, end.dx, end.dy);
 }
 
 Path _knotPath(Rect rect) {
@@ -48,9 +48,12 @@ Path _knotPath(Rect rect) {
     ..close();
 }
 
-/// The demo's balloon: body, highlight, knot and, unless [halo] is false, the
-/// halo. Body height is 1.25 × [bodyWidth], the knot is 0.085 × [bodyWidth],
-/// and the body is centred in a square 1.75 × [bodyWidth] wide.
+/// The balloon: body, highlight, knot, string and, unless [halo] is false,
+/// the halo. Body height is 1.25 × [bodyWidth], the knot is 0.085 ×
+/// [bodyWidth], and the body is centred in a square 1.75 × [bodyWidth] wide;
+/// the string hangs just past it. While [motion] runs (0 to 1, repeating) the
+/// highlight shines and the string sways; both are paint-only, so the body,
+/// the only part that pops, never moves.
 class BalloonIllustration extends StatelessWidget {
   const BalloonIllustration({
     super.key,
@@ -58,11 +61,13 @@ class BalloonIllustration extends StatelessWidget {
     this.halo = true,
     this.pressed = false,
     this.label = 'Balloon illustration',
+    this.motion,
   });
 
   final double bodyWidth;
   final bool halo, pressed;
   final String label;
+  final Animation<double>? motion;
 
   @override
   Widget build(BuildContext context) {
@@ -71,22 +76,37 @@ class BalloonIllustration extends StatelessWidget {
       label: label,
       child: CustomPaint(
         size: Size.square(side),
-        painter: _BalloonPainter(bodyWidth, halo: halo, pressed: pressed),
+        painter: _BalloonPainter(
+          bodyWidth,
+          halo: halo,
+          pressed: pressed,
+          motion: motion,
+        ),
       ),
     );
   }
 }
 
 class _BalloonPainter extends CustomPainter {
-  _BalloonPainter(this.bodyWidth, {required this.halo, required this.pressed});
+  _BalloonPainter(
+    this.bodyWidth, {
+    required this.halo,
+    required this.pressed,
+    this.motion,
+  }) : super(repaint: motion);
 
   final double bodyWidth;
   final bool halo, pressed;
+  final Animation<double>? motion;
+
+  /// The share of each [motion] cycle the shine takes to cross the highlight.
+  static const _shineShare = 0.4;
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = size.center(Offset.zero);
     final w = bodyWidth, knot = bodyWidth * 0.085;
+    final t = motion?.value;
 
     if (halo) {
       canvas.drawCircle(
@@ -104,38 +124,71 @@ class _BalloonPainter extends CustomPainter {
       );
     }
 
-    // Body and knot stack vertically, shifted down by half the knot as in the
-    // demo, which leaves the body centred.
     final body = balloonBodyRect(size, w);
     final bodyPath = balloonBodyPath(body);
 
+    // The string, kept short enough to stay inside the play area's margin.
+    final sway = t == null ? 0.0 : w * 0.03 * sin(2 * pi * t);
+    final from = Offset(center.dx, body.bottom + knot), length = w * 0.18;
     canvas.drawPath(
-      bodyPath.shift(Offset(0, pressed ? 2 : 6)),
+      Path()
+        ..moveTo(from.dx, from.dy)
+        ..quadraticBezierTo(
+          from.dx - w * 0.07 + sway,
+          from.dy + length * 0.45,
+          from.dx + w * 0.02 + sway * 0.6,
+          from.dy + length,
+        ),
       Paint()
-        ..color = HandsColors.ink.withValues(alpha: pressed ? 0.08 : 0.16)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2
+        ..color = HandsColors.inkMuted,
+    );
+
+    canvas.drawPath(
+      bodyPath.shift(Offset(0, pressed ? 4 : 12)),
+      Paint()
+        ..color = HandsColors.redShadow.withValues(alpha: pressed ? 0.15 : 0.25)
         ..maskFilter = MaskFilter.blur(
           BlurStyle.normal,
-          Shadow.convertRadiusToSigma(pressed ? 3 : 9),
+          Shadow.convertRadiusToSigma(pressed ? 6 : 16),
         ),
     );
     canvas.drawPath(
       bodyPath,
-      Paint()..color = pressed ? HandsColors.redShadow : HandsColors.red,
+      pressed
+          ? (Paint()..color = HandsColors.redShadow)
+          : (Paint()..shader = HandsGradients.balloon.createShader(body)),
     );
+    final highlight = _highlightPath(body);
+    final stroke = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = w * 0.076;
     canvas.drawPath(
-      _highlightPath(body),
-      Paint()
-        ..color = pressed
-            ? HandsColors.white.withValues(alpha: 0.22)
-            : HandsColors.redLight,
+      highlight,
+      stroke
+        ..color = HandsColors.white.withValues(alpha: pressed ? 0.22 : 0.55),
     );
-    canvas.drawPath(
-      bodyPath,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = pressed ? 3 : 1
-        ..color = HandsColors.redShadow,
-    );
+    // The shine: a bright stretch that runs along the highlight, then rests.
+    if (t != null && t < _shineShare && !pressed) {
+      final s = t / _shineShare;
+      final metric = highlight.computeMetrics().first;
+      final head = metric.length * 1.4 * s;
+      canvas.drawPath(
+        metric.extractPath(head - metric.length * 0.4, head),
+        stroke..color = HandsColors.white.withValues(alpha: 0.9 * sin(pi * s)),
+      );
+    }
+    if (pressed) {
+      canvas.drawPath(
+        bodyPath,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 3
+          ..color = HandsColors.redShadow,
+      );
+    }
     canvas.drawPath(
       _knotPath(Rect.fromLTWH(center.dx - knot / 2, body.bottom, knot, knot)),
       Paint()..color = HandsColors.redShadow,
@@ -144,5 +197,8 @@ class _BalloonPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_BalloonPainter old) =>
-      old.bodyWidth != bodyWidth || old.halo != halo || old.pressed != pressed;
+      old.bodyWidth != bodyWidth ||
+      old.halo != halo ||
+      old.pressed != pressed ||
+      old.motion != motion;
 }

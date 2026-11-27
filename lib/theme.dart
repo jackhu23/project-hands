@@ -190,6 +190,20 @@ abstract final class HandsSizes {
   static const noteIcon = 30.0;
   static const rowPadV = 7.0;
 
+  // Run stage (run-stage mockup)
+  static const runBandH = 104.0; // top band: logo, progress pill, Pause
+  static const runBandPadH = 36.0;
+  static const runLogoH = 30.0;
+  static const runPillW = 420.0;
+  static const runPillH = 64.0;
+  static const runPillPadH = 24.0;
+  static const runBarH = 14.0;
+  static const pausePadH = 28.0;
+  static const pauseIcon = 22.0;
+  static const stageInset = 24.0; // play area to the screen's sides and bottom
+  static const burst = 200.0; // Pop burst, before scaling
+  static const missRing = 56.0;
+
   static const balloonW = 134.0;
   static const balloonH = 178.0; // includes string; hit area is the body only
 }
@@ -199,6 +213,9 @@ abstract final class HandsMotion {
   static const entrance = Duration(milliseconds: 300);
   static const stagger = Duration(milliseconds: 80);
   static const countUp = Duration(milliseconds: 380); // numbers and columns
+  static const burst = Duration(milliseconds: 500); // the next balloon waits
+  static const missRing = Duration(milliseconds: 300);
+  static const balloonLife = Duration(seconds: 3); // shine and string sway
 }
 
 /// Text styles, in the bundled Nunito.
@@ -262,6 +279,7 @@ abstract final class HandsText {
   static final note = _n(17, FontWeight.w400, HandsColors.redDarkest);
   static final rowTitle = _n(16, FontWeight.w800, HandsColors.ink);
   static final rowValue = _n(19, FontWeight.w900, HandsColors.tealLink);
+  static final runCount = _n(22, FontWeight.w900, HandsColors.ink);
 }
 
 /// App-wide ThemeData. Screens still use the gradients and tokens above.
