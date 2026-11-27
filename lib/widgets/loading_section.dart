@@ -50,7 +50,8 @@ class _LoadingSectionState<T> extends State<LoadingSection<T>> {
         return Skeletonizer(child: widget.builder(context, widget.placeholder));
       }
       if (snapshot.hasError) return _failure();
-      return widget.builder(context, snapshot.requireData);
+      // Not requireData: T may be nullable, and null is a loaded value.
+      return widget.builder(context, snapshot.data as T);
     },
   );
 
