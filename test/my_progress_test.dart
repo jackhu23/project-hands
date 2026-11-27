@@ -152,6 +152,50 @@ void main() {
     );
   });
 
+  testWidgets('a chart too wide to fit shows whole columns, never a cut one', (
+    tester,
+  ) async {
+    addTearDown(tester.view.reset);
+    await openHub(tester);
+    for (var i = 0; i < 8; i++) {
+      await oneRun(tester);
+    }
+    for (final size in tabletSizes) {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      await openProgress(tester);
+
+      final labels = find.text('$today · L1');
+      final chart = tester.getRect(
+        find
+            .ancestor(of: labels.first, matching: find.byType(Scrollable))
+            .first,
+      );
+      for (final label in labels.evaluate()) {
+        final column = tester.getRect(
+          find
+              .ancestor(
+                of: find.byWidget(label.widget),
+                matching: find.byType(SizedBox),
+              )
+              .first,
+        );
+        final inside =
+            column.left >= chart.left - 0.5 &&
+            column.right <= chart.right + 0.5;
+        final outside =
+            column.right <= chart.left + 0.5 ||
+            column.left >= chart.right - 0.5;
+        expect(
+          inside || outside,
+          isTrue,
+          reason: 'at $size: $column in $chart',
+        );
+      }
+      await tapAndSettle(tester, find.text('Practice'));
+    }
+  });
+
   testWidgets('Recent runs lists the latest four, then See all runs', (
     tester,
   ) async {

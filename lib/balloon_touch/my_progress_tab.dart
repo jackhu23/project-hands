@@ -406,10 +406,10 @@ class _Chart extends StatelessWidget {
     }
     return LayoutBuilder(
       builder: (context, box) {
-        final slot = max(
-          box.maxWidth / points.length,
-          HandsSizes.chartColumnMinW,
-        );
+        // Fill the width with a whole number of columns, so the first view
+        // never cuts the oldest visible one in half.
+        final fit = max(1, box.maxWidth ~/ HandsSizes.chartColumnMinW);
+        final slot = box.maxWidth / min(fit, points.length);
         return SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           reverse: true,
