@@ -116,3 +116,26 @@ Map<int, RunSummary> summarizeByLevel(Iterable<RunRecord> runs) => {
 
 Duration? mean(List<Duration> ds) =>
     ds.isEmpty ? null : ds.reduce((a, b) => a + b) ~/ ds.length;
+
+/// One run's Accuracy over all its Actions.
+double? runAccuracy(RunRecord r) {
+  final c = countOutcomes(r.actions);
+  return accuracy(pops: c.pops, misses: c.misses);
+}
+
+/// The runs at Difficulty Level [level], or every run when it's null.
+List<RunRecord> atLevel(Iterable<RunRecord> runs, int? level) => [
+  for (final r in runs)
+    if (level == null || r.run.difficultyLevel == level) r,
+];
+
+/// One column of the Accuracy-over-time chart.
+typedef AccuracyPoint = ({DateTime startedAt, int level, double accuracy});
+
+/// A point per completed run with any Pops or Misses, oldest first.
+List<AccuracyPoint> accuracySeries(Iterable<RunRecord> runs) => [
+  for (final r in runs)
+    if (r.run.outcome == RunOutcome.completed)
+      if (runAccuracy(r) case final a?)
+        (startedAt: r.run.startedAt, level: r.run.difficultyLevel, accuracy: a),
+]..sort((a, b) => a.startedAt.compareTo(b.startedAt));

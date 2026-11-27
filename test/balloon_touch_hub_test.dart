@@ -91,10 +91,19 @@ void main() {
     await openHub(tester);
 
     expect(find.byType(BalloonTouchHub), findsOneWidget);
-    for (final text in ['EXERCISE', 'Balloon Touch', 'Practice']) {
+    for (final text in [
+      'EXERCISE',
+      'Balloon Touch',
+      'Practice',
+      'My progress',
+    ]) {
       expect(find.text(text), findsOneWidget);
     }
-    expect(find.text('My progress'), findsNothing, reason: 'a later issue');
+    expect(
+      isSemantics(isSelected: true)
+          .matches(tester.getSemantics(find.text('Practice')), {}),
+      isTrue,
+    );
     expect(find.bySemanticsLabel('Carle Health'), findsOneWidget);
   });
 
@@ -270,6 +279,34 @@ void main() {
     await tester.pump();
     expect(startEnabled(tester), isTrue);
     expect(selected(tester, 3), isTrue);
+  });
+
+  testWidgets('a trip to My progress keeps the chosen level and Start', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final db = SlowDatabase();
+    addTearDown(db.close);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: BalloonTouchHub(database: db, patientId: 'P-test'),
+      ),
+    );
+    db.levels.single.complete(2);
+    await settle(tester);
+    await tester.tap(level(3));
+    await settle(tester);
+
+    await tester.tap(find.text('My progress'));
+    await settle(tester);
+    await tester.tap(find.text('Practice'));
+    await tester.pump();
+
+    expect(db.levels, hasLength(1), reason: 'the level is not loaded again');
+    expect(selected(tester, 3), isTrue);
+    expect(startEnabled(tester), isTrue);
   });
 
   testWidgets('the Practice tab fits every tablet size', (tester) async {

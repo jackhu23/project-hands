@@ -6,12 +6,13 @@ import '../widgets/gradient_header.dart';
 import '../widgets/line_icon.dart';
 import '../widgets/loading_section.dart';
 import 'exercise_screen.dart';
+import 'my_progress_tab.dart';
 import 'session.dart';
 
 const _minBalloons = 1, _maxBalloons = 30;
 
-/// The Balloon Touch hub, open on its Practice tab: Watch how, run setup and
-/// Start. My progress arrives in a later issue.
+/// The Balloon Touch hub. It opens on Practice (Watch how, run setup and
+/// Start); My progress shows how the Patient's runs went.
 class BalloonTouchHub extends StatefulWidget {
   const BalloonTouchHub({
     super.key,
@@ -31,6 +32,7 @@ class _BalloonTouchHubState extends State<BalloonTouchHub> {
   /// a run never starts at a level the Patient can't see.
   int? _level;
   int _balloons = _minBalloons;
+  int _tab = 0;
 
   Future<int> _loadLevel() async =>
       await widget.database.lastDifficultyLevel() ?? minDifficultyLevel;
@@ -55,34 +57,49 @@ class _BalloonTouchHubState extends State<BalloonTouchHub> {
   Widget build(BuildContext context) => Scaffold(
     body: Column(
       children: [
-        const GradientHeader(
+        GradientHeader(
           eyebrow: 'EXERCISE',
           title: 'Balloon Touch',
-          tabs: ['Practice'],
-          selectedTab: 0,
+          tabs: const ['Practice', 'My progress'],
+          selectedTab: _tab,
+          onTab: (tab) => setState(() => _tab = tab),
         ),
         Expanded(
-          child: SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(
-                HandsSizes.pagePadH,
-                HandsSizes.hubPadTop,
-                HandsSizes.pagePadH,
-                HandsSizes.hubPadBottom,
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                spacing: HandsSizes.gap,
-                children: [
-                  const Expanded(child: _WatchHowCard()),
-                  Expanded(child: _setupCard()),
-                ],
-              ),
-            ),
+          // Practice stays mounted, so its level never reloads behind an
+          // enabled Start; My progress is built afresh to load the latest runs.
+          child: IndexedStack(
+            index: _tab,
+            sizing: StackFit.expand,
+            children: [
+              _practice(),
+              if (_tab == 1)
+                MyProgressTab(database: widget.database)
+              else
+                const SizedBox(),
+            ],
           ),
         ),
       ],
+    ),
+  );
+
+  Widget _practice() => SafeArea(
+    top: false,
+    child: Padding(
+      padding: const EdgeInsets.fromLTRB(
+        HandsSizes.pagePadH,
+        HandsSizes.hubPadTop,
+        HandsSizes.pagePadH,
+        HandsSizes.hubPadBottom,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: HandsSizes.gap,
+        children: [
+          const Expanded(child: _WatchHowCard()),
+          Expanded(child: _setupCard()),
+        ],
+      ),
     ),
   );
 
