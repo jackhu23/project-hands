@@ -48,6 +48,7 @@ RunRecord record({
   String id = 'r',
   int level = 1,
   RunOutcome outcome = RunOutcome.completed,
+  int start = 0,
   int end = 60000,
   List<TrialRow> trials = const [],
   List<ActionRow> actions = const [],
@@ -61,7 +62,7 @@ RunRecord record({
     balloonCount: 3,
     areaWidth: 1000,
     areaHeight: 600,
-    startedAt: t0,
+    startedAt: at(start),
     endedAt: at(end),
     outcome: outcome,
   ),
@@ -218,4 +219,65 @@ void main() {
       expect(accuracy(pops: 0, misses: 0), isNull);
     },
   );
+
+  test('the level filter keeps one Difficulty Level, or all for null', () {
+    final runs = [
+      record(id: 'a', level: 2),
+      record(id: 'b', level: 1),
+      record(id: 'c', level: 2, outcome: RunOutcome.stopped),
+    ];
+
+    expect(atLevel(runs, 2).map((r) => r.run.id), ['a', 'c']);
+    expect(atLevel(runs, 4), isEmpty);
+    expect(atLevel(runs, null).map((r) => r.run.id), ['a', 'b', 'c']);
+  });
+
+  test('the chart series has one point per completed run, oldest first', () {
+    final runs = [
+      record(
+        id: 'new',
+        level: 3,
+        start: 2000,
+        trials: [trial('n1', run: 'new')],
+        actions: [action('n1', pop, 2100, 2200)],
+      ),
+      record(
+        id: 'stopped',
+        start: 1500,
+        outcome: RunOutcome.stopped,
+        trials: [trial('s1', run: 'stopped')],
+        actions: [action('s1', miss, 1600, 1700)],
+      ),
+      record(
+        id: 'old',
+        level: 2,
+        start: 1000,
+        trials: [trial('o1', run: 'old')],
+        actions: [
+          action('o1', miss, 1100, 1150),
+          action('o1', overlapping, 1160, 1170),
+          action('o1', pop, 1200, 1300),
+        ],
+      ),
+    ];
+
+    expect(accuracySeries(runs), [
+      (startedAt: at(1000), level: 2, accuracy: 0.5),
+      (startedAt: at(2000), level: 3, accuracy: 1.0),
+    ]);
+    expect(accuracySeries([]), isEmpty);
+  });
+
+  test("a run's Accuracy counts its own Pops and Misses", () {
+    expect(
+      runAccuracy(
+        record(
+          trials: [trial('t')],
+          actions: [action('t', miss, 0, 10), action('t', pop, 20, 30)],
+        ),
+      ),
+      0.5,
+    );
+    expect(runAccuracy(record()), isNull);
+  });
 }
