@@ -33,6 +33,7 @@ abstract final class HandsColors {
   static const borderControl = Color(0xFFC5D3DA); // unselected chips
   static const onTealMuted = Color(0xFFD3E8EE); // secondary text on gradient
   static const shadow = Color(0x1F003A4E); // card drop shadow, tealDeep at 12%
+  static const shadowStrong = Color(0x47003A4E); // selected level, Start: 28%
 
   // Translucent white on the gradient (patient chip, Plan panel)
   static const onTealFill = Color(0x1FFFFFFF);
@@ -141,6 +142,26 @@ abstract final class HandsSizes {
   static const logoH = 40.0;
   static const iconSize = 84.0; // red line icons on cards
 
+  // Exercise hub (Balloon Touch mockup)
+  static const headerPadTop = 24.0;
+  static const headerPadBottom = 22.0;
+  static const headerGap = 18.0; // title row to tabs, back button to title
+  static const headerLogoH = 34.0;
+  static const tabPadH = 26.0;
+  static const hubPadTop = 30.0;
+  static const hubPadBottom = 34.0;
+  static const panelPad = 28.0;
+  static const panelGap = 18.0;
+  static const controlGap = 10.0;
+  static const controlBorderW = 2.0;
+  static const zoneDiagramW = 56.0;
+  static const zoneDiagramH = 40.0;
+  static const stepperValueW = 80.0;
+  static const stepperIcon = 30.0;
+  static const startIcon = 30.0;
+  static const selectedShadowBlur = 16.0;
+  static const selectedShadowDy = 6.0;
+
   static const balloonW = 134.0;
   static const balloonH = 178.0; // includes string; hit area is the body only
 }
@@ -194,6 +215,10 @@ abstract final class HandsText {
   static final button = _n(30, FontWeight.w900, HandsColors.white);
   static final buttonSmall = _n(20, FontWeight.w900, HandsColors.tealDeep);
   static final metric = _n(50, FontWeight.w900, HandsColors.tealLink);
+  static final levelNumber = _n(24, FontWeight.w900, HandsColors.tealLink);
+  static final stepperValue = _n(42, FontWeight.w900, HandsColors.ink);
+  static final caption = _n(16, FontWeight.w400, HandsColors.inkMuted);
+  static final tab = _n(18, FontWeight.w800, HandsColors.white);
   static final link = _n(20, FontWeight.w800, HandsColors.tealDeep);
 }
 

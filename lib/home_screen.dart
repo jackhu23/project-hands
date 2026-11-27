@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 
-import 'balloon_touch/setup_screen.dart';
+import 'balloon_touch/hub_screen.dart';
 import 'database.dart';
 import 'theme.dart';
 import 'therapist_screen.dart';
+import 'widgets/line_icon.dart';
 
 // Red line icons from the Home mockup (docs/design/reference_mockups).
 const _balloonIcon =
@@ -19,15 +19,6 @@ const _personIcon =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>';
 const _lockIcon =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
-const _arrowIcon =
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
-
-Widget _icon(String svg, Color color, double height) => SvgPicture.string(
-  svg,
-  height: height,
-  theme: SvgTheme(currentColor: color),
-  excludeFromSemantics: true,
-);
 
 /// Home, "Today's plan": the hero with the Plan, and a card per Exercise.
 class HomeScreen extends StatelessWidget {
@@ -53,10 +44,9 @@ class HomeScreen extends StatelessWidget {
         title: 'Balloon Touch',
         body: 'Pop each balloon with one finger.',
         cta: 'Start',
-        // Until the Balloon Touch hub lands.
         onTap: () => _open(
           context,
-          () => SetupScreen(database: database, patientId: patientId),
+          () => BalloonTouchHub(database: database, patientId: patientId),
         ),
       ),
       const _ExerciseCard(
@@ -194,7 +184,7 @@ class _Hero extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         spacing: HandsSizes.gapXS,
                         children: [
-                          _icon(
+                          lineIcon(
                             _personIcon,
                             HandsColors.white,
                             HandsSizes.chipIcon,
@@ -226,7 +216,7 @@ class _Hero extends StatelessWidget {
                       ),
                     ),
                   ),
-                  icon: _icon(
+                  icon: lineIcon(
                     _lockIcon,
                     HandsColors.tealDeep,
                     HandsSizes.chipIcon,
@@ -342,7 +332,7 @@ class _ExerciseCard extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _icon(icon, HandsColors.red, HandsSizes.iconSize),
+                      lineIcon(icon, HandsColors.red, HandsSizes.iconSize),
                       const SizedBox(height: HandsSizes.gap),
                       Text(eyebrow, style: HandsText.eyebrow),
                       const SizedBox(height: HandsSizes.gapXS),
@@ -365,7 +355,11 @@ class _ExerciseCard extends StatelessWidget {
                   spacing: HandsSizes.gapXS,
                   children: [
                     Text(cta, style: HandsText.link),
-                    _icon(_arrowIcon, HandsColors.tealDeep, HandsSizes.ctaIcon),
+                    lineIcon(
+                      arrowIcon,
+                      HandsColors.tealDeep,
+                      HandsSizes.ctaIcon,
+                    ),
                   ],
                 ),
               ),

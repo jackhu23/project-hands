@@ -23,9 +23,9 @@ Future<void> startRun(WidgetTester tester, {int balloons = 3}) async {
   await tester.tap(find.text('Balloon Touch'));
   await settle(tester);
   for (var i = 1; i < balloons; i++) {
-    await tester.tap(find.byTooltip('Increase repetitions'));
+    await tester.tap(find.byTooltip('More balloons'));
   }
-  await tester.tap(find.text('Start Now'));
+  await tester.tap(find.text('Start'));
   await settle(tester);
 }
 
@@ -77,7 +77,7 @@ double progress(WidgetTester tester) => tester
     .value!;
 
 void main() {
-  testWidgets('Start Now opens the Exercise screen with one balloon', (
+  testWidgets('Start opens the Exercise screen with one balloon', (
     tester,
   ) async {
     await startRun(tester);
@@ -246,7 +246,7 @@ void main() {
 
     await tester.tap(find.text('Start New Session'));
     await settle(tester);
-    expect(find.text('Start Now'), findsOneWidget);
+    expect(find.text('Start'), findsOneWidget);
   });
 
   // Portrait and landscape tablets, in logical pixels.
@@ -260,7 +260,7 @@ void main() {
       await pumpApp(tester, null, size);
       await tester.tap(find.text('Balloon Touch'));
       await settle(tester);
-      await tester.tap(find.text('Start Now'));
+      await tester.tap(find.text('Start'));
       await settle(tester);
 
       final area = tester.getRect(
@@ -404,7 +404,7 @@ void main() {
       expect(find.text('2 / 3'), findsOneWidget);
     });
 
-    testWidgets('Start New Session from a paused Session returns to setup', (
+    testWidgets('Start New Session from a paused Session returns to the hub', (
       tester,
     ) async {
       await startRun(tester);
@@ -413,9 +413,9 @@ void main() {
 
       await tapAndSettle(tester, find.text('Start New Session'));
 
-      expect(find.text('Start Now'), findsOneWidget);
+      expect(find.text('Start'), findsOneWidget);
       expect(find.text('Resume Session'), findsNothing);
-      await tapAndSettle(tester, find.text('Start Now'));
+      await tapAndSettle(tester, find.text('Start'));
       expect(find.text('0 / 3'), findsOneWidget, reason: 'a new Session');
       expect(balloon, findsOneWidget);
     });
@@ -564,19 +564,13 @@ void main() {
       expect((await sample(tester, 1)).toSet(), hasLength(greaterThan(1)));
     });
 
-    testWidgets('setup and progress illustrations stay still', (tester) async {
+    testWidgets('the progress illustration stays still', (tester) async {
       await startRun(tester, balloons: 1);
       await touch(tester, bodyCenter(tester));
       final still = find.byType(BalloonIllustration);
       final size = tester.getRect(still);
       await tester.pump(const Duration(seconds: 1));
       expect(tester.getRect(still), size);
-
-      await tester.tap(find.text('Start New Session'));
-      await settle(tester);
-      final setupSize = tester.getRect(still);
-      await tester.pump(const Duration(seconds: 1));
-      expect(tester.getRect(still), setupSize);
     });
 
     // The body's widest point is 0.42 down it, 12 px above its centre.
@@ -602,5 +596,17 @@ void main() {
       await touch(tester, rightEdge(tester, 59.5));
       expect(find.text('0 / 3'), findsOneWidget);
     });
+  });
+
+  test('balloon body is 1.25 times as tall as it is wide', () {
+    const rect = Rect.fromLTWH(10, 20, 120, 150);
+    final bounds = balloonBodyPath(rect).getBounds();
+
+    expect(bounds.left, closeTo(10, 0.5));
+    expect(bounds.top, closeTo(20, 0.5));
+    expect(bounds.width, closeTo(120, 0.5));
+    expect(bounds.height, closeTo(150, 0.5));
+    expect(balloonBodyPath(rect).contains(rect.center), isTrue);
+    expect(balloonBodyPath(rect).contains(rect.topLeft), isFalse);
   });
 }
