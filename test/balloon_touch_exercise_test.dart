@@ -175,6 +175,21 @@ void main() {
     expect(find.text('0 of 3'), findsOneWidget);
   });
 
+  testWidgets('a Miss leaves a red dot that fades over 1.5 s', (tester) async {
+    await startRun(tester);
+    final off = offBody(tester);
+    await tester.tapAt(off);
+    await tester.pump();
+
+    final dot = find.byType(MissDot);
+    expect(tester.getCenter(dot), sameSpot(off));
+    await tester.pump(const Duration(milliseconds: 1000));
+    expect(dot, findsOneWidget, reason: 'it outlasts the ring');
+    await tester.pump(const Duration(milliseconds: 510));
+    await tester.pump();
+    expect(dot, findsNothing);
+  });
+
   testWidgets('a Pop shows no Miss ring', (tester) async {
     await startRun(tester);
     await tester.tapAt(bodyCenter(tester));

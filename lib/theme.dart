@@ -15,7 +15,7 @@ abstract final class HandsColors {
   static const tealHeading = Color(0xFF00657F); // card and section titles
   static const tealLink = Color(0xFF00546B); // links, metric numbers
 
-  // Carle red (labels, icons, highlights; never for errors or Misses)
+  // Carle red (labels, icons, highlights; never for errors; a Miss's dot)
   static const red = Color(0xFFC8102E); // eyebrow labels, line icons
   static const redDeep = Color(0xFFA50D26); // text on pink pills
   static const redDarkest = Color(0xFF7A0A1C); // body text on pink note card
@@ -200,6 +200,7 @@ abstract final class HandsSizes {
   static const pauseIcon = 22.0;
   static const stageInset = 24.0; // play area to the screen's sides and bottom
   static const missRing = 56.0;
+  static const missDot = 18.0;
 
   static const balloonW = 134.0;
   static const balloonH = 178.0; // includes string; hit area is the body only
@@ -215,6 +216,7 @@ abstract final class HandsMotion {
     milliseconds: 500,
   ); // a new balloon springs in
   static const missRing = Duration(milliseconds: 300);
+  static const missDot = Duration(milliseconds: 1500); // lingers to show where
   // Whole cycles of every idle float layer (3.4, 6.2 and 4.6 s), so it loops seamlessly.
   static const balloonFloat = Duration(milliseconds: 2424200);
 }

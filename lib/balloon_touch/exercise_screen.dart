@@ -46,7 +46,7 @@ class _ExerciseScreenState extends State<ExerciseScreen>
   ({Offset center, double bodyWidth, double? floatAt})? _burst;
 
   /// Where the last Miss lifted off, and a count so each Miss restarts it.
-  Offset? _miss;
+  Offset? _miss, _missDot;
   var _misses = 0;
 
   @override
@@ -85,7 +85,7 @@ class _ExerciseScreenState extends State<ExerciseScreen>
   // and ring go too, so the next balloon never waits on a burst not shown.
   void _pause() => setState(() {
     _session.pause();
-    _burst = _miss = null;
+    _burst = _miss = _missDot = null;
   });
 
   void _resume() => setState(_session.resume);
@@ -162,7 +162,7 @@ class _ExerciseScreenState extends State<ExerciseScreen>
             floatAt: _reduceMotion ? null : _life.value,
           );
         case ActionOutcome.miss:
-          _miss = event.localPosition;
+          _miss = _missDot = event.localPosition;
           _misses++;
         case ActionOutcome.overlappingTouch || null:
       }
@@ -240,8 +240,14 @@ class _ExerciseScreenState extends State<ExerciseScreen>
     // Like the demo, a balloon appears once the area has a size.
     if (_burst == null) _session.presentNextTrial(area);
     final trial = _session.exerciseRun.activeTrial;
-    Widget at(Offset c, double side, Widget child) =>
-        Positioned(left: c.dx - side / 2, top: c.dy - side / 2, child: child);
+    // The child's key goes on the Positioned so a sibling coming or going
+    // doesn't restart its animation.
+    Widget at(Offset c, double side, Widget child) => Positioned(
+      key: child.key,
+      left: c.dx - side / 2,
+      top: c.dy - side / 2,
+      child: child,
+    );
     return Stack(
       children: [
         const SizedBox.expand(),
@@ -287,6 +293,15 @@ class _ExerciseScreenState extends State<ExerciseScreen>
             MissRing(
               key: ValueKey(_misses),
               onDone: () => setState(() => _miss = null),
+            ),
+          ),
+        if (_missDot case final c?)
+          at(
+            c,
+            HandsSizes.missDot,
+            MissDot(
+              key: ValueKey('dot $_misses'),
+              onDone: () => setState(() => _missDot = null),
             ),
           ),
       ],
@@ -686,6 +701,31 @@ class MissRing extends StatelessWidget {
             color: HandsColors.inkMuted.withValues(alpha: 0.35),
             width: 3,
           ),
+        ),
+      ),
+    ),
+  );
+}
+
+/// A red dot where a Miss lifted off, holding then fading over 1.5 s so
+/// the Patient can see where they touched.
+class MissDot extends StatelessWidget {
+  const MissDot({super.key, required this.onDone});
+
+  final VoidCallback onDone;
+
+  @override
+  Widget build(BuildContext context) => _Once(
+    duration: HandsMotion.missDot,
+    onDone: onDone,
+    builder: (context, t) => Opacity(
+      opacity: 1 - Curves.easeIn.transform(t),
+      child: Container(
+        width: HandsSizes.missDot,
+        height: HandsSizes.missDot,
+        decoration: const BoxDecoration(
+          shape: BoxShape.circle,
+          color: HandsColors.red,
         ),
       ),
     ),
