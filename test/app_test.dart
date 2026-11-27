@@ -6,6 +6,6 @@ void main() {
   testWidgets('app launches to the home screen', (tester) async {
     await pumpApp(tester);
 
-    expect(find.text('Balloon Touch'), findsOneWidget);
+    expect(find.text('My Games'), findsOneWidget);
   });
 }

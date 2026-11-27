@@ -15,10 +15,12 @@ class ExerciseScreen extends StatefulWidget {
     super.key,
     required this.session,
     required this.database,
+    this.onHome,
   });
 
   final Session session;
   final HandsDatabase database;
+  final VoidCallback? onHome;
 
   @override
   State<ExerciseScreen> createState() => _ExerciseScreenState();
@@ -27,6 +29,7 @@ class ExerciseScreen extends StatefulWidget {
 class _ExerciseScreenState extends State<ExerciseScreen> {
   Session get _session => widget.session;
   final _balloonKey = GlobalKey();
+  bool _returningHome = false;
 
   late final AppLifecycleListener _lifecycle;
 
@@ -60,8 +63,11 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
     _pause();
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) =>
-            ProgressScreen(session: _session, database: widget.database),
+        builder: (_) => ProgressScreen(
+          session: _session,
+          database: widget.database,
+          onHome: widget.onHome == null ? null : _returnHome,
+        ),
       ),
     );
     if (!mounted) return;
@@ -71,6 +77,13 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
     } else {
       setState(() {});
     }
+  }
+
+  // Keep the paused Session alive when the progress page returns to Home.
+  void _returnHome() {
+    _returningHome = true;
+    _session.pause();
+    widget.onHome?.call();
   }
 
   bool _onBody(Offset global) {
@@ -120,8 +133,11 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
     if (_session.status == SessionStatus.completed) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(
-          builder: (_) =>
-              ProgressScreen(session: _session, database: widget.database),
+          builder: (_) => ProgressScreen(
+            session: _session,
+            database: widget.database,
+            onHome: widget.onHome,
+          ),
         ),
       );
     }
@@ -134,7 +150,7 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
     // The system back gesture abandons the run, so it is saved as stopped.
     return PopScope(
       onPopInvokedWithResult: (didPop, _) {
-        if (didPop) _session.stop();
+        if (didPop && !_returningHome) _session.stop();
       },
       child: Scaffold(
         backgroundColor: HandsColors.warmCream,

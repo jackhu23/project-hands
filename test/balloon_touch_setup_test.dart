@@ -8,7 +8,8 @@ import 'test_app.dart';
 
 Future<void> openSetup(WidgetTester tester) async {
   await pumpApp(tester);
-  await tester.tap(find.text('Balloon Touch'));
+  await tester.ensureVisible(find.text('Start Now'));
+  await tester.tap(find.text('Start Now'));
   await tester.pumpAndSettle();
 }
 
@@ -44,25 +45,6 @@ bool enabled(WidgetTester tester, String tooltip) =>
     null;
 
 void main() {
-  testWidgets('home screen shows one square Balloon Touch button top-left', (
-    tester,
-  ) async {
-    await pumpApp(tester);
-
-    final scaffold = tester.widget<Scaffold>(find.byType(Scaffold));
-    expect(scaffold.backgroundColor, Colors.white);
-    final button = find.ancestor(
-      of: find.text('Balloon Touch'),
-      matching: find.byType(OutlinedButton),
-    );
-    expect(button, findsOneWidget);
-    final rect = tester.getRect(button);
-    expect(rect.width, rect.height);
-    expect(rect.width, greaterThanOrEqualTo(200));
-    expect(rect.left, lessThan(100));
-    expect(rect.top, lessThan(100));
-  });
-
   testWidgets('setup shows the demo layout and the back button returns home', (
     tester,
   ) async {
@@ -81,8 +63,8 @@ void main() {
 
     await tester.tap(find.byTooltip('Back'));
     await tester.pumpAndSettle();
-    expect(find.text('Start Now'), findsNothing);
-    expect(find.text('Balloon Touch'), findsOneWidget);
+    expect(find.text('My Games'), findsOneWidget);
+    expect(find.text('Balloon Pop'), findsOneWidget);
   });
 
   testWidgets('system back gesture returns home from setup', (tester) async {
@@ -91,8 +73,8 @@ void main() {
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
 
-    expect(find.text('Start Now'), findsNothing);
-    expect(find.text('Balloon Touch'), findsOneWidget);
+    expect(find.text('My Games'), findsOneWidget);
+    expect(find.text('Balloon Pop'), findsOneWidget);
   });
 
   testWidgets('count starts at 1 and stays within 1 to 30', (tester) async {

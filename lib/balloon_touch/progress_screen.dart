@@ -16,10 +16,12 @@ class ProgressScreen extends StatelessWidget {
     super.key,
     required this.session,
     required this.database,
+    this.onHome,
   });
 
   final Session session;
   final HandsDatabase database;
+  final VoidCallback? onHome;
 
   @override
   Widget build(BuildContext context) {
@@ -176,11 +178,18 @@ class ProgressScreen extends StatelessWidget {
                               ),
                             ),
                           ),
+                          if (onHome != null)
+                            TextButton(
+                              onPressed: onHome,
+                              child: Text('Back to Home', style: handsText(20)),
+                            ),
                           TextButton(
                             onPressed: () => Navigator.of(context).push(
                               MaterialPageRoute<void>(
-                                builder: (_) =>
-                                    HistoryScreen(database: database),
+                                builder: (_) => HistoryScreen(
+                                  database: database,
+                                  patientId: session.patientId,
+                                ),
                               ),
                             ),
                             style: TextButton.styleFrom(

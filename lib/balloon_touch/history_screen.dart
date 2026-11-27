@@ -25,22 +25,23 @@ String formatDuration(Duration d) => '${d.inMinutes}:${_two(d.inSeconds % 60)}';
 /// Past Exercise Runs, newest first. The look is provisional until the
 /// design round.
 class HistoryScreen extends StatefulWidget {
-  const HistoryScreen({super.key, required this.database});
+  const HistoryScreen({super.key, required this.database, this.patientId});
 
   final HandsDatabase database;
+  final String? patientId;
 
   @override
   State<HistoryScreen> createState() => _HistoryScreenState();
 }
 
 class _HistoryScreenState extends State<HistoryScreen> {
-  late var _rows = widget.database.history();
+  late var _rows = widget.database.history(patientId: widget.patientId);
 
   Future<void> _clearAll() async {
     await widget.database.clearAll();
     if (!mounted) return;
     setState(() {
-      _rows = widget.database.history();
+      _rows = widget.database.history(patientId: widget.patientId);
     });
   }
 

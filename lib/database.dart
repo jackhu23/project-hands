@@ -322,13 +322,14 @@ class HandsDatabase extends _$HandsDatabase {
               .difficultyLevel;
   }
 
-  /// Ended Exercise Runs, newest first.
-  Future<List<HistoryRow>> history() async {
+  /// Ended Exercise Runs, newest first; optionally for one Patient.
+  Future<List<HistoryRow>> history({String? patientId}) async {
     final popped = trials.id.count(
       filter: trials.status.equalsValue(TrialStatus.completed),
     );
     final query =
         select(exerciseRuns).join([
+            innerJoin(sessions, sessions.id.equalsExp(exerciseRuns.sessionId)),
             leftOuterJoin(
               trials,
               trials.exerciseRunId.equalsExp(exerciseRuns.id),
@@ -337,6 +338,7 @@ class HandsDatabase extends _$HandsDatabase {
           ..addColumns([popped])
           ..where(exerciseRuns.outcome.isNotNull())
           ..groupBy([exerciseRuns.id]);
+    if (patientId != null) query.where(sessions.patientId.equals(patientId));
     final outcomeCount = actions.id.count();
     final counts = <(String, ActionOutcome), int>{
       for (final row

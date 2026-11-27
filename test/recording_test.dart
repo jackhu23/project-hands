@@ -28,7 +28,7 @@ Future<void> startRun(
   tester.view.physicalSize = const Size(1280, 800);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
-  await tapAndSettle(tester, find.text('Balloon Touch'));
+  await tapAndSettle(tester, find.text('Start Now'));
   for (var i = 1; i < balloons; i++) {
     await tester.tap(find.byTooltip('Increase repetitions'));
   }
@@ -289,7 +289,7 @@ void main() {
 
     await tester.pumpWidget(const SizedBox());
     await pumpApp(tester, db);
-    await tapAndSettle(tester, find.text('Balloon Touch'));
+    await tapAndSettle(tester, find.text('Start Now'));
 
     expect(find.bySemanticsLabel('Difficulty Level 3'), findsOneWidget);
   });

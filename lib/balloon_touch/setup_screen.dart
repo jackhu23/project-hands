@@ -16,10 +16,14 @@ class SetupScreen extends StatefulWidget {
     super.key,
     required this.database,
     required this.patientId,
+    this.onSessionStarted,
+    this.onHome,
   });
 
   final HandsDatabase database;
   final String patientId;
+  final ValueChanged<Session>? onSessionStarted;
+  final VoidCallback? onHome;
 
   @override
   State<SetupScreen> createState() => _SetupScreenState();
@@ -57,10 +61,14 @@ class _SetupScreenState extends State<SetupScreen> {
       difficultyLevel: _difficultyLevel.value,
       onChange: widget.database.saveSession,
     );
+    widget.onSessionStarted?.call(session);
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) =>
-            ExerciseScreen(session: session, database: widget.database),
+        builder: (_) => ExerciseScreen(
+          session: session,
+          database: widget.database,
+          onHome: widget.onHome,
+        ),
       ),
     );
   }

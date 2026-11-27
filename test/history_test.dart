@@ -22,7 +22,7 @@ Future<void> startRun(WidgetTester tester) async {
   tester.view.physicalSize = const Size(1280, 800);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
-  await tapAndSettle(tester, find.text('Balloon Touch'));
+  await tapAndSettle(tester, find.text('Start Now'));
   await tapAndSettle(tester, find.text('Start Now'));
 }
 
@@ -33,7 +33,7 @@ Future<void> popBalloon(WidgetTester tester) async {
 }
 
 Future<void> openHistoryFromHome(WidgetTester tester) async {
-  await tapAndSettle(tester, find.text('History'));
+  await tapAndSettle(tester, find.text('View Results'));
 }
 
 /// Closes the app and launches it again on the same database.

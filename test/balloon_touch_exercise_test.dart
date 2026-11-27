@@ -20,7 +20,7 @@ Future<void> startRun(WidgetTester tester, {int balloons = 3}) async {
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   await pumpApp(tester);
-  await tester.tap(find.text('Balloon Touch'));
+  await tester.tap(find.text('Start Now'));
   await settle(tester);
   for (var i = 1; i < balloons; i++) {
     await tester.tap(find.byTooltip('Increase repetitions'));
@@ -261,7 +261,7 @@ void main() {
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
       await pumpApp(tester);
-      await tester.tap(find.text('Balloon Touch'));
+      await tester.tap(find.text('Start Now'));
       await settle(tester);
       await tester.tap(find.text('Start Now'));
       await settle(tester);
