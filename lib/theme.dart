@@ -20,7 +20,8 @@ abstract final class HandsColors {
   static const redDeep = Color(0xFFA50D26); // text on pink pills
   static const redDarkest = Color(0xFF7A0A1C); // body text on pink note card
   static const redLight = Color(0xFFF0566F); // balloon highlight
-  static const redShadow = Color(0xFF8E0B21); // balloon edge and knot
+  static const redShadow = Color(0xFF8E0B21); // balloon shading
+  static const balloonOutline = Color(0xFF3A0D16); // balloon outline, string
   static const redOnTeal = Color(0xFFFFC9D2); // eyebrow labels on the gradient
 
   // Neutrals
@@ -201,7 +202,7 @@ abstract final class HandsSizes {
   static const pausePadH = 28.0;
   static const pauseIcon = 22.0;
   static const stageInset = 24.0; // play area to the screen's sides and bottom
-  static const burst = 200.0; // Pop burst, before scaling
+  static const burst = 200.0; // Pop burst's box; shards fly past it
   static const missRing = 56.0;
 
   static const balloonW = 134.0;

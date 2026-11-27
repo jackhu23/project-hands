@@ -124,8 +124,8 @@ void main() {
     await startRun(tester, balloons: 10);
     for (var i = 0; i < 10; i++) {
       final c = bodyCenter(tester);
-      // Body, knot and string at the largest pulse.
-      final drawn = Rect.fromLTRB(c.dx - 62, c.dy - 78, c.dx + 62, c.dy + 112);
+      // Body and knot at the largest pulse; the string may be cut off.
+      final drawn = Rect.fromLTRB(c.dx - 62, c.dy - 78, c.dx + 62, c.dy + 138);
       expect(playArea(tester).intersect(drawn), drawn, reason: '#$i');
       await touch(tester, c);
     }

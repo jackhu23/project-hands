@@ -469,8 +469,9 @@ class _OnceState extends State<_Once> with SingleTickerProviderStateMixin {
   );
 }
 
-/// A Pop's burst: a red ring and eight teal rays that grow from 0.4 to 1.5
-/// and fade out over 500 ms. Under reduce motion it only fades.
+/// A Pop's burst: the balloon breaks into red shards that fly out, spin,
+/// drop and fade over 500 ms, with teal streaks. Under reduce motion the
+/// shards stay put and only fade.
 class PopBurst extends StatelessWidget {
   const PopBurst({super.key, required this.onDone});
 
@@ -482,50 +483,89 @@ class PopBurst extends StatelessWidget {
     return _Once(
       duration: HandsMotion.burst,
       onDone: onDone,
-      builder: (context, t) {
-        final eased = Curves.easeOut.transform(t);
-        return Opacity(
-          opacity: 1 - eased,
-          child: Transform.scale(
-            scale: still ? 1 : 0.4 + 1.1 * eased,
-            child: const CustomPaint(
-              size: Size.square(HandsSizes.burst),
-              painter: _BurstPainter(),
-            ),
-          ),
-        );
-      },
+      builder: (context, t) => CustomPaint(
+        size: const Size.square(HandsSizes.burst),
+        painter: _BurstPainter(t, still: still),
+      ),
     );
   }
 }
 
 class _BurstPainter extends CustomPainter {
-  const _BurstPainter();
+  const _BurstPainter(this.t, {required this.still});
+
+  final double t;
+  final bool still;
+
+  /// Each shard's direction (radians), size and spin (turns).
+  static const _shards = [
+    (-1.9, 1.1, 0.25),
+    (-0.9, 0.9, -0.3),
+    (-0.1, 0.8, 0.35),
+    (0.8, 1.0, -0.2),
+    (1.7, 0.7, 0.3),
+    (2.5, 0.9, -0.35),
+    (3.3, 0.8, 0.2),
+  ];
+
+  /// A jagged scrap of rubber, about two units across.
+  static final _shard = Path()
+    ..addPolygon(const [
+      Offset(-1, -0.5),
+      Offset(-0.4, -0.9),
+      Offset(0.3, -0.7),
+      Offset(1, -0.8),
+      Offset(0.8, -0.1),
+      Offset(1, 0.5),
+      Offset(0.2, 0.6),
+      Offset(-0.3, 1),
+      Offset(-0.6, 0.4),
+      Offset(-1, 0.3),
+    ], true);
 
   @override
   void paint(Canvas canvas, Size size) {
-    // In the mockup's 200 × 200 box: ring r46, rays from 70 to 88 out.
     final k = size.width / 200, c = size.center(Offset.zero);
-    canvas.drawCircle(
-      c,
-      46 * k,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 5 * k
-        ..color = HandsColors.red,
-    );
-    final ray = Paint()
-      ..strokeWidth = 6 * k
+    final e = still ? 0.0 : Curves.easeOut.transform(t);
+    final fade = t < 0.5 ? 1.0 : 2 - 2 * t;
+
+    final streak = Paint()
+      ..strokeWidth = 5 * k
       ..strokeCap = StrokeCap.round
-      ..color = HandsColors.tealBright;
+      ..color = HandsColors.tealBright.withValues(alpha: 0.6 * (1 - t));
     for (var i = 0; i < 8; i++) {
-      final d = Offset.fromDirection(i * pi / 4);
-      canvas.drawLine(c + d * 70 * k, c + d * 88 * k, ray);
+      final d = Offset.fromDirection(i * pi / 4 + pi / 8);
+      canvas.drawLine(
+        c + d * (40 + 40 * e) * k,
+        c + d * (60 + 60 * e) * k,
+        streak,
+      );
+    }
+
+    final fill = Paint()..color = HandsColors.red.withValues(alpha: fade);
+    final outline = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.15
+      ..strokeJoin = StrokeJoin.round
+      ..color = HandsColors.balloonOutline.withValues(alpha: fade);
+    for (final (angle, scale, spin) in _shards) {
+      final at =
+          c +
+          Offset.fromDirection(angle) * (18 + 80 * e) * k +
+          Offset(0, 40 * k * e * e); // falls as it slows
+      canvas
+        ..save()
+        ..translate(at.dx, at.dy)
+        ..rotate(angle + 2 * pi * spin * e)
+        ..scale(26 * scale * k)
+        ..drawPath(_shard, fill)
+        ..drawPath(_shard, outline)
+        ..restore();
     }
   }
 
   @override
-  bool shouldRepaint(_BurstPainter old) => false;
+  bool shouldRepaint(_BurstPainter old) => old.t != t || old.still != still;
 }
 
 /// A Miss's faint grey ring at the lift-off point, fading over 300 ms. Never

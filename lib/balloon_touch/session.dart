@@ -45,7 +45,7 @@ int zoneOf(Offset point, Size area) {
 
 /// Where a balloon's centre may go in [area] so that, at full pulse plus the
 /// edge margin, it isn't clipped; null when the area is too small. The string
-/// isn't reserved: it is kept short enough to end inside the edge margin.
+/// isn't reserved: it is paint-only, so it may be cut off at the bottom edge.
 Rect? usableArea(Size area) {
   const w = balloonBodyWidth, knot = w * 0.085;
   const dx = w / 2 * maxPulseScale + edgeMargin;
