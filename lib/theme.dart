@@ -19,10 +19,15 @@ abstract final class HandsColors {
   static const red = Color(0xFFC8102E); // eyebrow labels, line icons
   static const redDeep = Color(0xFFA50D26); // text on pink pills
   static const redDarkest = Color(0xFF7A0A1C); // body text on pink note card
-  static const redLight = Color(0xFFF0566F); // balloon highlight
-  static const redShadow = Color(0xFF8E0B21); // balloon shading
-  static const balloonOutline = Color(0xFF3A0D16); // balloon outline, string
+  static const redLight = Color(0xFFF0566F); // chart column highlight
   static const redOnTeal = Color(0xFFFFC9D2); // eyebrow labels on the gradient
+
+  // The balloon, in balloon-pop-spec.md's pink
+  static const balloon = Color(0xFFF7558A); // body
+  static const balloonDark = Color(0xFFC8124F); // shade crescent, knot, pressed
+  static const balloonLight = Color(0xFFFFA6C6); // left sheen
+  static const balloonString = Color(0xFF4C6A92);
+  static const popLines = Color(0xFF2B2B3A); // the Pop's motion lines
 
   // Neutrals
   static const ink = Color(0xFF0B2D3C); // body text
@@ -79,14 +84,6 @@ abstract final class HandsGradients {
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
     colors: [HandsColors.redLight, HandsColors.red],
-  );
-
-  /// Balloon body (radial, highlight upper-left).
-  static const balloon = RadialGradient(
-    center: Alignment(-0.3, -0.4),
-    radius: 0.8,
-    colors: [HandsColors.redLight, HandsColors.red, HandsColors.redShadow],
-    stops: [0.0, 0.55, 1.0],
   );
 
   /// Run-screen play area.
@@ -202,7 +199,6 @@ abstract final class HandsSizes {
   static const pausePadH = 28.0;
   static const pauseIcon = 22.0;
   static const stageInset = 24.0; // play area to the screen's sides and bottom
-  static const burst = 200.0; // Pop burst's box; shards fly past it
   static const missRing = 56.0;
 
   static const balloonW = 134.0;
@@ -214,9 +210,13 @@ abstract final class HandsMotion {
   static const entrance = Duration(milliseconds: 300);
   static const stagger = Duration(milliseconds: 80);
   static const countUp = Duration(milliseconds: 380); // numbers and columns
-  static const burst = Duration(milliseconds: 500); // the next balloon waits
+  static const burst = Duration(milliseconds: 1200); // the next balloon waits
+  static const inflate = Duration(
+    milliseconds: 500,
+  ); // a new balloon springs in
   static const missRing = Duration(milliseconds: 300);
-  static const balloonLife = Duration(seconds: 3); // shine and string sway
+  // Whole cycles of every idle float layer (3.4, 6.2 and 4.6 s), so it loops seamlessly.
+  static const balloonFloat = Duration(milliseconds: 2424200);
 }
 
 /// Text styles, in the bundled Nunito.

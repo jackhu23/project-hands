@@ -15,6 +15,8 @@ import 'test_app.dart';
 /// pumps past any route transition instead.
 Future<void> settle(WidgetTester tester) async {
   await tester.pump();
+  // Past a Pop's 1.2 s burst, then the next balloon's inflate.
+  await tester.pump(const Duration(seconds: 2));
   await tester.pump(const Duration(seconds: 1));
 }
 
@@ -142,11 +144,11 @@ void main() {
     final burst = find.byType(PopBurst);
     expect(burst, findsOneWidget);
     expect(tester.getCenter(burst), sameSpot(c));
-    expect(tester.getSize(burst), const Size.square(200));
+    expect(tester.getSize(burst), const Size.square(210));
     expect(balloon, findsNothing);
     expect(find.text('1 of 3'), findsOneWidget);
 
-    await tester.pump(const Duration(milliseconds: 450));
+    await tester.pump(const Duration(milliseconds: 1150));
     expect(balloon, findsNothing);
     await tester.pump(const Duration(milliseconds: 60));
     await tester.pump();
@@ -217,7 +219,7 @@ void main() {
     expect(balloon, findsOneWidget);
   });
 
-  testWidgets('the balloon shines and its string sways', (tester) async {
+  testWidgets('the balloon floats', (tester) async {
     await startRun(tester);
     final clock = motion(tester)!;
     final before = clock.value;
@@ -225,7 +227,9 @@ void main() {
     expect(clock.value, isNot(before));
   });
 
-  testWidgets('shine and sway leave the hit area as the body', (tester) async {
+  testWidgets('the float leaves the string out of the hit area', (
+    tester,
+  ) async {
     await startRun(tester);
     for (var i = 0; i < 4; i++) {
       await tester.pump(const Duration(milliseconds: 700));
@@ -237,7 +241,7 @@ void main() {
     expect(find.text('1 of 3'), findsOneWidget);
   });
 
-  testWidgets('shine and sway stop under reduce motion', (tester) async {
+  testWidgets('the float stops under reduce motion', (tester) async {
     tester.platformDispatcher.accessibilityFeaturesTestValue =
         const FakeAccessibilityFeatures(disableAnimations: true);
     addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
@@ -765,27 +769,27 @@ void main() {
       expect(tester.getRect(still), size);
     });
 
-    // The body's widest point is 0.42 down it, 12 px above its centre.
+    // The float's reach is 67 px right of the centre at rest, here 12 px up.
     Offset rightEdge(WidgetTester tester, double dx) {
       final c = bodyCenter(tester);
       return Offset(c.dx + dx, c.dy - 12 * scale(tester));
     }
 
-    testWidgets('at 1.03 a touch just outside the unscaled body pops', (
+    testWidgets('at 1.03 a touch just outside the unscaled reach pops', (
       tester,
     ) async {
       await startRun(tester);
       await pumpToScale(tester, 1.03);
-      await touch(tester, rightEdge(tester, 61));
+      await touch(tester, rightEdge(tester, 68));
       expect(find.text('1 of 3'), findsOneWidget);
     });
 
-    testWidgets('at 0.98 a touch just inside the unscaled body misses', (
+    testWidgets('at 0.98 a touch just inside the unscaled reach misses', (
       tester,
     ) async {
       await startRun(tester);
       await pumpToScale(tester, 0.98);
-      await touch(tester, rightEdge(tester, 59.5));
+      await touch(tester, rightEdge(tester, 66.5));
       expect(find.text('0 of 3'), findsOneWidget);
     });
   });

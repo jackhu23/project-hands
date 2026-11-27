@@ -33,15 +33,17 @@ class _ExerciseScreenState extends State<ExerciseScreen>
 
   late final AppLifecycleListener _lifecycle;
 
-  /// Drives the balloon's shine and string sway; stopped under reduce motion.
+  /// The balloon's idle float clock, in seconds; stopped under reduce motion.
   late final _life = AnimationController(
     vsync: this,
-    duration: HandsMotion.balloonLife,
+    upperBound: HandsMotion.balloonFloat.inMilliseconds / 1000,
+    duration: HandsMotion.balloonFloat,
   );
   bool _reduceMotion = false;
 
-  /// Where the last Pop's burst plays; the next balloon waits for it.
-  Offset? _burst;
+  /// The last Pop's burst: where, how big, and the float second it froze
+  /// at. The next balloon waits for it.
+  ({Offset center, double bodyWidth, double? floatAt})? _burst;
 
   /// Where the last Miss lifted off, and a count so each Miss restarts it.
   Offset? _miss;
@@ -111,8 +113,10 @@ class _ExerciseScreenState extends State<ExerciseScreen>
     final box = _balloonKey.currentContext?.findRenderObject() as RenderBox?;
     final trial = _session.exerciseRun.activeTrial;
     if (box == null || trial == null) return false;
-    return balloonBodyPath(balloonBodyRect(box.size, trial.bodyWidth))
-        .contains(box.globalToLocal(global));
+    return balloonReachContains(
+      balloonBodyRect(box.size, trial.bodyWidth),
+      box.globalToLocal(global),
+    );
   }
 
   static TouchInput _input(PointerEvent event) => (
@@ -152,7 +156,11 @@ class _ExerciseScreenState extends State<ExerciseScreen>
         onBody: _onBody(event.position),
       )) {
         case ActionOutcome.pop:
-          _burst = trial!.center;
+          _burst = (
+            center: trial!.center,
+            bodyWidth: trial.bodyWidth,
+            floatAt: _reduceMotion ? null : _life.value,
+          );
         case ActionOutcome.miss:
           _miss = event.localPosition;
           _misses++;
@@ -241,23 +249,36 @@ class _ExerciseScreenState extends State<ExerciseScreen>
           at(
             trial.center,
             trial.bodyWidth * 1.75,
-            _Pulse(
-              holding: pressed,
-              child: BalloonIllustration(
-                key: _balloonKey,
-                bodyWidth: trial.bodyWidth,
-                halo: false,
-                pressed: pressed,
-                label: 'Balloon',
-                motion: _reduceMotion ? null : _life,
+            // Each new balloon springs in from 15 %.
+            _Once(
+              key: ObjectKey(trial),
+              duration: HandsMotion.inflate,
+              onDone: () {},
+              builder: (context, t) => Transform.scale(
+                scale: 0.15 + 0.85 * _spring.transform(t),
+                child: _Pulse(
+                  holding: pressed,
+                  child: BalloonIllustration(
+                    key: _balloonKey,
+                    bodyWidth: trial.bodyWidth,
+                    halo: false,
+                    pressed: pressed,
+                    label: 'Balloon',
+                    motion: _reduceMotion ? null : _life,
+                  ),
+                ),
               ),
             ),
           ),
-        if (_burst case final c?)
+        if (_burst case final b?)
           at(
-            c,
-            HandsSizes.burst,
-            PopBurst(onDone: () => setState(() => _burst = null)),
+            b.center,
+            b.bodyWidth * 1.75,
+            PopBurst(
+              bodyWidth: b.bodyWidth,
+              floatAt: b.floatAt,
+              onDone: () => setState(() => _burst = null),
+            ),
           ),
         if (_miss case final c?)
           at(
@@ -429,6 +450,7 @@ class _ExerciseScreenState extends State<ExerciseScreen>
 /// calls [onDone].
 class _Once extends StatefulWidget {
   const _Once({
+    super.key,
     required this.duration,
     required this.onDone,
     required this.builder,
@@ -469,103 +491,177 @@ class _OnceState extends State<_Once> with SingleTickerProviderStateMixin {
   );
 }
 
-/// A Pop's burst: the balloon breaks into red shards that fly out, spin,
-/// drop and fade over 500 ms, with teal streaks. Under reduce motion the
-/// shards stay put and only fade.
-class PopBurst extends StatelessWidget {
-  const PopBurst({super.key, required this.onDone});
+/// The respawn's spring, overshooting past full size.
+const _spring = Cubic(0.3, 1.6, 0.5, 1);
 
+/// A Pop, as in balloon-pop-spec.md, over 1200 ms: the body squashes,
+/// stretches and bursts; motion lines flash; rubber shreds fly out, spin
+/// and drop; the string hops and falls. It starts from the float second
+/// [floatAt] (null: at rest) so the balloon doesn't jump.
+class PopBurst extends StatelessWidget {
+  const PopBurst({
+    super.key,
+    required this.bodyWidth,
+    this.floatAt,
+    required this.onDone,
+  });
+
+  final double bodyWidth;
+  final double? floatAt;
   final VoidCallback onDone;
 
   @override
-  Widget build(BuildContext context) {
-    final still = MediaQuery.disableAnimationsOf(context);
-    return _Once(
-      duration: HandsMotion.burst,
-      onDone: onDone,
-      builder: (context, t) => CustomPaint(
-        size: const Size.square(HandsSizes.burst),
-        painter: _BurstPainter(t, still: still),
-      ),
-    );
+  Widget build(BuildContext context) => _Once(
+    duration: HandsMotion.burst,
+    onDone: onDone,
+    builder: (context, t) => CustomPaint(
+      size: Size.square(bodyWidth * 1.75),
+      painter: _BurstPainter(t, bodyWidth, floatAt),
+    ),
+  );
+}
+
+/// CSS-style keyframes: (time, value, easing to the next frame).
+double _keys(double t, List<(double, double, Curve)> frames) {
+  if (t <= frames.first.$1) return frames.first.$2;
+  for (var i = 1; i < frames.length; i++) {
+    final (t1, v1, _) = frames[i];
+    if (t <= t1) {
+      final (t0, v0, curve) = frames[i - 1];
+      return v0 + (v1 - v0) * curve.transform((t - t0) / (t1 - t0));
+    }
   }
+  return frames.last.$2;
 }
 
 class _BurstPainter extends CustomPainter {
-  const _BurstPainter(this.t, {required this.still});
+  const _BurstPainter(this.t, this.bodyWidth, this.floatAt);
 
-  final double t;
-  final bool still;
+  final double t, bodyWidth;
+  final double? floatAt;
 
-  /// Each shard's direction (radians), size and spin (turns).
-  static const _shards = [
-    (-1.9, 1.1, 0.25),
-    (-0.9, 0.9, -0.3),
-    (-0.1, 0.8, 0.35),
-    (0.8, 1.0, -0.2),
-    (1.7, 0.7, 0.3),
-    (2.5, 0.9, -0.35),
-    (3.3, 0.8, 0.2),
+  static const _gravity = Cubic(0.55, 0, 1, 0.45);
+  static const _flash = Cubic(0.2, 0.9, 0.3, 1);
+  static const _fling = Cubic(0.12, 0.8, 0.3, 1);
+
+  static final _shredA = Path()
+    ..moveTo(-12, -4)
+    ..cubicTo(-5, -12, 7, -12, 12, -3)
+    ..cubicTo(5, -6, -2, -3, -7, 5)
+    ..close();
+  static final _shredB = Path()
+    ..moveTo(-9, -7)
+    ..cubicTo(0, -9, 9, -5, 10, 5)
+    ..cubicTo(4, 0, -3, 0, -10, 3)
+    ..close();
+  static final _shredC = Path()
+    ..moveTo(-10, -6)
+    ..cubicTo(-2, -10, 8, -8, 11, 0)
+    ..cubicTo(4, -3, -3, -1, -8, 6)
+    ..close();
+  static final _shredD = Path()
+    ..moveTo(-8, -6)
+    ..cubicTo(0, -8, 8, -4, 9, 4)
+    ..cubicTo(3, 0, -3, 0, -9, 2)
+    ..close();
+
+  /// Each shred: shape, dark or not, where it flies and its spin (degrees).
+  static final _shreds = [
+    (_shredA, false, -120.0, -70.0, -260.0),
+    (_shredB, true, 118.0, -92.0, 300.0),
+    (_shredC, false, -138.0, 28.0, -180.0),
+    (_shredA, false, 132.0, 40.0, 220.0),
+    (_shredD, true, -40.0, -142.0, 160.0),
+    (_shredB, false, 52.0, 112.0, -240.0),
   ];
-
-  /// A jagged scrap of rubber, about two units across.
-  static final _shard = Path()
-    ..addPolygon(const [
-      Offset(-1, -0.5),
-      Offset(-0.4, -0.9),
-      Offset(0.3, -0.7),
-      Offset(1, -0.8),
-      Offset(0.8, -0.1),
-      Offset(1, 0.5),
-      Offset(0.2, 0.6),
-      Offset(-0.3, 1),
-      Offset(-0.6, 0.4),
-      Offset(-1, 0.3),
-    ], true);
 
   @override
   void paint(Canvas canvas, Size size) {
-    final k = size.width / 200, c = size.center(Offset.zero);
-    final e = still ? 0.0 : Curves.easeOut.transform(t);
-    final fade = t < 0.5 ? 1.0 : 2 - 2 * t;
+    canvas.save();
+    enterBalloonArt(canvas, size, bodyWidth, floatAt);
 
-    final streak = Paint()
-      ..strokeWidth = 5 * k
-      ..strokeCap = StrokeCap.round
-      ..color = HandsColors.tealBright.withValues(alpha: 0.6 * (1 - t));
-    for (var i = 0; i < 8; i++) {
-      final d = Offset.fromDirection(i * pi / 4 + pi / 8);
-      canvas.drawLine(
-        c + d * (40 + 40 * e) * k,
-        c + d * (60 + 60 * e) * k,
-        streak,
-      );
+    // The string and knot hop up, then fall and fade.
+    if (t < 0.92) {
+      const ease = Curves.ease;
+      final x = _keys(t, const [(0.27, 0, _gravity), (0.85, 6, ease)]);
+      final y = _keys(t, const [
+        (0.2, 0, ease),
+        (0.27, -10, _gravity),
+        (0.85, 190, ease),
+        (0.92, 200, ease),
+      ]);
+      final turn = _keys(t, const [
+        (0.2, 0, ease),
+        (0.27, -6, _gravity),
+        (0.85, 14, ease),
+      ]);
+      final fade = _keys(t, const [(0.85, 1, ease), (0.92, 0, ease)]);
+      canvas
+        ..saveLayer(null, Paint()..color = Color.fromRGBO(0, 0, 0, fade))
+        ..translate(100 + x, 203 + y)
+        ..rotate(turn * pi / 180)
+        ..translate(-100, -203);
+      paintBalloonTail(canvas, floatAt);
+      canvas.restore();
     }
 
-    final fill = Paint()..color = HandsColors.red.withValues(alpha: fade);
-    final outline = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.15
-      ..strokeJoin = StrokeJoin.round
-      ..color = HandsColors.balloonOutline.withValues(alpha: fade);
-    for (final (angle, scale, spin) in _shards) {
-      final at =
-          c +
-          Offset.fromDirection(angle) * (18 + 80 * e) * k +
-          Offset(0, 40 * k * e * e); // falls as it slows
+    // The body squashes, stretches, over-inflates, then is gone.
+    if (t < 0.206) {
+      double scale(double squash, double stretch) => _keys(t, [
+        (0, 1, Curves.easeOut),
+        (0.08, squash, Curves.easeInOut),
+        (0.15, stretch, Curves.easeIn),
+        (0.2, 1.16, Curves.linear),
+      ]);
       canvas
         ..save()
-        ..translate(at.dx, at.dy)
-        ..rotate(angle + 2 * pi * spin * e)
-        ..scale(26 * scale * k)
-        ..drawPath(_shard, fill)
-        ..drawPath(_shard, outline)
-        ..restore();
+        ..translate(100, 121.75)
+        ..scale(scale(1.08, 0.94), scale(0.9, 1.08))
+        ..translate(-100, -121.75);
+      paintBalloonBody(canvas);
+      canvas.restore();
     }
+
+    // Eight motion lines flash out from the centre.
+    if (t >= 0.2 && t < 0.42) {
+      final line = Paint()
+        ..strokeWidth = 5
+        ..strokeCap = StrokeCap.round
+        ..color = HandsColors.popLines.withValues(
+          alpha: _keys(t, const [(0.2, 1, _flash), (0.42, 0, _flash)]),
+        );
+      canvas
+        ..save()
+        ..translate(100, 112)
+        ..scale(_keys(t, const [(0.2, 0.6, _flash), (0.42, 1.4, _flash)]));
+      for (var i = 0; i < 8; i++) {
+        final d = Offset.fromDirection(i * pi / 4);
+        canvas.drawLine(d * 72, d * 92, line);
+      }
+      canvas.restore();
+    }
+
+    // The shreds fly out and spin, then drop, shrink and fade.
+    if (t >= 0.2 && t < 0.85) {
+      final out = _fling.transform(((t - 0.2) / 0.35).clamp(0, 1));
+      final drop = Curves.easeIn.transform(((t - 0.55) / 0.3).clamp(0, 1));
+      for (final (shape, dark, x, y, spin) in _shreds) {
+        final color = dark ? HandsColors.balloonDark : HandsColors.balloon;
+        canvas
+          ..save()
+          ..translate(100 + x * out, 112 + y * out + 60 * drop)
+          ..rotate(spin * (out + 0.4 * drop) * pi / 180)
+          ..scale(1 - 0.3 * drop)
+          ..drawPath(shape, Paint()..color = color.withValues(alpha: 1 - drop))
+          ..restore();
+      }
+    }
+    canvas.restore();
   }
 
   @override
-  bool shouldRepaint(_BurstPainter old) => old.t != t || old.still != still;
+  bool shouldRepaint(_BurstPainter old) =>
+      old.t != t || old.bodyWidth != bodyWidth || old.floatAt != floatAt;
 }
 
 /// A Miss's faint grey ring at the lift-off point, fading over 300 ms. Never

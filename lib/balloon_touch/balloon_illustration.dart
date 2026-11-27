@@ -1,23 +1,56 @@
 import 'dart:math';
+import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/material.dart';
 
 import '../theme.dart';
 
-/// The balloon body's outline inside [rect], ported from the demo's
-/// `BalloonBodyShape`. The popping rule tests touches against this path.
-Path balloonBodyPath(Rect rect) {
-  Offset p(double x, double y) =>
-      Offset(rect.left + x * rect.width, rect.top + y * rect.height);
-  Path curve(Path path, Offset c1, Offset c2, Offset to) =>
-      path..cubicTo(c1.dx, c1.dy, c2.dx, c2.dy, to.dx, to.dy);
+// The art from balloon-pop-spec.md, in its SVG units: the body spans
+// x 22–178 and y 20–205.
+final _body = Path()
+  ..moveTo(100, 20)
+  ..cubicTo(150, 20, 178, 62, 178, 110)
+  ..cubicTo(178, 160, 140, 200, 100, 205)
+  ..cubicTo(60, 200, 22, 160, 22, 110)
+  ..cubicTo(22, 62, 50, 20, 100, 20)
+  ..close();
+final _sheen = Path()
+  ..moveTo(100, 26)
+  ..cubicTo(62, 28, 34, 62, 32, 106)
+  ..cubicTo(40, 72, 66, 42, 100, 34)
+  ..close();
+final _shade = Path()
+  ..moveTo(100, 205)
+  ..cubicTo(140, 200, 178, 160, 178, 110)
+  ..cubicTo(178, 68, 156, 36, 126, 24)
+  ..cubicTo(148, 46, 162, 80, 160, 114)
+  ..cubicTo(157, 158, 132, 192, 100, 205)
+  ..close();
+final _knot = Path()
+  ..addPolygon(const [
+    Offset(91, 216),
+    Offset(109, 216),
+    Offset(103, 203),
+    Offset(97, 203),
+  ], true);
+final _string = Path()
+  ..moveTo(100, 214)
+  ..cubicTo(86, 240, 114, 262, 100, 290)
+  ..cubicTo(86, 318, 96, 330, 104, 352);
 
-  final path = Path()..moveTo(p(0.5, 0).dx, p(0.5, 0).dy);
-  curve(path, p(0.82, 0), p(1, 0.17), p(1, 0.42));
-  curve(path, p(1, 0.7), p(0.64, 1), p(0.5, 1));
-  curve(path, p(0.36, 1), p(0, 0.7), p(0, 0.42));
-  curve(path, p(0, 0.17), p(0.18, 0), p(0.5, 0));
-  return path..close();
+/// Where the float's tilt turns: the knot.
+const _pivot = Offset(100, 206);
+
+/// The balloon body's outline inside [rect].
+Path balloonBodyPath(Rect rect) {
+  final sx = rect.width / 156, sy = rect.height / 185;
+  return _body.transform(
+    (Matrix4.diagonal3Values(
+      sx,
+      sy,
+      1,
+    )..setTranslationRaw(rect.left - 22 * sx, rect.top - 20 * sy, 0)).storage,
+  );
 }
 
 /// Where the body sits inside a balloon drawn at [size]: centred, 1.25 times
@@ -28,22 +61,121 @@ Rect balloonBodyRect(Size size, double bodyWidth) => Rect.fromCenter(
   height: bodyWidth * 1.25,
 );
 
-/// The shine's path along the body's upper left edge, inside the outline.
-Path _shinePath(Rect rect) {
-  Offset p(double x, double y) =>
-      Offset(rect.left + x * rect.width, rect.top + y * rect.height);
-  final start = p(0.13, 0.5), c = p(0.12, 0.12), end = p(0.5, 0.07);
-  return Path()
-    ..moveTo(start.dx, start.dy)
-    ..quadraticBezierTo(c.dx, c.dy, end.dx, end.dy);
+/// Whether [point] is on the body ([body] at rest) anywhere the idle float
+/// can carry it. The whole reach pops, so it doesn't matter where the
+/// balloon is in its float when it is touched.
+bool balloonReachContains(Rect body, Offset point) {
+  final p = Offset(
+    22 + (point.dx - body.left) * 156 / body.width,
+    20 + (point.dy - body.top) * 185 / body.height,
+  );
+  // The float's extremes and midpoints (see _float); the gaps between
+  // samples are far under a pixel.
+  for (final dx in const [-4.0, 0.0, 4.0]) {
+    for (final dy in const [-8.0, -2.0, 4.0]) {
+      for (final degrees in const [-3.0, 0.0, 3.0]) {
+        final q = p - Offset(dx, dy) - _pivot, r = -degrees * pi / 180;
+        final atRest =
+            Offset(
+              q.dx * cos(r) - q.dy * sin(r),
+              q.dx * sin(r) + q.dy * cos(r),
+            ) +
+            _pivot;
+        if (_body.contains(atRest)) return true;
+      }
+    }
+  }
+  return false;
 }
 
-/// The balloon, in a cartoon style: outlined body with a shaded crescent and
-/// glare, knot, wavy string and, unless [halo] is false, the halo. Body height is 1.25 × [bodyWidth], the knot is 0.085 ×
-/// [bodyWidth], and the body is centred in a square 1.75 × [bodyWidth] wide;
-/// the string hangs below it. While [motion] runs (0 to 1, repeating) the
-/// edge shines and the string sways; both are paint-only, so the body,
-/// the only part that pops, never moves.
+/// 0 to 1 and back every 2 × [half] seconds, as CSS's `ease-in-out infinite
+/// alternate`.
+double _wave(double s, double half) {
+  final p = (s / half) % 2;
+  return Curves.easeInOut.transform(p < 1 ? p : 2 - p);
+}
+
+/// The idle float at [s] seconds: bob, drift, then tilt about the knot.
+void _float(Canvas canvas, double s) => canvas
+  ..translate(
+    lerpDouble(-4, 4, _wave(s, 3.1))!,
+    lerpDouble(4, -8, _wave(s, 1.7))!,
+  )
+  ..translate(_pivot.dx, _pivot.dy)
+  ..rotate(lerpDouble(-3, 3, _wave(s, 2.3))! * pi / 180)
+  ..translate(-_pivot.dx, -_pivot.dy);
+
+/// Moves [canvas] into the art's SVG units for a balloon drawn at [size],
+/// floated to [s] seconds, or at rest if [s] is null.
+void enterBalloonArt(Canvas canvas, Size size, double bodyWidth, double? s) {
+  final body = balloonBodyRect(size, bodyWidth);
+  canvas
+    ..translate(body.left, body.top)
+    ..scale(body.width / 156, body.height / 185)
+    ..translate(-22, -20);
+  if (s != null) _float(canvas, s);
+}
+
+/// The string and knot, in the art's units. At [s] seconds the string
+/// trails the float's tilt.
+void paintBalloonTail(Canvas canvas, double? s) {
+  final trail = s == null
+      ? 0.0
+      : lerpDouble(2.5, -2.5, _wave(max(0, s - 0.35), 2.3))! * pi / 180;
+  canvas
+    ..save()
+    ..translate(100, 214)
+    ..rotate(trail)
+    ..translate(-100, -214)
+    ..drawPath(
+      _string,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3.5
+        ..strokeCap = StrokeCap.round
+        ..color = HandsColors.balloonString,
+    )
+    ..restore()
+    ..drawPath(_knot, Paint()..color = HandsColors.balloonDark);
+}
+
+/// The body, in the art's units: base, left sheen, shade crescent and two
+/// highlights. [pressed] darkens it.
+void paintBalloonBody(Canvas canvas, {bool pressed = false}) {
+  canvas.drawPath(
+    _body,
+    Paint()..color = pressed ? HandsColors.balloonDark : HandsColors.balloon,
+  );
+  if (!pressed) {
+    canvas.drawPath(
+      _sheen,
+      Paint()..color = HandsColors.balloonLight.withValues(alpha: 0.55),
+    );
+  }
+  canvas
+    ..drawPath(_shade, Paint()..color = HandsColors.balloonDark)
+    ..save()
+    ..translate(64, 68)
+    ..rotate(28 * pi / 180)
+    ..drawOval(
+      Rect.fromCenter(center: Offset.zero, width: 22, height: 54),
+      Paint()..color = HandsColors.white.withValues(alpha: pressed ? 0.4 : 0.8),
+    )
+    ..restore()
+    ..drawCircle(
+      const Offset(56, 114),
+      6,
+      Paint()
+        ..color = HandsColors.white.withValues(alpha: pressed ? 0.3 : 0.55),
+    );
+}
+
+/// The cartoon balloon from balloon-pop-spec.md: body with sheen, shade and
+/// highlights, knot, string and, unless [halo] is false, the halo. Body
+/// height is 1.25 × [bodyWidth], centred in a square 1.75 × [bodyWidth]
+/// wide; the string hangs below it. [motion], in seconds, drives the idle
+/// float. The float is paint-only: the box never moves, and the hit area is
+/// the float's whole reach ([balloonReachContains]).
 class BalloonIllustration extends StatelessWidget {
   const BalloonIllustration({
     super.key,
@@ -89,129 +221,31 @@ class _BalloonPainter extends CustomPainter {
   final bool halo, pressed;
   final Animation<double>? motion;
 
-  /// The share of each [motion] cycle the shine takes to cross the highlight.
-  static const _shineShare = 0.4;
-
   @override
   void paint(Canvas canvas, Size size) {
-    final center = size.center(Offset.zero);
-    final w = bodyWidth, knot = bodyWidth * 0.085;
-    final t = motion?.value;
-
     if (halo) {
-      canvas.drawCircle(
-        center,
-        w * 1.65 / 2,
-        Paint()..color = HandsColors.panel,
-      );
-      canvas.drawCircle(
-        center,
-        w * 1.65 / 2,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 2
-          ..color = HandsColors.tealMid.withValues(alpha: 0.10),
-      );
+      final center = size.center(Offset.zero);
+      canvas
+        ..drawCircle(
+          center,
+          bodyWidth * 1.65 / 2,
+          Paint()..color = HandsColors.panel,
+        )
+        ..drawCircle(
+          center,
+          bodyWidth * 1.65 / 2,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 2
+            ..color = HandsColors.tealMid.withValues(alpha: 0.10),
+        );
     }
-
-    final body = balloonBodyRect(size, w);
-    final bodyPath = balloonBodyPath(body);
-    Offset at(double x, double y) =>
-        Offset(body.left + x * body.width, body.top + y * body.height);
-    final outline = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = w * 0.035
-      ..strokeJoin = StrokeJoin.round
-      ..strokeCap = StrokeCap.round
-      ..color = HandsColors.balloonOutline;
-
-    // A long wavy string. Paint-only, so near the bottom edge it may be cut off.
-    final sway = t == null ? 0.0 : w * 0.05 * sin(2 * pi * t);
-    final from = Offset(center.dx, body.bottom + knot), length = w * 0.55;
-    canvas.drawPath(
-      Path()
-        ..moveTo(from.dx, from.dy)
-        ..cubicTo(
-          from.dx + w * 0.14 + sway * 0.4,
-          from.dy + length * 0.3,
-          from.dx - w * 0.14 + sway,
-          from.dy + length * 0.6,
-          from.dx + w * 0.04 + sway * 1.4,
-          from.dy + length,
-        ),
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = w * 0.028
-        ..strokeCap = StrokeCap.round
-        ..color = HandsColors.balloonOutline,
-    );
-
-    canvas.drawPath(
-      bodyPath.shift(Offset(0, pressed ? 4 : 12)),
-      Paint()
-        ..color = HandsColors.redShadow.withValues(alpha: pressed ? 0.15 : 0.25)
-        ..maskFilter = MaskFilter.blur(
-          BlurStyle.normal,
-          Shadow.convertRadiusToSigma(pressed ? 6 : 16),
-        ),
-    );
-    canvas.drawPath(
-      bodyPath,
-      pressed
-          ? (Paint()..color = HandsColors.redShadow)
-          : (Paint()..shader = HandsGradients.balloon.createShader(body)),
-    );
-    // The darker crescent along the lower right.
-    canvas.drawPath(
-      Path.combine(
-        PathOperation.difference,
-        bodyPath,
-        bodyPath.shift(Offset(-w * 0.12, -w * 0.1)),
-      ),
-      Paint()
-        ..color = HandsColors.redShadow.withValues(alpha: pressed ? 0.3 : 0.6),
-    );
-    // The glare: a tilted oval and a dot.
-    final glare = Paint()
-      ..color = HandsColors.white.withValues(alpha: pressed ? 0.3 : 0.85);
-    canvas
-      ..save()
-      ..translate(at(0.33, 0.2).dx, at(0.33, 0.2).dy)
-      ..rotate(-0.6)
-      ..drawOval(
-        Rect.fromCenter(center: Offset.zero, width: w * 0.3, height: w * 0.14),
-        glare,
-      )
-      ..restore()
-      ..drawCircle(at(0.19, 0.4), w * 0.045, glare);
-    // The shine: a bright stretch that runs along the edge, then rests.
-    if (t != null && t < _shineShare && !pressed) {
-      final s = t / _shineShare;
-      final metric = _shinePath(body).computeMetrics().first;
-      final head = metric.length * 1.4 * s;
-      canvas.drawPath(
-        metric.extractPath(head - metric.length * 0.4, head),
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeCap = StrokeCap.round
-          ..strokeWidth = w * 0.045
-          ..color = HandsColors.white.withValues(alpha: 0.9 * sin(pi * s)),
-      );
-    }
-    canvas.drawPath(bodyPath, outline);
-    // The knot: a small trapezoid widening down from the body.
-    final knotPath = Path()
-      ..moveTo(center.dx - w * 0.04, body.bottom - w * 0.02)
-      ..lineTo(center.dx + w * 0.04, body.bottom - w * 0.02)
-      ..lineTo(center.dx + w * 0.08, body.bottom + knot)
-      ..lineTo(center.dx - w * 0.08, body.bottom + knot)
-      ..close();
-    canvas
-      ..drawPath(
-        knotPath,
-        Paint()..color = pressed ? HandsColors.redShadow : HandsColors.red,
-      )
-      ..drawPath(knotPath, outline);
+    final s = motion?.value;
+    canvas.save();
+    enterBalloonArt(canvas, size, bodyWidth, s);
+    paintBalloonTail(canvas, s);
+    paintBalloonBody(canvas, pressed: pressed);
+    canvas.restore();
   }
 
   @override

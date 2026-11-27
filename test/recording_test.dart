@@ -10,6 +10,8 @@ import 'test_app.dart';
 /// The balloon pulses forever, so pumpAndSettle would never return.
 Future<void> settle(WidgetTester tester) async {
   await tester.pump();
+  // Past a Pop's 1.2 s burst, then the next balloon's inflate.
+  await tester.pump(const Duration(seconds: 2));
   await tester.pump(const Duration(seconds: 1));
 }
 
