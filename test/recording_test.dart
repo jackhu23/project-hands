@@ -239,6 +239,18 @@ void main() {
     });
   }
 
+  testWidgets('a touch during the Pop burst records no Action', (tester) async {
+    final db = await pumpApp(tester);
+    await startRun(tester);
+    final spot = bodyCenter(tester);
+    await tester.tapAt(spot);
+    await tester.pump();
+    await tester.tapAt(spot);
+    await settle(tester);
+
+    expect(await outcomes(db), [ActionOutcome.pop]);
+  });
+
   testWidgets('controls, touches while paused and cancels record no Action', (
     tester,
   ) async {

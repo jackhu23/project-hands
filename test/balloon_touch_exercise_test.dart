@@ -180,6 +180,43 @@ void main() {
     expect(find.byType(MissRing), findsNothing);
   });
 
+  testWidgets('an Overlapping Touch shows no Miss ring', (tester) async {
+    await startRun(tester);
+    final first = await tester.startGesture(offBody(tester), pointer: 1);
+    final second = await tester.startGesture(bodyCenter(tester), pointer: 2);
+    await second.up();
+    await tester.pump();
+    expect(find.byType(MissRing), findsNothing);
+    await first.up();
+  });
+
+  testWidgets('a touch during the burst does nothing', (tester) async {
+    await startRun(tester);
+    final c = bodyCenter(tester);
+    await tester.tapAt(c);
+    await tester.pump();
+    await tester.tapAt(c);
+    await tester.pump();
+    expect(find.byType(MissRing), findsNothing);
+    await settle(tester);
+    expect(find.text('1 of 3'), findsOneWidget);
+    expect(balloon, findsOneWidget);
+  });
+
+  testWidgets('pausing mid-burst still brings the next balloon on Resume', (
+    tester,
+  ) async {
+    await startRun(tester);
+    await tester.tapAt(bodyCenter(tester));
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.tap(find.widgetWithText(FilledButton, 'Pause'));
+    await settle(tester);
+    await tester.tap(find.text('Resume'));
+    await tester.pump();
+    expect(find.byType(PopBurst), findsNothing);
+    expect(balloon, findsOneWidget);
+  });
+
   testWidgets('the balloon shines and its string sways', (tester) async {
     await startRun(tester);
     final clock = motion(tester)!;
