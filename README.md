@@ -58,6 +58,20 @@ fvm flutter test
 
 **Anything metric-related** (touch timing, accuracy, Touch Samples) must be tested with a real finger on a physical tablet. Emulators and mouse clicks don't produce realistic touch data.
 
+### Testing on the other platform
+
+The device smoke test ([`integration_test/smoke_test.dart`](integration_test/smoke_test.dart)) opens the real app, plays one Exercise Run at Level 1, opens it from My progress, and takes a screenshot at each step. Use it to check a branch on the platform you don't have.
+
+**In GitHub:** go to Actions → **Device smoke test** → **Run workflow**. Pick the branch and the platform (`android`, `ios` or `both`). It runs on an Android tablet emulator and an iPad simulator. When it finishes, the screenshots are under the run's **Artifacts** (`screenshots-android`, `screenshots-ios`). If one platform fails, the other still runs. It only runs when started this way, never on pull requests or pushes.
+
+**Locally,** with an emulator, simulator or tablet connected:
+
+```sh
+fvm flutter drive -d <device> --driver=test_driver/integration_test.dart --target=integration_test/smoke_test.dart
+```
+
+The screenshots land in `build/screenshots/`. The test uses the device's own database, so it adds a run to whatever history the app on that device already has. On an emulator without GPU acceleration, add `--no-enable-impeller`.
+
 ## CI
 
 GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs on every pull request and every push to `main`.
