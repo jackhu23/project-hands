@@ -391,7 +391,7 @@ class _ExerciseDemoScreenState extends State<ExerciseDemoScreen> {
                 onPressed: _finish,
                 style: OutlinedButton.styleFrom(
                   fixedSize: const Size(
-                    HandsSizes.completeButtonW,
+                    HandsSizes.pauseButtonW,
                     HandsSizes.buttonSecondaryH,
                   ),
                   foregroundColor: HandsColors.white,
