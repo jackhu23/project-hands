@@ -10,6 +10,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import '../database.dart';
 import '../theme.dart';
 import 'balloon_illustration.dart';
+import 'exercise_demo.dart';
 import 'run_summary_screen.dart';
 import 'session.dart';
 
@@ -99,6 +100,15 @@ class _ExerciseScreenState extends State<ExerciseScreen>
   });
 
   void _resume() => setState(_session.resume);
+
+  void _watchDemo() {
+    final navigator = Navigator.of(context);
+    navigator.push(
+      MaterialPageRoute<void>(
+        builder: (_) => ExerciseDemoScreen(onDone: navigator.pop),
+      ),
+    );
+  }
 
   /// Saves the run as stopped and shows its summary.
   void _end() {
@@ -353,6 +363,26 @@ class _ExerciseScreenState extends State<ExerciseScreen>
                       shape: RoundedRectangleBorder(borderRadius: radius),
                     ),
                     child: Text('Keep going', style: HandsText.keepGoing),
+                  ),
+                  // Over the paused run, so its time counts as paused time.
+                  OutlinedButton(
+                    onPressed: _watchDemo,
+                    style: OutlinedButton.styleFrom(
+                      fixedSize: const Size(
+                        HandsSizes.pauseButtonW,
+                        HandsSizes.buttonSecondaryH,
+                      ),
+                      foregroundColor: HandsColors.white,
+                      side: const BorderSide(
+                        color: HandsColors.onTealOutline,
+                        width: 2,
+                      ),
+                      shape: RoundedRectangleBorder(borderRadius: radius),
+                    ),
+                    child: Text(
+                      'Watch the demo again',
+                      style: HandsText.completeButton,
+                    ),
                   ),
                   FilledButton(
                     onPressed: _end,

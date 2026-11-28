@@ -5,6 +5,7 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hands/database.dart';
+import 'package:hands/balloon_touch/exercise_demo.dart';
 import 'package:hands/balloon_touch/exercise_screen.dart';
 import 'package:hands/balloon_touch/hub_screen.dart';
 import 'package:hands/theme.dart';
@@ -128,11 +129,37 @@ void main() {
     expect(find.text("Today's plan"), findsOneWidget);
   });
 
-  testWidgets('Watch how shows an empty state', (tester) async {
-    await openHub(tester);
-
+  testWidgets('Watch how loops the Exercise Demo, recording nothing', (
+    tester,
+  ) async {
+    final db = await pumpApp(tester);
+    await tester.tap(find.text('Balloon Touch'));
+    await settle(tester);
     expect(find.text('STEP 1 · WATCH HOW'), findsOneWidget);
-    expect(find.text('Demo coming soon'), findsOneWidget);
+    expect(find.byType(ExerciseDemo), findsOneWidget);
+
+    // Over two loops, in 100 ms steps: each loop shows a Pop, then a Miss.
+    final seen = <String>[];
+    for (var ms = 0; ms < ExerciseDemo.length.inMilliseconds * 2; ms += 100) {
+      await tester.pump(const Duration(milliseconds: 100));
+      final now = find.byType(PopBurst).evaluate().isNotEmpty
+          ? 'Pop'
+          : find.byType(MissMarker).evaluate().isNotEmpty
+          ? 'Miss'
+          : null;
+      if (now != null && (seen.isEmpty || seen.last != now)) seen.add(now);
+    }
+    expect(seen, ['Pop', 'Miss', 'Pop', 'Miss']);
+
+    expect(
+      [
+        (await db.select(db.exerciseRuns).get()).length,
+        (await db.select(db.trials).get()).length,
+        (await db.select(db.actions).get()).length,
+        (await db.select(db.touchSamples).get()).length,
+      ],
+      [0, 0, 0, 0],
+    );
   });
 
   testWidgets('four Difficulty Levels, each with its Zone diagram', (

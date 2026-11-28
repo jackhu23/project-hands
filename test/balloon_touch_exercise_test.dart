@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hands/balloon_touch/balloon_illustration.dart';
+import 'package:hands/balloon_touch/exercise_demo.dart';
 import 'package:hands/balloon_touch/exercise_screen.dart';
 import 'package:hands/balloon_touch/session.dart';
 import 'package:hands/theme.dart';
@@ -680,6 +681,10 @@ void main() {
     );
     final keepGoing = find.widgetWithText(FilledButton, 'Keep going');
     final endRun = find.widgetWithText(FilledButton, 'End this run');
+    final watchDemo = find.widgetWithText(
+      OutlinedButton,
+      'Watch the demo again',
+    );
 
     Future<void> tapAndSettle(WidgetTester tester, Finder finder) async {
       await tester.tap(finder);
@@ -719,6 +724,31 @@ void main() {
       expectPauseOverlay(tester);
     });
 
+    testWidgets('Watch the demo again plays it while the run stays paused', (
+      tester,
+    ) async {
+      await startRun(tester);
+      final session = tester
+          .widget<ExerciseScreen>(find.byType(ExerciseScreen))
+          .session;
+      await tapAndSettle(tester, pauseButton);
+
+      await tapAndSettle(tester, watchDemo);
+      expect(find.byType(ExerciseDemo), findsOneWidget);
+      await tester.pump(ExerciseDemo.length);
+      await settle(tester);
+
+      expect(find.byType(ExerciseDemo), findsNothing);
+      expectPauseOverlay(tester);
+      expect(session.status, SessionStatus.paused);
+      expect(session.exerciseRun.pauses.single.resumedAt, isNull);
+      expect(session.exerciseRun.trials.expand((t) => t.actions), isEmpty);
+
+      await tapAndSettle(tester, watchDemo);
+      await tapAndSettle(tester, find.text('Skip'));
+      expectPauseOverlay(tester);
+    });
+
     testWidgets('End this run lands on the stopped Run summary', (
       tester,
     ) async {
@@ -746,7 +776,11 @@ void main() {
       await tapAndSettle(tester, pauseButton);
       // Touching where the balloon was does nothing while paused, unless it
       // sat where a button now is.
-      if (![keepGoing, endRun].any((b) => tester.getRect(b).contains(spot))) {
+      if (![
+        keepGoing,
+        watchDemo,
+        endRun,
+      ].any((b) => tester.getRect(b).contains(spot))) {
         await touch(tester, spot);
       }
       await tapAndSettle(tester, keepGoing);

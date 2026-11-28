@@ -6,6 +6,7 @@ import '../theme.dart';
 import '../widgets/gradient_header.dart';
 import '../widgets/line_icon.dart';
 import '../widgets/loading_section.dart';
+import 'exercise_demo.dart';
 import 'exercise_screen.dart';
 import 'my_progress_tab.dart';
 import 'session.dart';
@@ -203,7 +204,7 @@ class _BalloonTouchHubState extends State<BalloonTouchHub>
   );
 }
 
-/// Step 1. The Exercise Demo arrives in a later issue.
+/// Step 1: the Exercise Demo, always looping.
 class _WatchHowCard extends StatelessWidget {
   const _WatchHowCard();
 
@@ -219,17 +220,8 @@ class _WatchHowCard extends StatelessWidget {
       spacing: HandsSizes.gapS,
       children: [
         _oneLine(Text('STEP 1 · WATCH HOW', style: HandsText.eyebrow)),
-        Expanded(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: HandsGradients.brandButton,
-              borderRadius: BorderRadius.circular(HandsSizes.radiusCard),
-            ),
-            child: Center(
-              child: Text('Demo coming soon', style: HandsText.bodyOnTeal),
-            ),
-          ),
-        ),
+        // Loops while the card shows; tickers stop when a route covers it.
+        const Expanded(child: ExerciseDemo()),
       ],
     ),
   );
