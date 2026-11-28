@@ -1,0 +1,80 @@
+name: Device smoke test
+
+# Started by hand (Actions → Device smoke test → Run workflow), so anyone can
+# check a branch on the platform they don't own. Never runs on PRs or pushes.
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Platform to test
+        type: choice
+        options: [both, android, ios]
+        default: both
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    if: inputs.platform != 'ios'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/flutter
+      - run: flutter pub get
+      - name: Enable KVM for the emulator
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_tablet
+          # Kept on: with animations off Flutter turns on reduce motion and the demo stands still.
+          disable-animations: false
+          # Android's one-time "Viewing full screen" notice takes focus when the run goes
+          # immersive, which pauses it; mark it seen. On failure, also capture the whole
+          # screen, since system dialogs don't show in Flutter's screenshots.
+          script: |
+            adb shell settings put secure immersive_mode_confirmations confirmed
+            flutter drive --no-enable-impeller -d emulator-5554 --driver=test_driver/integration_test.dart --target=integration_test/smoke_test.dart || (mkdir -p build/screenshots && adb exec-out screencap -p > build/screenshots/device-on-failure.png && exit 1)
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshots-android
+          path: build/screenshots/
+          if-no-files-found: warn
+
+  ios:
+    if: inputs.platform != 'android'
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/flutter
+      - run: flutter pub get
+      - name: Boot an iPad simulator
+        id: sim
+        run: |
+          # An iPad on the newest iOS runtime installed.
+          udid=$(xcrun simctl list devices available --json | jq -r '
+            .devices | to_entries
+            | map(select(.key | test("iOS")) | {v: (.key | [scan("[0-9]+") | tonumber]), d: .value})
+            | sort_by(.v) | reverse
+            | [.[].d[] | select(.name | startswith("iPad"))][0].udid // empty')
+          if [ -z "$udid" ]; then echo "::error::No iPad simulator is installed on this runner"; exit 1; fi
+          echo "Booting $udid"
+          xcrun simctl boot "$udid"
+          xcrun simctl bootstatus "$udid"
+          echo "udid=$udid" >> "$GITHUB_OUTPUT"
+      - run: flutter drive -d ${{ steps.sim.outputs.udid }} --driver=test_driver/integration_test.dart --target=integration_test/smoke_test.dart
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshots-ios
+          path: build/screenshots/
+          if-no-files-found: warn
