@@ -70,10 +70,14 @@ class RunSummaryScreen extends StatefulWidget {
     required this.database,
     required this.runId,
     this.from,
+    this.backLabel = 'Back to my progress',
   });
 
   final HandsDatabase database;
   final String runId;
+
+  /// Where the header Back goes, read out; it pops when [from] is null.
+  final String backLabel;
 
   /// The Session whose run just ended, when arriving straight from it. Only
   /// then does the screen offer Go again and play its entry motion.
@@ -201,7 +205,7 @@ class _RunSummaryScreenState extends State<RunSummaryScreen>
             title: _run == null ? '' : '${_run!.exercise} results',
             subtitle: _subtitle,
             semanticsLabel: _headerLabel,
-            backLabel: 'Back to my progress',
+            backLabel: widget.backLabel,
             onBack: _back,
           ),
           Expanded(

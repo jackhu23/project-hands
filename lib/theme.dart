@@ -54,6 +54,9 @@ abstract final class HandsColors {
   // Tints
   static const pinkPill = Color(0xFFFCE4E8); // label pills, "End this run"
   static const pinkCard = Color(0xFFF9E6E9); // "From your therapist" card
+  static const tealTint = Color(0xFFE1F0F3); // COMPLETED pill
+  static const zebra = Color(0xFFF7FAFB); // odd table rows
+  static const stoppedBar = Color(0xFFF0A3B0); // stopped runs in a bar
 
   // Run screen play area (radial: centre to edge)
   static const stageCentre = Color(0xFFFFFFFF);
@@ -254,6 +257,26 @@ abstract final class HandsSizes {
   static const summaryGoAgainH = 60.0;
   static const summaryButtonGap = 12.0;
 
+  // All runs (all-runs-b mockup)
+  static const allRunsPadBottom = 26.0;
+  static const allRunsLeftW = 380.0;
+  static const allRunsCardGap = 16.0;
+  static const tableGap = 12.0; // between columns, title row to table
+  static const tablePadH = 20.0;
+  static const tableCellPadH = 12.0;
+  static const runRowMinH = 64.0;
+  static const segmentH = 42.0;
+  static const segmentPad = 3.0;
+  static const segmentPadH = 16.0;
+  static const statusPillH = 30.0;
+  static const statusPillPadH = 12.0;
+  static const levelLabelW = 64.0;
+  static const levelTrackH = 18.0;
+  static const levelCountW = 24.0;
+  static const legendSquare = 12.0;
+  static const chevron = 22.0;
+  static const practiceButtonH = 60.0;
+
   static const balloonW = 134.0;
   static const balloonH = 178.0; // includes string; hit area is the body only
 }
@@ -381,6 +404,29 @@ abstract final class HandsText {
   static final dotNumber = _n(13, FontWeight.w900, HandsColors.white);
   static final legend = _n(14, FontWeight.w700, HandsColors.inkMuted);
   static final goAgain = _n(19, FontWeight.w800, HandsColors.tealDeep);
+  // All runs
+  static final cardEyebrow = _n(14, FontWeight.w800, HandsColors.red, ls: 1.5);
+  static final tableHead = _n(14, FontWeight.w800, HandsColors.tealLink);
+  static final tableLabel = _n(16, FontWeight.w700, HandsColors.ink);
+  static final tableValue = _n(24, FontWeight.w900, HandsColors.ink);
+  static final levelCount = _n(16, FontWeight.w900, HandsColors.ink);
+  static final everyRun = _n(22, FontWeight.w800, HandsColors.tealHeading);
+  static final segment = _n(15, FontWeight.w800, HandsColors.tealLink);
+  static final columnHead = _n(
+    13,
+    FontWeight.w800,
+    HandsColors.inkMuted,
+    ls: 1.0,
+  );
+  static final runDate = _n(17, FontWeight.w800, HandsColors.ink);
+  static final runTime = _n(14, FontWeight.w400, HandsColors.inkMuted);
+  static final cellMuted = _n(16, FontWeight.w700, HandsColors.inkMuted);
+  static final statusPill = _n(
+    13,
+    FontWeight.w800,
+    HandsColors.tealLink,
+    ls: 1.0,
+  );
 }
 
 /// App-wide ThemeData. Screens still use the gradients and tokens above.

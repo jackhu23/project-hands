@@ -56,25 +56,7 @@ OutcomeCounts countOutcomes(Iterable<ActionRow> actions) {
   );
 }
 
-/// One row of the run detail.
-typedef TrialDetail = ({
-  int number,
-  int zone,
-  Duration? reactionTime,
-  OutcomeCounts counts,
-});
-
-List<TrialDetail> trialDetails(RunRecord r) => [
-  for (final t in r.trials)
-    (
-      number: t.number,
-      zone: t.zone,
-      reactionTime: reactionTime(r, t),
-      counts: countOutcomes(_actionsOf(r, t)),
-    ),
-];
-
-/// The history page's summary. Run counts include stopped runs; the metrics
+/// My progress's summary. Run counts include stopped runs; the metrics
 /// use completed runs only and are null when there's nothing to measure.
 typedef ProgressStats = ({
   int runs,
@@ -108,13 +90,28 @@ ProgressStats summarize(Iterable<RunRecord> runs) {
   );
 }
 
-/// [summarize] for each Difficulty Level played, lowest first.
-Map<int, ProgressStats> summarizeByLevel(Iterable<RunRecord> runs) => {
-  for (final level in {
-    for (final r in runs) r.run.difficultyLevel,
-  }.toList()..sort())
-    level: summarize(runs.where((r) => r.run.difficultyLevel == level)),
-};
+/// One column of the All runs summary. Unlike [summarize], Overlapping
+/// Touches per run counts every run, stopped ones included; null with none.
+typedef RunCounts = ({
+  int runs,
+  int completed,
+  int stopped,
+  double? overlappingPerRun,
+});
+
+RunCounts countRuns(Iterable<RunRecord> runs) {
+  final completed = runs
+      .where((r) => r.run.outcome == RunOutcome.completed)
+      .length;
+  final overlapping = countOutcomes([for (final r in runs) ...r.actions])
+      .overlapping;
+  return (
+    runs: runs.length,
+    completed: completed,
+    stopped: runs.length - completed,
+    overlappingPerRun: runs.isEmpty ? null : overlapping / runs.length,
+  );
+}
 
 Duration? mean(List<Duration> ds) =>
     ds.isEmpty ? null : ds.reduce((a, b) => a + b) ~/ ds.length;

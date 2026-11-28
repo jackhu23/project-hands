@@ -123,7 +123,10 @@ class _BalloonTouchHubState extends State<BalloonTouchHub>
               children: [
                 _practice(),
                 if (_tab == 1)
-                  MyProgressTab(database: widget.database)
+                  MyProgressTab(
+                    database: widget.database,
+                    onPractice: () => _showTab(0),
+                  )
                 else
                   const SizedBox(),
               ],
