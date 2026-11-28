@@ -38,8 +38,12 @@ jobs:
           profile: pixel_tablet
           # Kept on: with animations off Flutter turns on reduce motion and the demo stands still.
           disable-animations: false
-          # On failure, also capture the whole screen: system dialogs don't show in Flutter's screenshots.
-          script: flutter drive --no-enable-impeller -d emulator-5554 --driver=test_driver/integration_test.dart --target=integration_test/smoke_test.dart || (mkdir -p build/screenshots && adb exec-out screencap -p > build/screenshots/device-on-failure.png && exit 1)
+          # Android's one-time "Viewing full screen" notice takes focus when the run goes
+          # immersive, which pauses it; mark it seen. On failure, also capture the whole
+          # screen, since system dialogs don't show in Flutter's screenshots.
+          script: |
+            adb shell settings put secure immersive_mode_confirmations confirmed
+            flutter drive --no-enable-impeller -d emulator-5554 --driver=test_driver/integration_test.dart --target=integration_test/smoke_test.dart || (mkdir -p build/screenshots && adb exec-out screencap -p > build/screenshots/device-on-failure.png && exit 1)
       - uses: actions/upload-artifact@v4
         if: always()
         with:
