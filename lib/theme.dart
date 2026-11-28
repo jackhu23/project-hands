@@ -315,6 +315,7 @@ abstract final class HandsText {
   static final screenTitle = _n(38, FontWeight.w900, HandsColors.white, h: 1.1);
   static final cardTitle = _n(34, FontWeight.w800, HandsColors.tealHeading);
   static final sectionTitle = _n(24, FontWeight.w800, HandsColors.tealHeading);
+  static final demoCaption = _n(18, FontWeight.w800, HandsColors.ink);
   static final body = _n(19, FontWeight.w400, HandsColors.ink, h: 1.45);
   static final bodyOnTeal = _n(22, FontWeight.w400, HandsColors.onTealMuted);
   static final eyebrow = _n(16, FontWeight.w800, HandsColors.red, ls: 1.5);
