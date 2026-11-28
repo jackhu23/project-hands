@@ -148,14 +148,14 @@ class _AllRunsScreenState extends State<AllRunsScreen> {
   }
 
   Widget _summary(List<RunRecord> runs) {
-    final columns = <String, RunSummary>{
+    final columns = <String, ProgressStats>{
       'Overall': summarize(runs),
       for (final MapEntry(key: level, value: summary) in summarizeByLevel(
         runs,
       ).entries)
         'Level $level': summary,
     };
-    List<String> each(String Function(RunSummary) f) =>
+    List<String> each(String Function(ProgressStats) f) =>
         columns.values.map(f).toList();
     return _table(columns.keys.toList(), [
       ('Runs', each((s) => '${s.runs}')),
