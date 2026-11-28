@@ -25,6 +25,16 @@ String formatAccuracy(double? accuracy) =>
 /// Minutes and seconds, for example "2:05".
 String formatDuration(Duration d) => '${d.inMinutes}:${_two(d.inSeconds % 60)}';
 
+/// For screen readers, for example "2 minutes 5 seconds".
+String spokenDuration(Duration d) {
+  String unit(int n, String name) => '$n $name${n == 1 ? '' : 's'}';
+  final m = d.inMinutes, s = d.inSeconds % 60;
+  return [
+    if (m > 0) unit(m, 'minute'),
+    if (s > 0 || m == 0) unit(s, 'second'),
+  ].join(' ');
+}
+
 /// Seconds to two places, for example "1.23 s", or a dash.
 String formatSeconds(Duration? d) =>
     d == null ? '–' : '${(d.inMicroseconds / 1e6).toStringAsFixed(2)} s';

@@ -4,6 +4,7 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart' hide Action;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hands/balloon_touch/exercise_screen.dart';
+import 'package:hands/balloon_touch/history_screen.dart';
 import 'package:hands/balloon_touch/run_summary_screen.dart';
 import 'package:hands/balloon_touch/session.dart';
 import 'package:hands/database.dart';
@@ -196,6 +197,28 @@ String label(int i, String rest) => 'Balloon $i, $rest';
 Finder bar(int i) => find.byKey(ValueKey('bar $i'));
 
 void main() {
+  test('durations are spoken in minutes and seconds', () {
+    expect(spokenDuration(const Duration(seconds: 17)), '17 seconds');
+    expect(spokenDuration(const Duration(seconds: 1)), '1 second');
+    expect(spokenDuration(Duration.zero), '0 seconds');
+    expect(spokenDuration(const Duration(minutes: 1)), '1 minute');
+    expect(
+      spokenDuration(const Duration(minutes: 2, seconds: 5)),
+      '2 minutes 5 seconds',
+    );
+  });
+
+  testWidgets('the time is 12-hour even on a 24-hour tablet', (tester) async {
+    tester.platformDispatcher.alwaysUse24HourFormatTestValue = true;
+    addTearDown(tester.platformDispatcher.clearAlwaysUse24HourTestValue);
+    final db = await pumpApp(tester);
+    await openSummary(tester, await seedRun(db, threeTrials));
+    expect(
+      find.textContaining(RegExp(r'^27 Nov 2026 · 2:05\sPM$')),
+      findsOneWidget,
+    );
+  });
+
   group('ways in', () {
     testWidgets('finishing every balloon shows the summary, and Back never '
         'returns into the run', (tester) async {
@@ -207,8 +230,9 @@ void main() {
 
       expect(find.byType(RunSummaryScreen), findsOneWidget);
       expect(find.byType(ExerciseScreen), findsNothing);
-      expect(find.text('BALLOON TOUCH · RUN SUMMARY'), findsOneWidget);
-      expect(find.textContaining(RegExp(r' · Level 2$')), findsOneWidget);
+      expect(find.text('RUN SUMMARY'), findsOneWidget);
+      expect(find.text('Balloon Touch results'), findsOneWidget);
+      expect(find.text('LEVEL 2'), findsOneWidget);
       expect(find.text('3 of 3'), findsOneWidget);
       expect(find.text('RUN COMPLETE'), findsOneWidget);
       expect(find.text('100%'), findsOneWidget);
@@ -273,7 +297,21 @@ void main() {
 
       expect(find.byType(RunSummaryScreen), findsOneWidget);
       expect(
-        find.textContaining(RegExp(r'^27 Nov 2026 · 2:05\sPM · Level 2$')),
+        find.textContaining(RegExp(r'^27 Nov 2026 · 2:05\sPM$')),
+        findsOneWidget,
+      );
+      expect(
+        tester.getSemantics(
+          find.bySemanticsLabel(
+            RegExp(r'^Balloon Touch results, 27 November 2026, 2:05\sPM$'),
+          ),
+        ),
+        isSemantics(isHeader: true),
+      );
+      expect(
+        find.bySemanticsLabel(
+          RegExp(r'^Level 2\. Run complete\. \d.* seconds? total\.$'),
+        ),
         findsOneWidget,
       );
       expect(find.text('Go again'), findsNothing, reason: 'not from a run');
@@ -362,13 +400,10 @@ void main() {
       expect(find.text('3 of 3'), findsOneWidget);
       expect(find.text('0:31 total'), findsOneWidget);
       expect(find.text('75%'), findsOneWidget);
-      expect(
-        find.text('3 pops · 1 miss · Level 2 average 67%'),
-        findsOneWidget,
-      );
+      expect(find.text('3 pops · 1 miss\nLevel 2 average 67%'), findsOneWidget);
       expect(find.text('1.50 s'), findsOneWidget);
       expect(
-        find.text('Average per balloon · Level 2 average 1.00 s'),
+        find.text('Average per balloon\nLevel 2 average 1.00 s'),
         findsOneWidget,
       );
     });

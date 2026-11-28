@@ -226,12 +226,13 @@ abstract final class HandsSizes {
   static const pauseGap = 16.0;
 
   // Run summary (run-summary mockup)
-  static const summaryPadTop = 24.0;
-  static const summaryPadBottom = 28.0;
+  static const summaryPadTop = 12.0;
+  static const summaryPadBottom = 16.0;
   static const summaryGap = 16.0;
   static const bannerPadH = 28.0;
   static const bannerPadV = 22.0;
   static const summaryPillH = 34.0;
+  static const summaryPillPadH = 16.0;
   static const summaryStatPadH = 22.0;
   static const summaryStatPadV = 16.0;
   static const summaryCardPadH = 18.0;
@@ -311,7 +312,7 @@ abstract final class HandsText {
     ls: -0.5,
     h: 1.05,
   );
-  static final screenTitle = _n(38, FontWeight.w900, HandsColors.white);
+  static final screenTitle = _n(38, FontWeight.w900, HandsColors.white, h: 1.1);
   static final cardTitle = _n(34, FontWeight.w800, HandsColors.tealHeading);
   static final sectionTitle = _n(24, FontWeight.w800, HandsColors.tealHeading);
   static final body = _n(19, FontWeight.w400, HandsColors.ink, h: 1.45);
@@ -324,6 +325,12 @@ abstract final class HandsText {
     ls: 1.5,
   );
   static final pill = _n(15, FontWeight.w800, HandsColors.redDeep, ls: 1.0);
+  static final summaryPill = _n(
+    14,
+    FontWeight.w800,
+    HandsColors.redDeep,
+    ls: 1.0,
+  );
   static final chip = _n(18, FontWeight.w800, HandsColors.white);
   static final button = _n(30, FontWeight.w900, HandsColors.white);
   static final buttonSmall = _n(20, FontWeight.w900, HandsColors.tealDeep);

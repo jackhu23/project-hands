@@ -130,15 +130,17 @@ class _RunSummaryScreenState extends State<RunSummaryScreen>
     }
   }
 
-  String get _title {
-    final run = _run;
-    if (run == null) return '';
-    final time = MediaQuery.alwaysUse24HourFormatOf(context)
-        ? DateFormat.Hm()
-        : DateFormat.jm();
-    return '${DateFormat('d MMM y').format(run.startedAt)} · '
-        '${time.format(run.startedAt)} · Level ${run.difficultyLevel}';
-  }
+  // Always 12-hour, whatever the tablet's setting.
+  String _time(ExerciseRunRow run) => DateFormat.jm().format(run.startedAt);
+
+  String? get _subtitle => _run == null
+      ? null
+      : '${DateFormat('d MMM y').format(_run!.startedAt)} · ${_time(_run!)}';
+
+  String? get _headerLabel => _run == null
+      ? null
+      : '${_run!.exercise} results, '
+            '${DateFormat('d MMMM y').format(_run!.startedAt)}, ${_time(_run!)}';
 
   /// To My progress: popped back to when opened from there, or a fresh hub
   /// on that tab after a run.
@@ -192,8 +194,10 @@ class _RunSummaryScreenState extends State<RunSummaryScreen>
       body: Column(
         children: [
           GradientHeader(
-            eyebrow: 'BALLOON TOUCH · RUN SUMMARY',
-            title: _title,
+            eyebrow: 'RUN SUMMARY',
+            title: _run == null ? '' : '${_run!.exercise} results',
+            subtitle: _subtitle,
+            semanticsLabel: _headerLabel,
             backLabel: 'Back to my progress',
             onBack: _back,
           ),
@@ -345,30 +349,69 @@ class _RunSummaryScreenState extends State<RunSummaryScreen>
             ],
           ),
         ),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          spacing: HandsSizes.gapXS,
-          children: [
-            Container(
-              height: HandsSizes.summaryPillH,
-              padding: const EdgeInsets.symmetric(
-                horizontal: HandsSizes.pillPadH,
-              ),
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: HandsColors.pinkPill,
-                borderRadius: BorderRadius.circular(HandsSizes.radiusPill),
-              ),
-              child: Text(
-                s.completed ? 'RUN COMPLETE' : 'RUN STOPPED',
-                style: HandsText.pill,
-              ),
+        Flexible(
+          child: Semantics(
+            label:
+                'Level ${s.run.difficultyLevel}. '
+                'Run ${s.completed ? 'complete' : 'stopped'}. '
+                '${spokenDuration(s.duration)} total.',
+            excludeSemantics: true,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              spacing: HandsSizes.gapXS,
+              children: [
+                // Stacks the pills when the banner is narrow.
+                Wrap(
+                  alignment: WrapAlignment.end,
+                  spacing: HandsSizes.gapXS,
+                  runSpacing: HandsSizes.gapXS,
+                  children: [
+                    Container(
+                      height: HandsSizes.summaryPillH,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: HandsSizes.summaryPillPadH,
+                      ),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: HandsColors.onTealFill,
+                        border: Border.all(color: HandsColors.onTealLine),
+                        borderRadius: BorderRadius.circular(
+                          HandsSizes.radiusPill,
+                        ),
+                      ),
+                      child: Text(
+                        'LEVEL ${s.run.difficultyLevel}',
+                        style: HandsText.summaryPill.copyWith(
+                          color: HandsColors.white,
+                        ),
+                      ),
+                    ),
+                    Container(
+                      height: HandsSizes.summaryPillH,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: HandsSizes.summaryPillPadH,
+                      ),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: HandsColors.pinkPill,
+                        borderRadius: BorderRadius.circular(
+                          HandsSizes.radiusPill,
+                        ),
+                      ),
+                      child: Text(
+                        s.completed ? 'RUN COMPLETE' : 'RUN STOPPED',
+                        style: HandsText.summaryPill,
+                      ),
+                    ),
+                  ],
+                ),
+                Text(
+                  '${formatDuration(s.duration)} total',
+                  style: HandsText.bannerMeta,
+                ),
+              ],
             ),
-            Text(
-              '${formatDuration(s.duration)} total',
-              style: HandsText.bannerMeta,
-            ),
-          ],
+          ),
         ),
       ],
     ),
@@ -409,16 +452,18 @@ class _RunSummaryScreenState extends State<RunSummaryScreen>
             'ACCURACY',
             formatAccuracy(s.accuracy),
             [
-              _plural(s.pops, 'pop'),
-              _plural(s.misses, 'miss', 'misses'),
-              if (s.overlapping > 0)
-                _plural(
-                  s.overlapping,
-                  'overlapping touch',
-                  'overlapping touches',
-                ),
+              [
+                _plural(s.pops, 'pop'),
+                _plural(s.misses, 'miss', 'misses'),
+                if (s.overlapping > 0)
+                  _plural(
+                    s.overlapping,
+                    'overlapping touch',
+                    'overlapping touches',
+                  ),
+              ].join(' · '),
               if (s.levelAccuracy case final a?) '$level ${formatAccuracy(a)}',
-            ].join(' · '),
+            ].join('\n'),
           ),
           card(
             'REACTION TIME',
@@ -427,7 +472,7 @@ class _RunSummaryScreenState extends State<RunSummaryScreen>
               'Average per balloon',
               if (s.levelReactionTime case final rt?)
                 '$level ${formatSeconds(rt)}',
-            ].join(' · '),
+            ].join('\n'),
           ),
         ],
       ),
@@ -491,7 +536,8 @@ class _RunSummaryScreenState extends State<RunSummaryScreen>
         Row(
           children: [
             Expanded(child: Text(title, style: HandsText.summaryCardTitle)),
-            ?trailing,
+            // Shares the row rather than squeezing the title to a strip.
+            if (trailing != null) Flexible(child: trailing),
           ],
         ),
         Expanded(child: child),
@@ -550,7 +596,10 @@ class _RunSummaryScreenState extends State<RunSummaryScreen>
                             ),
                           ),
                         ),
-                        Text('${t.number}', style: HandsText.barLabel),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text('${t.number}', style: HandsText.barLabel),
+                        ),
                       ],
                     ),
                   ),

@@ -10,6 +10,8 @@ class GradientHeader extends StatelessWidget {
     super.key,
     required this.eyebrow,
     required this.title,
+    this.subtitle,
+    this.semanticsLabel,
     this.tabs = const [],
     this.selectedTab = 0,
     this.onTab,
@@ -18,6 +20,10 @@ class GradientHeader extends StatelessWidget {
   });
 
   final String eyebrow, title;
+  final String? subtitle;
+
+  /// Read for the title and subtitle together, in place of their text.
+  final String? semanticsLabel;
   final List<String> tabs;
   final int selectedTab;
   final ValueChanged<int>? onTab;
@@ -64,9 +70,21 @@ class GradientHeader extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(eyebrow, style: HandsText.eyebrowOnTeal),
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(title, style: HandsText.screenTitle),
+                      Semantics(
+                        header: true,
+                        label: semanticsLabel,
+                        excludeSemantics: semanticsLabel != null,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(title, style: HandsText.screenTitle),
+                            ),
+                            if (subtitle != null)
+                              Text(subtitle!, style: HandsText.bannerMeta),
+                          ],
+                        ),
                       ),
                     ],
                   ),
