@@ -2,6 +2,7 @@ import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart' hide Action;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hands/balloon_touch/history_screen.dart';
 import 'package:hands/balloon_touch/session.dart';
 import 'package:hands/database.dart';
 
@@ -183,7 +184,7 @@ void main() {
     await first.up();
     await settle(tester);
 
-    expect(find.text('Session finished'), findsOneWidget);
+    expect(find.text('Well done!'), findsOneWidget);
     expect(
       await outcomes(db),
       unorderedEquals([ActionOutcome.pop, ActionOutcome.overlappingTouch]),
@@ -263,13 +264,27 @@ void main() {
     await tapAndSettle(tester, find.text('0 of 3'));
     await tapAndSettle(tester, find.text('Pause'));
     await touch(tester, corner);
-    await tapAndSettle(tester, find.text('Resume'));
+    await tapAndSettle(tester, find.text('Keep going'));
     final cancelled = await tester.startGesture(bodyCenter(tester));
     await cancelled.cancel();
     await settle(tester);
     await touch(tester, bodyCenter(tester));
 
     expect(await outcomes(db), [ActionOutcome.pop]);
+  });
+
+  testWidgets('a failed save tells the Patient', (tester) async {
+    final db = await pumpApp(tester);
+    await startRun(tester, balloons: 1);
+    await tester.runAsync(db.close);
+
+    await touch(tester, bodyCenter(tester));
+
+    expect(
+      find.text("Couldn't save this run. Please tell your therapist."),
+      findsOneWidget,
+    );
+    expect(find.text('Well done!'), findsOneWidget);
   });
 
   testWidgets('each pause and resume time is saved on the Exercise Run', (
@@ -279,8 +294,8 @@ void main() {
     await startRun(tester);
 
     await tapAndSettle(tester, find.text('Pause'));
-    await tapAndSettle(tester, find.text('Resume'));
-    await tapAndSettle(tester, find.byTooltip('Home'));
+    await tapAndSettle(tester, find.text('Keep going'));
+    await tapAndSettle(tester, find.text('Pause'));
 
     final run = await db.select(db.exerciseRuns).getSingle();
     final pauses = await (db.select(
@@ -296,12 +311,17 @@ void main() {
   testWidgets('history rows show Difficulty Level and Accuracy', (
     tester,
   ) async {
-    await pumpApp(tester);
+    final db = await pumpApp(tester);
     await startRun(tester, balloons: 1, level: 2);
     await touch(tester, tester.getTopLeft(balloon) - const Offset(10, 10));
     await touch(tester, bodyCenter(tester));
 
-    await tapAndSettle(tester, find.text('View history'));
+    tester
+        .state<NavigatorState>(find.byType(Navigator))
+        .push(
+          MaterialPageRoute<void>(builder: (_) => AllRunsScreen(database: db)),
+        );
+    await settle(tester);
 
     expect(
       find.descendant(

@@ -50,7 +50,9 @@ Future<void> oneRun(
     await settle(tester);
   }
   await tapAndSettle(tester, find.bySemanticsLabel('Balloon'));
-  await tapAndSettle(tester, find.text('Start New Session'));
+  // Back from Run complete returns to the hub.
+  await tester.binding.handlePopRoute();
+  await settle(tester);
 }
 
 Future<void> openProgress(WidgetTester tester) =>
@@ -235,12 +237,17 @@ void main() {
     await oneRun(tester);
     await tester.tap(find.text('My progress'));
     await tester.pump();
-    await tester.pump();
+    // Past the start of the tab's fade-through, which hides it at first.
+    await tester.pump(const Duration(milliseconds: 150));
 
-    expect(find.text('0%'), findsOneWidget, reason: 'counts up from 0');
+    final counted = find.text('100%').evaluate().length;
     final growing = tester.getSize(find.bySemanticsLabel(RegExp('latest')));
     await settle(tester);
-    expect(find.text('100%'), findsWidgets);
+    expect(
+      find.text('100%').evaluate().length,
+      greaterThan(counted),
+      reason: 'still counting up',
+    );
     expect(find.text('0%'), findsNothing);
     expect(
       tester.getSize(find.bySemanticsLabel(RegExp('latest'))).height,

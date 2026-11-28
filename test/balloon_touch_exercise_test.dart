@@ -6,6 +6,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hands/balloon_touch/balloon_illustration.dart';
 import 'package:hands/balloon_touch/exercise_screen.dart';
+import 'package:hands/balloon_touch/run_complete_screen.dart';
+import 'package:hands/balloon_touch/session.dart';
 import 'package:hands/theme.dart';
 
 import 'tablet_sizes.dart';
@@ -77,11 +79,6 @@ Future<void> touchWith(
   await settle(tester);
 }
 
-/// The progress page's bar.
-double progress(WidgetTester tester) => tester
-    .widget<LinearProgressIndicator>(find.byType(LinearProgressIndicator))
-    .value!;
-
 /// The run's progress pill bar.
 double runProgress(WidgetTester tester) => tester
     .widget<FractionallySizedBox>(find.byType(FractionallySizedBox))
@@ -112,8 +109,9 @@ void main() {
     expect(find.bySemanticsLabel('Carle Health'), findsOneWidget);
     expect(find.text('0 of 3'), findsOneWidget);
     expect(find.widgetWithText(FilledButton, 'Pause'), findsOneWidget);
+    // One Pause button, and no Home or Finish to end a run by accident.
     for (final tooltip in ['Home', 'Finish']) {
-      expect(find.byTooltip(tooltip), findsOneWidget);
+      expect(find.byTooltip(tooltip), findsNothing);
     }
     expect(find.text('H.A.N.D.S'), findsNothing);
     expect(find.byTooltip('Settings'), findsNothing);
@@ -297,7 +295,7 @@ void main() {
       await miss(tester);
       await tester.tap(find.widgetWithText(FilledButton, 'Pause'));
       await settle(tester);
-      await tester.tap(find.text('Resume'));
+      await tester.tap(find.text('Keep going'));
       await settle(tester);
       expect(find.text('1'), findsOneWidget);
       expect(find.text('miss'), findsOneWidget);
@@ -424,7 +422,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
     await tester.tap(find.widgetWithText(FilledButton, 'Pause'));
     await settle(tester);
-    await tester.tap(find.text('Resume'));
+    await tester.tap(find.text('Keep going'));
     await tester.pump();
     expect(find.byType(PopBurst), findsNothing);
     expect(balloon, findsOneWidget);
@@ -636,30 +634,79 @@ void main() {
     expect(pressed(), isFalse);
   });
 
-  testWidgets('popping every balloon opens the finished progress page', (
-    tester,
-  ) async {
-    await startRun(tester);
-    for (var i = 0; i < 3; i++) {
-      await touch(tester, bodyCenter(tester));
+  group('Run complete', () {
+    Future<void> finish(WidgetTester tester, {int balloons = 3}) async {
+      await startRun(tester, balloons: balloons);
+      for (var i = 0; i < balloons; i++) {
+        await touch(tester, bodyCenter(tester));
+      }
     }
 
-    for (final text in [
-      'Your progress',
-      '3/3',
-      'Session finished',
-      'You completed 3 of 3 balloons.',
-      'Start New Session',
-    ]) {
-      expect(find.text(text), findsOneWidget);
-    }
-    expect(find.text('Resume Session'), findsNothing);
-    expect(find.byType(BalloonIllustration), findsOneWidget);
-    expect(progress(tester), 1);
+    testWidgets('popping every balloon shows Well done', (tester) async {
+      await finish(tester);
+      for (final text in [
+        'RUN COMPLETE',
+        'Well done!',
+        'You popped all 3 balloons.',
+        "Back to today's plan",
+        'Go again',
+      ]) {
+        expect(find.text(text), findsOneWidget);
+      }
+      expect(find.bySemanticsLabel('Carle Health'), findsOneWidget);
+      expect(balloon, findsNothing);
+    });
 
-    await tester.tap(find.text('Start New Session'));
-    await settle(tester);
-    expect(find.text('Start'), findsOneWidget);
+    testWidgets('one balloon reads naturally', (tester) async {
+      await finish(tester, balloons: 1);
+      expect(find.text('You popped the balloon.'), findsOneWidget);
+    });
+
+    testWidgets('Go again starts a run with the same level and count', (
+      tester,
+    ) async {
+      await pumpApp(tester);
+      await tester.tap(find.text('Balloon Touch'));
+      await settle(tester);
+      await tester.tap(find.byTooltip('More balloons'));
+      await tester.tap(find.bySemanticsLabel('Difficulty Level 3'));
+      await tester.tap(find.text('Start'));
+      await settle(tester);
+      final first = tester
+          .widget<ExerciseScreen>(find.byType(ExerciseScreen))
+          .session;
+      for (var i = 0; i < 2; i++) {
+        await touch(tester, bodyCenter(tester));
+      }
+
+      await tester.tap(find.text('Go again'));
+      await settle(tester);
+
+      final next = tester
+          .widget<ExerciseScreen>(find.byType(ExerciseScreen))
+          .session;
+      expect(next, isNot(same(first)));
+      expect(next.exerciseRun.difficultyLevel, 3);
+      expect(find.text('0 of 2'), findsOneWidget);
+      expect(balloon, findsOneWidget);
+      // Back from the new run returns to the hub, not to Run complete.
+      await tester.binding.handlePopRoute();
+      await settle(tester);
+      expect(find.text('Start'), findsOneWidget);
+    });
+
+    testWidgets("Back to today's plan goes Home", (tester) async {
+      await finish(tester);
+      await tester.tap(find.text("Back to today's plan"));
+      await settle(tester);
+      expect(find.text("Today's plan"), findsOneWidget);
+      expect(find.byType(RunCompleteScreen), findsNothing);
+    });
+
+    testWidgets('fits every tablet', (tester) async {
+      await expectFitsTablets(tester, () => finish(tester));
+      expect(find.text('Well done!'), findsOneWidget);
+    });
   });
 
   // Portrait and landscape tablets, in logical pixels.
@@ -669,7 +716,7 @@ void main() {
     Size(1280, 800),
     Size(800, 1280),
   ]) {
-    testWidgets('Exercise and progress pages fit $size', (tester) async {
+    testWidgets('the run and Run complete fit $size', (tester) async {
       await pumpApp(tester, null, size);
       await tester.tap(find.text('Balloon Touch'));
       await settle(tester);
@@ -691,38 +738,77 @@ void main() {
       expect(area.intersect(drawn), drawn);
 
       await touch(tester, bodyCenter(tester));
-      expect(find.text('Session finished'), findsOneWidget);
+      expect(find.text('Well done!'), findsOneWidget);
+      expect(tester.takeException(), isNull);
     });
   }
 
   group('pause', () {
     final pauseButton = find.widgetWithText(FilledButton, 'Pause');
-    final pausedPanel = find.ancestor(
+    final overlay = find.ancestor(
       of: find.text('Paused'),
       matching: find.byWidgetPredicate(
         (w) =>
-            w is Container &&
-            (w.decoration as BoxDecoration?)?.color == HandsColors.panel,
+            w is DecoratedBox &&
+            (w.decoration as BoxDecoration).gradient == HandsGradients.pause,
       ),
     );
+    final keepGoing = find.widgetWithText(FilledButton, 'Keep going');
+    final endRun = find.widgetWithText(FilledButton, 'End this run');
 
     Future<void> tapAndSettle(WidgetTester tester, Finder finder) async {
       await tester.tap(finder);
       await settle(tester);
     }
 
-    void expectPausedPanel(WidgetTester tester) {
-      expect(pausedPanel, findsOneWidget);
-      expect(find.text('Resume'), findsOneWidget);
+    void expectPauseOverlay(WidgetTester tester) {
+      expect(overlay, findsOneWidget);
+      expect(keepGoing, findsOneWidget);
+      expect(endRun, findsOneWidget);
       expect(balloon, findsNothing);
       expect(tester.widget<FilledButton>(pauseButton).onPressed, isNull);
     }
 
-    testWidgets('Pause swaps the balloon for the Paused panel', (tester) async {
+    testWidgets('Pause covers the whole screen with the overlay', (
+      tester,
+    ) async {
       await startRun(tester);
       await tapAndSettle(tester, pauseButton);
-      expectPausedPanel(tester);
-      expect(find.text('0 of 3'), findsOneWidget);
+      expectPauseOverlay(tester);
+      expect(tester.getRect(overlay), Offset.zero & const Size(1280, 800));
+      expect(tester.getSize(keepGoing), const Size(460, 88));
+      expect(tester.getSize(endRun), const Size(460, 68));
+      // The run behind is hidden from screen readers.
+      final semantics = tester.ensureSemantics();
+      await tester.pump();
+      expect(find.semantics.byLabel('Carle Health'), findsNothing);
+      expect(find.semantics.byLabel('Keep going'), findsOne);
+      semantics.dispose();
+    });
+
+    testWidgets('the overlay fits every tablet', (tester) async {
+      await expectFitsTablets(tester, () async {
+        await startRun(tester);
+        await tapAndSettle(tester, pauseButton);
+      });
+      expectPauseOverlay(tester);
+    });
+
+    testWidgets('End this run lands on the Practice tab', (tester) async {
+      await startRun(tester);
+      await touch(tester, bodyCenter(tester));
+      final session = tester
+          .widget<ExerciseScreen>(find.byType(ExerciseScreen))
+          .session;
+      await tapAndSettle(tester, pauseButton);
+
+      await tapAndSettle(tester, endRun);
+
+      expect(session.status, SessionStatus.stopped);
+      expect(find.byType(ExerciseScreen), findsNothing);
+      expect(find.text('STEP 2 · SET UP YOUR RUN'), findsOneWidget);
+      await tapAndSettle(tester, find.text('Start'));
+      expect(find.text('0 of 3'), findsOneWidget, reason: 'a new run');
     });
 
     testWidgets('Resume brings back the same balloon at the same spot', (
@@ -734,10 +820,11 @@ void main() {
 
       await tapAndSettle(tester, pauseButton);
       // Touching where the balloon was does nothing while paused, unless it
-      // sat where the centred Resume button now is.
-      final resume = find.widgetWithText(FilledButton, 'Resume');
-      if (!tester.getRect(resume).contains(spot)) await touch(tester, spot);
-      await tapAndSettle(tester, find.text('Resume'));
+      // sat where a button now is.
+      if (![keepGoing, endRun].any((b) => tester.getRect(b).contains(spot))) {
+        await touch(tester, spot);
+      }
+      await tapAndSettle(tester, keepGoing);
 
       expect(find.text('Paused'), findsNothing);
       expect(bodyCenter(tester), sameSpot(spot));
@@ -756,11 +843,7 @@ void main() {
       await tester.pump();
 
       await touchWith(tester, tester.getCenter(pauseButton), pointer: 2);
-      await touchWith(
-        tester,
-        tester.getCenter(find.text('Resume')),
-        pointer: 3,
-      );
+      await touchWith(tester, tester.getCenter(keepGoing), pointer: 3);
       await hold.up();
       await settle(tester);
 
@@ -773,64 +856,6 @@ void main() {
       );
       await touch(tester, spot);
       expect(find.text('1 of 3'), findsOneWidget);
-    });
-
-    for (final (name, button) in [
-      ('Home', find.byTooltip('Home')),
-      ('Finish', find.byTooltip('Finish')),
-    ]) {
-      testWidgets('$name pauses and opens the paused progress page', (
-        tester,
-      ) async {
-        await startRun(tester);
-        await touch(tester, bodyCenter(tester));
-        await tapAndSettle(tester, button);
-
-        for (final text in [
-          '1/3',
-          'Session paused',
-          'You completed 1 of 3 balloons.',
-          'Resume Session',
-          'Start New Session',
-        ]) {
-          expect(find.text(text), findsOneWidget);
-        }
-        expect(find.text('Session finished'), findsNothing);
-        expect(progress(tester), closeTo(1 / 3, 1e-9));
-      });
-    }
-
-    testWidgets('Resume Session returns to the same balloon and count', (
-      tester,
-    ) async {
-      await startRun(tester);
-      await touch(tester, bodyCenter(tester));
-      final spot = bodyCenter(tester);
-      await tapAndSettle(tester, find.byTooltip('Home'));
-
-      await tapAndSettle(tester, find.text('Resume Session'));
-
-      expect(find.text('Paused'), findsNothing);
-      expect(bodyCenter(tester), sameSpot(spot));
-      expect(find.text('1 of 3'), findsOneWidget);
-      await touch(tester, spot);
-      expect(find.text('2 of 3'), findsOneWidget);
-    });
-
-    testWidgets('Start New Session from a paused Session returns to the hub', (
-      tester,
-    ) async {
-      await startRun(tester);
-      await touch(tester, bodyCenter(tester));
-      await tapAndSettle(tester, find.byTooltip('Finish'));
-
-      await tapAndSettle(tester, find.text('Start New Session'));
-
-      expect(find.text('Start'), findsOneWidget);
-      expect(find.text('Resume Session'), findsNothing);
-      await tapAndSettle(tester, find.text('Start'));
-      expect(find.text('0 of 3'), findsOneWidget, reason: 'a new Session');
-      expect(balloon, findsOneWidget);
     });
 
     // Lifecycle changes must follow the order the platform reports them in.
@@ -859,18 +884,11 @@ void main() {
         await settle(tester);
 
         // It stays paused on return until the Patient resumes.
-        expectPausedPanel(tester);
-        await tapAndSettle(tester, find.text('Resume'));
+        expectPauseOverlay(tester);
+        await tapAndSettle(tester, keepGoing);
         expect(bodyCenter(tester), sameSpot(spot));
       });
     }
-
-    testWidgets("the progress page's gear does nothing", (tester) async {
-      await startRun(tester);
-      await tapAndSettle(tester, find.byTooltip('Home'));
-      await tapAndSettle(tester, find.byIcon(Icons.settings));
-      expect(find.text('Session paused'), findsOneWidget);
-    });
   });
 
   group('pulse', () {
@@ -939,7 +957,7 @@ void main() {
         tester.binding.handleAppLifecycleStateChanged(state);
       }
       await settle(tester);
-      await tester.tap(find.text('Resume'));
+      await tester.tap(find.text('Keep going'));
       await tester.pump();
       expect((await sample(tester, 1)).toSet(), hasLength(greaterThan(1)));
     });
@@ -969,15 +987,6 @@ void main() {
       tester.platformDispatcher.clearAccessibilityFeaturesTestValue();
       await tester.pump();
       expect((await sample(tester, 1)).toSet(), hasLength(greaterThan(1)));
-    });
-
-    testWidgets('the progress illustration stays still', (tester) async {
-      await startRun(tester, balloons: 1);
-      await touch(tester, bodyCenter(tester));
-      final still = find.byType(BalloonIllustration);
-      final size = tester.getRect(still);
-      await tester.pump(const Duration(seconds: 1));
-      expect(tester.getRect(still), size);
     });
 
     // The float's reach is 67 px right of the centre at rest, here 12 px up.

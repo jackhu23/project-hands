@@ -1,3 +1,4 @@
+import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
 
 import '../database.dart';
@@ -27,23 +28,57 @@ class BalloonTouchHub extends StatefulWidget {
   State<BalloonTouchHub> createState() => _BalloonTouchHubState();
 }
 
-class _BalloonTouchHubState extends State<BalloonTouchHub> {
+class _BalloonTouchHubState extends State<BalloonTouchHub>
+    with SingleTickerProviderStateMixin {
   /// Null until the remembered Difficulty Level loads; Start waits for it so
   /// a run never starts at a level the Patient can't see.
   int? _level;
   int _balloons = _minBalloons;
   int _tab = 0;
 
+  /// Fades the tab shown in; it starts shown.
+  late final _tabFade = AnimationController(
+    vsync: this,
+    duration: HandsMotion.tabFade,
+    value: 1,
+  );
+
+  @override
+  void dispose() {
+    _tabFade.dispose();
+    super.dispose();
+  }
+
+  void _showTab(int tab) {
+    if (tab == _tab) return;
+    setState(() => _tab = tab);
+    MediaQuery.disableAnimationsOf(context)
+        ? _tabFade.value = 1
+        : _tabFade.forward(from: 0);
+  }
+
   Future<int> _loadLevel() async =>
       await widget.database.lastDifficultyLevel() ?? minDifficultyLevel;
 
   void _start() {
     // Created once here, not in the route builder, which can run again.
+    // The app's messenger outlives the hub, so Go again runs can use it.
+    final messenger = ScaffoldMessenger.of(context);
     final session = Session(
       patientId: widget.patientId,
       balloonCount: _balloons,
       difficultyLevel: _level!,
-      onChange: widget.database.saveSession,
+      onChange: (s) => widget.database.saveSession(s).catchError((Object _) {
+        messenger
+          ..clearSnackBars()
+          ..showSnackBar(
+            const SnackBar(
+              content: Text(
+                "Couldn't save this run. Please tell your therapist.",
+              ),
+            ),
+          );
+      }),
     );
     Navigator.of(context).push(
       MaterialPageRoute<void>(
@@ -62,21 +97,29 @@ class _BalloonTouchHubState extends State<BalloonTouchHub> {
           title: 'Balloon Touch',
           tabs: const ['Practice', 'My progress'],
           selectedTab: _tab,
-          onTab: (tab) => setState(() => _tab = tab),
+          onTab: _showTab,
         ),
         Expanded(
           // Practice stays mounted, so its level never reloads behind an
           // enabled Start; My progress is built afresh to load the latest runs.
-          child: IndexedStack(
-            index: _tab,
-            sizing: StackFit.expand,
-            children: [
-              _practice(),
-              if (_tab == 1)
-                MyProgressTab(database: widget.database)
-              else
-                const SizedBox(),
-            ],
+          // shortcut: only the incoming tab fades through; the outgoing one
+          // goes at once. Switch to PageTransitionSwitcher if Practice ever
+          // keeps no state.
+          child: FadeThroughTransition(
+            animation: _tabFade,
+            secondaryAnimation: kAlwaysDismissedAnimation,
+            fillColor: HandsColors.white,
+            child: IndexedStack(
+              index: _tab,
+              sizing: StackFit.expand,
+              children: [
+                _practice(),
+                if (_tab == 1)
+                  MyProgressTab(database: widget.database)
+                else
+                  const SizedBox(),
+              ],
+            ),
           ),
         ),
       ],

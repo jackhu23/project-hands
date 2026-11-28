@@ -2,6 +2,7 @@
 // Source of truth: docs/design/DESIGN_HANDOFF.md. Every value comes from the
 // approved mockups; screens take colours, gradients, sizes and text from here.
 
+import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
 
 /// Colour tokens.
@@ -85,6 +86,13 @@ abstract final class HandsGradients {
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
     colors: [HandsColors.redLight, HandsColors.red],
+  );
+
+  /// The Pause overlay, over the run at 96 %.
+  static const pause = LinearGradient(
+    begin: Alignment(-1.0, -0.27),
+    end: Alignment(1.0, 0.27),
+    colors: [Color(0xF50A8199), Color(0xF7003A4E)],
   );
 
   /// Run-screen play area.
@@ -208,6 +216,17 @@ abstract final class HandsSizes {
   static const missIcon = 22.0;
   static const missMarker = 80.0;
 
+  // Pause overlay and Run complete (run-stage mockup)
+  static const pauseButtonW = 460.0;
+  static const keepGoingH = 88.0;
+  static const pauseGap = 16.0;
+  static const completeGap = 18.0;
+  static const completeButtonW = 260.0;
+  static const completeButtonH = 80.0;
+  static const completePillH = 36.0;
+  static const completePillPadH = 18.0;
+  static const completeLogoBottom = 36.0;
+
   static const balloonW = 134.0;
   static const balloonH = 178.0; // includes string; hit area is the body only
 }
@@ -225,6 +244,9 @@ abstract final class HandsMotion {
     milliseconds: 1200,
   ); // lingers to show where
   static const missBump = Duration(milliseconds: 380);
+  static const tabFade = Duration(
+    milliseconds: 300,
+  ); // Practice and My progress
   // Rapid Misses make one announcement, not one each.
   static const missAnnounce = Duration(milliseconds: 1200);
   // Whole cycles of every idle float layer (3.4, 6.2 and 4.6 s), so it loops seamlessly.
@@ -295,6 +317,11 @@ abstract final class HandsText {
   static final runCount = _n(22, FontWeight.w900, HandsColors.ink);
   static final missCount = _n(22, FontWeight.w800, HandsColors.ink);
   static final missWord = _n(17, FontWeight.w700, HandsColors.inkMuted);
+  static final pausedTitle = _n(52, FontWeight.w900, HandsColors.white);
+  static final keepGoing = _n(28, FontWeight.w900, HandsColors.tealDeep);
+  static final endRun = _n(21, FontWeight.w800, HandsColors.redDeep);
+  static final completeBody = _n(24, FontWeight.w400, HandsColors.onTealMuted);
+  static final completeButton = _n(22, FontWeight.w900, HandsColors.white);
 }
 
 /// App-wide ThemeData. Screens still use the gradients and tokens above.
@@ -332,5 +359,36 @@ final handsTheme = () {
       thumbColor: const WidgetStatePropertyAll(HandsColors.white),
     ),
     materialTapTargetSize: MaterialTapTargetSize.padded,
+    pageTransitionsTheme: PageTransitionsTheme(
+      builders: {
+        for (final p in TargetPlatform.values) p: _SharedAxisOrStill(),
+      },
+    ),
   );
 }();
+
+/// Material shared-axis page transitions, instant under reduce motion.
+class _SharedAxisOrStill extends PageTransitionsBuilder {
+  const _SharedAxisOrStill();
+
+  static const _axis = SharedAxisPageTransitionsBuilder(
+    transitionType: SharedAxisTransitionType.horizontal,
+  );
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) => MediaQuery.disableAnimationsOf(context)
+      ? child
+      : _axis.buildTransitions(
+          route,
+          context,
+          animation,
+          secondaryAnimation,
+          child,
+        );
+}
