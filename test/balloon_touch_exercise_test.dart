@@ -156,7 +156,7 @@ void main() {
     expect(balloon, findsOneWidget);
   });
 
-  testWidgets('a Miss shows a grey ring at the lift-off point for 300 ms', (
+  testWidgets('a Miss shows a ripple marker at the lift-off point', (
     tester,
   ) async {
     await startRun(tester);
@@ -166,44 +166,189 @@ void main() {
     await gesture.up();
     await tester.pump();
 
-    final ring = find.byType(MissRing);
-    expect(ring, findsOneWidget);
-    expect(tester.getCenter(ring), sameSpot(off));
-    expect(balloon, findsOneWidget, reason: 'nothing waits on the ring');
-    await tester.pump(const Duration(milliseconds: 310));
-    expect(ring, findsNothing);
+    final marker = find.byType(MissMarker);
+    expect(marker, findsOneWidget);
+    expect(tester.getCenter(marker), sameSpot(off));
+    expect(balloon, findsOneWidget, reason: 'nothing waits on the marker');
+    await tester.pump(const Duration(milliseconds: 1100));
+    expect(marker, findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 30));
+    await tester.pump();
+    expect(marker, findsNothing);
     expect(find.text('0 of 3'), findsOneWidget);
   });
 
-  testWidgets('a Miss leaves a red dot that fades over 1.5 s', (tester) async {
+  testWidgets('quick Misses each keep their own marker', (tester) async {
     await startRun(tester);
-    final off = offBody(tester);
-    await tester.tapAt(off);
+    final a = offBody(tester), b = a + const Offset(0, 20);
+    await tester.tapAt(a);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tapAt(b);
     await tester.pump();
 
-    final dot = find.byType(MissDot);
-    expect(tester.getCenter(dot), sameSpot(off));
-    await tester.pump(const Duration(milliseconds: 1000));
-    expect(dot, findsOneWidget, reason: 'it outlasts the ring');
-    await tester.pump(const Duration(milliseconds: 510));
+    final marker = find.byType(MissMarker);
+    expect(marker, findsNWidgets(2));
+    expect(tester.getCenter(marker.first), sameSpot(a));
+    expect(tester.getCenter(marker.last), sameSpot(b));
+    // The first ends on its own clock, not restarted by the second.
+    await tester.pump(const Duration(milliseconds: 830));
     await tester.pump();
-    expect(dot, findsNothing);
+    expect(marker, findsOneWidget);
+    expect(tester.getCenter(marker), sameSpot(b));
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
+    expect(marker, findsNothing);
   });
 
-  testWidgets('a Pop shows no Miss ring', (tester) async {
+  testWidgets('under reduce motion the marker only fades, over 600 ms', (
+    tester,
+  ) async {
+    tester.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+    await startRun(tester);
+    await tester.tapAt(offBody(tester));
+    await tester.pump();
+    final marker = find.byType(MissMarker);
+    expect(marker, findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 610));
+    await tester.pump();
+    expect(marker, findsNothing);
+  });
+
+  group('Miss chip', () {
+    Future<void> miss(WidgetTester tester) async {
+      await tester.tapAt(offBody(tester));
+      await tester.pump();
+    }
+
+    /// The chip's count, as drawn: its scale and colour.
+    ({double scale, Color? color}) number(WidgetTester tester, String n) {
+      final text = find.text(n);
+      final transforms = find.ancestor(
+        of: text,
+        matching: find.byType(Transform),
+      );
+      return (
+        scale: transforms.evaluate().isEmpty
+            ? 1.0
+            : tester.widget<Transform>(transforms.first).transform.entry(0, 0),
+        color: tester.widget<Text>(text).style?.color,
+      );
+    }
+
+    testWidgets("counts the run's Misses right of the progress pill", (
+      tester,
+    ) async {
+      await startRun(tester);
+      expect(find.text('0'), findsOneWidget);
+      expect(find.text('misses'), findsOneWidget);
+      final pill = tester.getRect(find.text('0 of 3'));
+      final chip = tester.getRect(find.text('misses'));
+      expect(chip.left, greaterThan(pill.right));
+      expect(chip.center.dy, closeTo(pill.center.dy, 1));
+
+      await miss(tester);
+      expect(find.text('1'), findsOneWidget);
+      expect(find.text('miss'), findsOneWidget);
+      await miss(tester);
+      expect(find.text('2'), findsOneWidget);
+      expect(find.text('misses'), findsOneWidget);
+      expect(find.bySemanticsLabel('2 misses'), findsOneWidget);
+    });
+
+    testWidgets("a Pop and an Overlapping Touch don't count", (tester) async {
+      await startRun(tester);
+      final first = await tester.startGesture(offBody(tester), pointer: 1);
+      final second = await tester.startGesture(bodyCenter(tester), pointer: 2);
+      await second.up();
+      await tester.pump();
+      await first.up();
+      await tester.pump();
+      expect(find.text('1'), findsOneWidget, reason: 'the first was a Miss');
+      await touch(tester, bodyCenter(tester));
+      expect(find.text('1'), findsOneWidget);
+    });
+
+    testWidgets('the count survives Pause and Resume', (tester) async {
+      await startRun(tester);
+      await miss(tester);
+      await tester.tap(find.widgetWithText(FilledButton, 'Pause'));
+      await settle(tester);
+      await tester.tap(find.text('Resume'));
+      await settle(tester);
+      expect(find.text('1'), findsOneWidget);
+      expect(find.text('miss'), findsOneWidget);
+    });
+
+    testWidgets('each Miss bumps the number from coral to ink', (tester) async {
+      await startRun(tester);
+      expect(number(tester, '0').scale, 1);
+      await miss(tester);
+      expect(number(tester, '1').scale, closeTo(1.45, 0.01));
+      expect(number(tester, '1').color, HandsColors.coral);
+      await tester.pump(const Duration(milliseconds: 200));
+      await miss(tester);
+      expect(number(tester, '2').scale, closeTo(1.45, 0.01), reason: 'again');
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(number(tester, '2').scale, 1);
+      expect(number(tester, '2').color, HandsColors.ink);
+    });
+
+    testWidgets('no bump under reduce motion', (tester) async {
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(disableAnimations: true);
+      addTearDown(
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
+      await startRun(tester);
+      await miss(tester);
+      expect(number(tester, '1').scale, 1);
+      expect(number(tester, '1').color, HandsColors.ink);
+    });
+
+    testWidgets('announces the count 1.2 s after the last Miss', (
+      tester,
+    ) async {
+      await startRun(tester);
+      tester.takeAnnouncements();
+      await miss(tester);
+      await tester.pump(const Duration(milliseconds: 800));
+      await miss(tester);
+      await tester.pump(const Duration(milliseconds: 1100));
+      expect(tester.takeAnnouncements(), isEmpty);
+      await tester.pump(const Duration(milliseconds: 150));
+      expect(tester.takeAnnouncements().map((a) => a.message), ['2 misses']);
+    });
+
+    testWidgets('drops below the progress pill at the smallest tablet', (
+      tester,
+    ) async {
+      await startRun(tester);
+      tester.view.physicalSize = const Size(1024, 768);
+      await tester.pump();
+      final pill = tester.getRect(find.text('0 of 3'));
+      final chip = tester.getRect(find.text('misses'));
+      expect(chip.top, greaterThan(pill.bottom));
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  testWidgets('a Pop shows no Miss marker', (tester) async {
     await startRun(tester);
     await tester.tapAt(bodyCenter(tester));
     await tester.pump();
-    expect(find.byType(MissRing), findsNothing);
+    expect(find.byType(MissMarker), findsNothing);
   });
 
-  testWidgets('an Overlapping Touch shows no Miss ring', (tester) async {
+  testWidgets('an Overlapping Touch shows no Miss marker', (tester) async {
     await startRun(tester);
     final first = await tester.startGesture(offBody(tester), pointer: 1);
     final second = await tester.startGesture(bodyCenter(tester), pointer: 2);
     await second.up();
     await tester.pump();
-    expect(find.byType(MissRing), findsNothing);
+    expect(find.byType(MissMarker), findsNothing);
     await first.up();
   });
 
@@ -214,7 +359,7 @@ void main() {
     await tester.pump();
     await tester.tapAt(c);
     await tester.pump();
-    expect(find.byType(MissRing), findsNothing);
+    expect(find.byType(MissMarker), findsNothing);
     await settle(tester);
     expect(find.text('1 of 3'), findsOneWidget);
     expect(balloon, findsOneWidget);

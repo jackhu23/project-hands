@@ -15,7 +15,7 @@ abstract final class HandsColors {
   static const tealHeading = Color(0xFF00657F); // card and section titles
   static const tealLink = Color(0xFF00546B); // links, metric numbers
 
-  // Carle red (labels, icons, highlights; never for errors; a Miss's dot)
+  // Carle red (labels, icons, highlights; never for errors or Misses)
   static const red = Color(0xFFC8102E); // eyebrow labels, line icons
   static const redDeep = Color(0xFFA50D26); // text on pink pills
   static const redDarkest = Color(0xFF7A0A1C); // body text on pink note card
@@ -28,6 +28,7 @@ abstract final class HandsColors {
   static const balloonLight = Color(0xFFFFA6C6); // left sheen
   static const balloonString = Color(0xFF4C6A92);
   static const popLines = Color(0xFF2B2B3A); // the Pop's motion lines
+  static const coral = Color(0xFFEF6F61); // Miss marker and Miss chip
 
   // Neutrals
   static const ink = Color(0xFF0B2D3C); // body text
@@ -199,8 +200,13 @@ abstract final class HandsSizes {
   static const pausePadH = 28.0;
   static const pauseIcon = 22.0;
   static const stageInset = 24.0; // play area to the screen's sides and bottom
-  static const missRing = 56.0;
-  static const missDot = 18.0;
+  static const runPillMinW = 300.0; // narrower and the Miss chip drops below
+  static const runGroupGap = 14.0; // progress pill to Miss chip
+  static const missChipW = 180.0; // room kept for it, up to three digits
+  static const missChipPadH = 22.0;
+  static const missChipGap = 10.0;
+  static const missIcon = 22.0;
+  static const missMarker = 80.0;
 
   static const balloonW = 134.0;
   static const balloonH = 178.0; // includes string; hit area is the body only
@@ -215,8 +221,11 @@ abstract final class HandsMotion {
   static const inflate = Duration(
     milliseconds: 500,
   ); // a new balloon springs in
-  static const missRing = Duration(milliseconds: 300);
-  static const missDot = Duration(milliseconds: 1500); // lingers to show where
+  static const missMarker = Duration(milliseconds: 1120);
+  static const missMarkerReduced = Duration(milliseconds: 600);
+  static const missBump = Duration(milliseconds: 380);
+  // Rapid Misses make one announcement, not one each.
+  static const missAnnounce = Duration(milliseconds: 1200);
   // Whole cycles of every idle float layer (3.4, 6.2 and 4.6 s), so it loops seamlessly.
   static const balloonFloat = Duration(milliseconds: 2424200);
 }
@@ -283,6 +292,8 @@ abstract final class HandsText {
   static final rowTitle = _n(16, FontWeight.w800, HandsColors.ink);
   static final rowValue = _n(19, FontWeight.w900, HandsColors.tealLink);
   static final runCount = _n(22, FontWeight.w900, HandsColors.ink);
+  static final missCount = _n(22, FontWeight.w800, HandsColors.ink);
+  static final missWord = _n(17, FontWeight.w700, HandsColors.inkMuted);
 }
 
 /// App-wide ThemeData. Screens still use the gradients and tokens above.

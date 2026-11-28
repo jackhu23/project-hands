@@ -180,6 +180,11 @@ class ExerciseRun {
   int get completedTrials =>
       trials.where((t) => t.status == TrialStatus.completed).length;
 
+  int get misses => trials
+      .expand((t) => t.actions)
+      .where((a) => a.outcome == ActionOutcome.miss)
+      .length;
+
   Trial? get activeTrial =>
       trials.where((t) => t.status == TrialStatus.active).lastOrNull;
 }

@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart' hide Action;
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
@@ -45,9 +47,11 @@ class _ExerciseScreenState extends State<ExerciseScreen>
   /// at. The next balloon waits for it.
   ({Offset center, double bodyWidth, double? floatAt})? _burst;
 
-  /// Where the last Miss lifted off, and a count so each Miss restarts it.
-  Offset? _miss, _missDot;
-  var _misses = 0;
+  /// A marker for each recent Miss: an id for its key, and where it lifted
+  /// off.
+  final _markers = <(int, Offset)>[];
+  var _markerIds = 0;
+  Timer? _announce;
 
   @override
   void initState() {
@@ -72,6 +76,7 @@ class _ExerciseScreenState extends State<ExerciseScreen>
 
   @override
   void dispose() {
+    _announce?.cancel();
     WakelockPlus.disable();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     _life.dispose();
@@ -82,10 +87,11 @@ class _ExerciseScreenState extends State<ExerciseScreen>
   bool get _paused => _session.status == SessionStatus.paused;
 
   // Like the demo, pausing drops the balloon and any touch on it. The burst
-  // and ring go too, so the next balloon never waits on a burst not shown.
+  // and markers go too, so the next balloon never waits on a burst not shown.
   void _pause() => setState(() {
     _session.pause();
-    _burst = _miss = _missDot = null;
+    _burst = null;
+    _markers.clear();
   });
 
   void _resume() => setState(_session.resume);
@@ -162,8 +168,16 @@ class _ExerciseScreenState extends State<ExerciseScreen>
             floatAt: _reduceMotion ? null : _life.value,
           );
         case ActionOutcome.miss:
-          _miss = _missDot = event.localPosition;
-          _misses++;
+          _markers.add((_markerIds++, event.localPosition));
+          _announce?.cancel();
+          _announce = Timer(HandsMotion.missAnnounce, () {
+            if (!mounted) return;
+            SemanticsService.sendAnnouncement(
+              View.of(context),
+              _missLabel(_session.exerciseRun.misses),
+              Directionality.of(context),
+            );
+          });
         case ActionOutcome.overlappingTouch || null:
       }
     });
@@ -286,22 +300,14 @@ class _ExerciseScreenState extends State<ExerciseScreen>
               onDone: () => setState(() => _burst = null),
             ),
           ),
-        if (_miss case final c?)
+        for (final (id, c) in _markers)
           at(
             c,
-            HandsSizes.missRing,
-            MissRing(
-              key: ValueKey(_misses),
-              onDone: () => setState(() => _miss = null),
-            ),
-          ),
-        if (_missDot case final c?)
-          at(
-            c,
-            HandsSizes.missDot,
-            MissDot(
-              key: ValueKey('dot $_misses'),
-              onDone: () => setState(() => _missDot = null),
+            HandsSizes.missMarker,
+            MissMarker(
+              key: ValueKey(id),
+              onDone: () =>
+                  setState(() => _markers.removeWhere((m) => m.$1 == id)),
             ),
           ),
       ],
@@ -336,43 +342,107 @@ class _ExerciseScreenState extends State<ExerciseScreen>
     ),
   );
 
-  /// The logo, the progress pill and Pause. Home and Finish stay until the
-  /// Pause overlay replaces them.
-  Widget _band(ExerciseRun run) => SizedBox(
-    height: HandsSizes.runBandH,
-    child: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: HandsSizes.runBandPadH),
+  /// The logo, the progress pill with the Miss chip, and Pause. Home and
+  /// Finish stay until the Pause overlay replaces them. The band grows when
+  /// the chip drops below the pill.
+  Widget _band(ExerciseRun run) => Padding(
+    padding: const EdgeInsets.symmetric(
+      horizontal: HandsSizes.runBandPadH,
+      vertical: (HandsSizes.runBandH - HandsSizes.runPillH) / 2,
+    ),
+    child: Row(
+      children: [
+        Expanded(
+          flex: 2,
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Image.asset(
+              'assets/logos/carle-health-white.png',
+              height: HandsSizes.runLogoH,
+              semanticLabel: 'Carle Health',
+            ),
+          ),
+        ),
+        Expanded(
+          flex: 3,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              const pill = BoxConstraints(maxWidth: HandsSizes.runPillW);
+              final chip = _missChip(run.misses);
+              // Below the pill when they don't fit side by side, rather
+              // than squeezing either.
+              return constraints.maxWidth >=
+                      HandsSizes.runPillMinW +
+                          HandsSizes.runGroupGap +
+                          HandsSizes.missChipW
+                  ? Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      spacing: HandsSizes.runGroupGap,
+                      children: [
+                        Flexible(
+                          child: ConstrainedBox(
+                            constraints: pill,
+                            child: _progressPill(run),
+                          ),
+                        ),
+                        chip,
+                      ],
+                    )
+                  : Column(
+                      spacing: HandsSizes.runGroupGap,
+                      children: [
+                        ConstrainedBox(
+                          constraints: pill,
+                          child: _progressPill(run),
+                        ),
+                        chip,
+                      ],
+                    );
+            },
+          ),
+        ),
+        // The app is landscape only; this keeps a portrait window from
+        // overflowing.
+        Expanded(
+          flex: 2,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerRight,
+            child: _controls(),
+          ),
+        ),
+      ],
+    ),
+  );
+
+  /// The run's Miss count, so a Patient sees that Misses count.
+  Widget _missChip(int misses) => Semantics(
+    label: _missLabel(misses),
+    excludeSemantics: true,
+    child: Container(
+      height: HandsSizes.runPillH,
+      padding: const EdgeInsets.symmetric(horizontal: HandsSizes.missChipPadH),
+      decoration: BoxDecoration(
+        color: HandsColors.white,
+        borderRadius: BorderRadius.circular(HandsSizes.radiusPill),
+        boxShadow: const [
+          BoxShadow(
+            color: HandsColors.shadow,
+            blurRadius: 16,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
+        spacing: HandsSizes.missChipGap,
         children: [
-          Expanded(
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Image.asset(
-                'assets/logos/carle-health-white.png',
-                height: HandsSizes.runLogoH,
-                semanticLabel: 'Carle Health',
-              ),
-            ),
+          CustomPaint(
+            size: const Size.square(HandsSizes.missIcon),
+            painter: _MissIconPainter(),
           ),
-          Expanded(
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(
-                  maxWidth: HandsSizes.runPillW,
-                ),
-                child: _progressPill(run),
-              ),
-            ),
-          ),
-          // The app is landscape only; this keeps a portrait window from
-          // overflowing.
-          Expanded(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerRight,
-              child: _controls(),
-            ),
-          ),
+          _MissCount(misses, bump: !_reduceMotion),
+          Text(misses == 1 ? 'miss' : 'misses', style: HandsText.missWord),
         ],
       ),
     ),
@@ -679,57 +749,144 @@ class _BurstPainter extends CustomPainter {
       old.t != t || old.bodyWidth != bodyWidth || old.floatAt != floatAt;
 }
 
-/// A Miss's faint grey ring at the lift-off point, fading over 300 ms. Never
-/// red, so a Miss doesn't read as a mistake.
-class MissRing extends StatelessWidget {
-  const MissRing({super.key, required this.onDone});
+String _missLabel(int misses) => '$misses ${misses == 1 ? 'miss' : 'misses'}';
 
-  final VoidCallback onDone;
+/// The Miss chip's icon: a coral ring around a dot.
+class _MissIconPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final c = size.center(Offset.zero);
+    canvas
+      ..drawCircle(
+        c,
+        8.5,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2.5
+          ..color = HandsColors.coral,
+      )
+      ..drawCircle(c, 3.5, Paint()..color = HandsColors.coral);
+  }
 
   @override
-  Widget build(BuildContext context) => _Once(
-    duration: HandsMotion.missRing,
-    onDone: onDone,
-    builder: (context, t) => Opacity(
-      opacity: 1 - t,
-      child: Container(
-        width: HandsSizes.missRing,
-        height: HandsSizes.missRing,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: HandsColors.inkMuted.withValues(alpha: 0.35),
-            width: 3,
-          ),
-        ),
-      ),
-    ),
-  );
+  bool shouldRepaint(_MissIconPainter old) => false;
 }
 
-/// A red dot where a Miss lifted off, holding then fading over 1.5 s so
-/// the Patient can see where they touched.
-class MissDot extends StatelessWidget {
-  const MissDot({super.key, required this.onDone});
+/// The Miss chip's number. Each new count, unless [bump] is off, springs
+/// from 1.45 times in coral back to ink.
+class _MissCount extends StatelessWidget {
+  const _MissCount(this.misses, {required this.bump});
+
+  final int misses;
+  final bool bump;
+
+  Widget _text(Color color) => ConstrainedBox(
+    constraints: const BoxConstraints(minWidth: 14),
+    child: Text(
+      '$misses',
+      textAlign: TextAlign.center,
+      style: HandsText.missCount.copyWith(color: color),
+    ),
+  );
+
+  @override
+  Widget build(BuildContext context) => !bump || misses == 0
+      ? _text(HandsColors.ink)
+      : _Once(
+          key: ValueKey(misses),
+          duration: HandsMotion.missBump,
+          onDone: () {},
+          builder: (context, t) {
+            final k = _spring.transform(t);
+            return Transform.scale(
+              scale: 1.45 - 0.45 * k,
+              child: _text(
+                Color.lerp(HandsColors.coral, HandsColors.ink, k.clamp(0, 1))!,
+              ),
+            );
+          },
+        );
+}
+
+/// A Miss's soft coral ripple, as in miss-marker-spec.md: two rings spread
+/// and fade, the second 120 ms behind, round a dot that pops in and fades.
+/// Under reduce motion a ring and the dot just fade over 600 ms. Each Miss
+/// gets its own, so quick Misses overlap.
+class MissMarker extends StatelessWidget {
+  const MissMarker({super.key, required this.onDone});
 
   final VoidCallback onDone;
 
   @override
-  Widget build(BuildContext context) => _Once(
-    duration: HandsMotion.missDot,
-    onDone: onDone,
-    builder: (context, t) => Opacity(
-      opacity: 1 - Curves.easeIn.transform(t),
-      child: Container(
-        width: HandsSizes.missDot,
-        height: HandsSizes.missDot,
-        decoration: const BoxDecoration(
-          shape: BoxShape.circle,
-          color: HandsColors.red,
-        ),
+  Widget build(BuildContext context) {
+    final reduce = MediaQuery.disableAnimationsOf(context);
+    final life = reduce
+        ? HandsMotion.missMarkerReduced
+        : HandsMotion.missMarker;
+    return _Once(
+      duration: life,
+      onDone: onDone,
+      builder: (context, t) => CustomPaint(
+        size: const Size.square(HandsSizes.missMarker),
+        painter: _MarkerPainter(t * life.inMilliseconds, reduce: reduce),
       ),
-    ),
-  );
+    );
+  }
+}
+
+class _MarkerPainter extends CustomPainter {
+  const _MarkerPainter(this.ms, {required this.reduce});
+
+  /// Milliseconds since the Miss.
+  final double ms;
+  final bool reduce;
+
+  static const _spread = Cubic(0.2, 0.7, 0.3, 1);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final c = size.center(Offset.zero);
+    void ring(double scale, double opacity) => canvas.drawCircle(
+      c,
+      22 * scale,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3 * scale
+        ..color = HandsColors.coral.withValues(alpha: opacity),
+    );
+    void dot(double scale, double opacity) => canvas.drawCircle(
+      c,
+      6 * scale,
+      Paint()..color = HandsColors.coral.withValues(alpha: opacity),
+    );
+
+    if (reduce) {
+      final opacity = 0.9 * (1 - ms / 600).clamp(0, 1);
+      ring(1, opacity);
+      dot(1, opacity);
+      return;
+    }
+    // Both rings hold their first frame until they start (CSS fill both).
+    for (final delay in const [0, 120]) {
+      final k = _spread.transform(((ms - delay) / 900).clamp(0, 1));
+      ring(0.3 + 1.3 * k, 0.9 * (1 - k));
+    }
+    final p = ms / 1000;
+    const out = Curves.easeOut;
+    dot(
+      _keys(p, const [
+        (0, 0, out),
+        (0.15, 1.25, out),
+        (0.25, 1, out),
+        (1, 0.5, out),
+      ]),
+      _keys(p, const [(0.25, 1, out), (1, 0, out)]),
+    );
+  }
+
+  @override
+  bool shouldRepaint(_MarkerPainter old) =>
+      old.ms != ms || old.reduce != reduce;
 }
 
 /// The demo's pulse: scale `0.98 + 0.05 × (sin(t·π/2) + 1) / 2`, t in seconds.
