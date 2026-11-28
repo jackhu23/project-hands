@@ -10,6 +10,8 @@ on:
         type: choice
         options: [both, android, ios]
         default: both
+  push:
+    branches: [issue-47-device-smoke-test] # TEMP: remove before merge
 
 permissions:
   contents: read
@@ -60,7 +62,13 @@ jobs:
       - name: Boot an iPad simulator
         id: sim
         run: |
-          udid=$(xcrun simctl list devices available --json | jq -r '[.devices[][] | select(.name | startswith("iPad"))][0].udid')
+          # An iPad on the newest iOS runtime installed.
+          udid=$(xcrun simctl list devices available --json | jq -r '
+            .devices | to_entries
+            | map(select(.key | test("iOS")) | {v: (.key | [scan("[0-9]+") | tonumber]), d: .value})
+            | sort_by(.v) | reverse
+            | [.[].d[] | select(.name | startswith("iPad"))][0].udid // empty')
+          if [ -z "$udid" ]; then echo "::error::No iPad simulator is installed on this runner"; exit 1; fi
           echo "Booting $udid"
           xcrun simctl boot "$udid"
           xcrun simctl bootstatus "$udid"
