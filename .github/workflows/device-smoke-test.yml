@@ -10,8 +10,6 @@ on:
         type: choice
         options: [both, android, ios]
         default: both
-  push:
-    branches: [issue-47-device-smoke-test] # TEMP: remove before merge
 
 permissions:
   contents: read
