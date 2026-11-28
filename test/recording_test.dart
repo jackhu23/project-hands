@@ -275,11 +275,13 @@ void main() {
 
   testWidgets('a failed save tells the Patient', (tester) async {
     final db = await pumpApp(tester);
-    await startRun(tester, balloons: 1);
+    await startRun(tester, balloons: 2);
     await tester.runAsync(db.close);
 
     await touch(tester, bodyCenter(tester));
+    expect(find.byType(SnackBar), findsNothing, reason: 'not over the stage');
 
+    await touch(tester, bodyCenter(tester));
     expect(
       find.text("Couldn't save this run. Please tell your therapist."),
       findsOneWidget,

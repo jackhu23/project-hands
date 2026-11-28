@@ -69,6 +69,9 @@ class _BalloonTouchHubState extends State<BalloonTouchHub>
       balloonCount: _balloons,
       difficultyLevel: _level!,
       onChange: (s) => widget.database.saveSession(s).catchError((Object _) {
+        // A failed save mid-run is retried by the next one, and a SnackBar
+        // there would cover the stage, so only the run's last save tells.
+        if (s.status case SessionStatus.running || SessionStatus.paused) return;
         messenger
           ..clearSnackBars()
           ..showSnackBar(

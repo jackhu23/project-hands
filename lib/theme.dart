@@ -40,6 +40,9 @@ abstract final class HandsColors {
   static const borderStrong = Color(0xFF8FA9B4); // highlighted or dashed card
   static const borderControl = Color(0xFFC5D3DA); // unselected chips
   static const onTealMuted = Color(0xFFD3E8EE); // secondary text on gradient
+  static const onTealOutline = Color(
+    0x99FFFFFF,
+  ); // outlined buttons on gradient
   static const shadow = Color(0x1F003A4E); // card drop shadow, tealDeep at 12%
   static const shadowStrong = Color(0x47003A4E); // selected level, Start: 28%
 

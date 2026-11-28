@@ -86,7 +86,7 @@ class RunCompleteScreen extends StatelessWidget {
                                 fixedSize: size,
                                 foregroundColor: HandsColors.white,
                                 side: const BorderSide(
-                                  color: Color(0x99FFFFFF),
+                                  color: HandsColors.onTealOutline,
                                   width: 2,
                                 ),
                                 shape: RoundedRectangleBorder(
