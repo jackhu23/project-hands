@@ -227,7 +227,7 @@ class _AllRunsScreenState extends State<AllRunsScreen> {
                           semanticsLabel: '$name, $column: ${value(counts)}',
                           style: HandsText.tableValue.copyWith(
                             fontSize: short ? 20 : null,
-                            color: r == 2 && counts.stopped > 0
+                            color: name == 'Stopped early' && counts.stopped > 0
                                 ? HandsColors.redDeep
                                 : i == 0
                                 ? HandsColors.tealLink
@@ -247,7 +247,7 @@ class _AllRunsScreenState extends State<AllRunsScreen> {
   /// A bar per level: completed then stopped, scaled to the busiest level.
   Widget _byLevel(List<RunRecord> runs, List<int> levels) {
     final most = levels.map((l) => atLevel(runs, l).length).reduce(max);
-    Widget swatch(Color color, String label) => Row(
+    Widget swatch(String label, {Color? color, Gradient? gradient}) => Row(
       mainAxisSize: MainAxisSize.min,
       spacing: HandsSizes.gapXS,
       children: [
@@ -256,6 +256,7 @@ class _AllRunsScreenState extends State<AllRunsScreen> {
           height: HandsSizes.legendSquare,
           decoration: BoxDecoration(
             color: color,
+            gradient: gradient,
             borderRadius: BorderRadius.circular(3),
           ),
         ),
@@ -335,8 +336,8 @@ class _AllRunsScreenState extends State<AllRunsScreen> {
           Wrap(
             spacing: HandsSizes.allRunsCardGap,
             children: [
-              swatch(HandsColors.tealMid, 'Completed'),
-              swatch(HandsColors.stoppedBar, 'Stopped'),
+              swatch('Completed', gradient: HandsGradients.brandButton),
+              swatch('Stopped', color: HandsColors.stoppedBar),
             ],
           ),
         ],
@@ -464,9 +465,19 @@ class _AllRunsScreenState extends State<AllRunsScreen> {
       run.startedAt.year == DateTime.now().year ? 'd MMM' : 'd MMM y',
     ).format(run.startedAt);
     final time = DateFormat.jm().format(run.startedAt);
+    void open() => Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => RunSummaryScreen(
+          database: widget.database,
+          runId: run.id,
+          backLabel: 'Back to all runs',
+        ),
+      ),
+    );
     return Semantics(
       button: true,
       excludeSemantics: true,
+      onTap: open,
       label:
           '$date $time, level ${run.difficultyLevel}, '
           '$popped of ${run.balloonCount} popped, '
@@ -476,15 +487,7 @@ class _AllRunsScreenState extends State<AllRunsScreen> {
       child: Material(
         color: i.isOdd ? HandsColors.zebra : HandsColors.white,
         child: InkWell(
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (_) => RunSummaryScreen(
-                database: widget.database,
-                runId: run.id,
-                backLabel: 'Back to all runs',
-              ),
-            ),
-          ),
+          onTap: open,
           splashFactory: NoSplash.splashFactory,
           highlightColor: HandsColors.panel,
           child: Container(

@@ -68,7 +68,7 @@ Future<void> seedLevels(
       db,
       threeTrials,
       level: level,
-      startedAt: DateTime(2026, 11, 1 + i, 14, 5),
+      startedAt: DateTime(DateTime.now().year, 11, 1 + i, 14, 5),
     );
   }
   if (stoppedLevel != null) {
@@ -78,7 +78,7 @@ Future<void> seedLevels(
       level: stoppedLevel,
       balloonCount: 3,
       outcome: RunOutcome.stopped,
-      startedAt: DateTime(2026, 11, 20, 9, 30),
+      startedAt: DateTime(DateTime.now().year, 11, 20, 9, 30),
     );
   }
 }
@@ -243,7 +243,11 @@ void main() {
       greaterThanOrEqualTo(48),
     );
 
-    await tapAndSettle(tester, rows);
+    // Through the row's semantics, as a screen reader would.
+    tester.semantics.tap(
+      find.semantics.byLabel(RegExp(r'Opens run summary\.$')),
+    );
+    await tester.pumpAndSettle();
     expect(find.byType(RunSummaryScreen), findsOneWidget);
     await tapAndSettle(tester, find.byTooltip('Back to all runs'));
 
