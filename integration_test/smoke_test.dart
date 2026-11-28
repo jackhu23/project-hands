@@ -25,12 +25,20 @@ void main() {
     await binding.takeScreenshot('${++shots}-$name');
   }
 
+  /// Fails with a screenshot of what was on screen instead.
+  Future<Never> failWithScreenshot(WidgetTester tester, String reason) async {
+    await screenshot(tester, 'FAILED');
+    fail(reason);
+  }
+
   /// Pumps until [finder] shows. The balloon and demo animate forever, so
   /// pumpAndSettle would never return, and devices in CI can be slow.
   Future<void> waitFor(WidgetTester tester, Finder finder) async {
     final end = DateTime.now().add(const Duration(seconds: 30));
     while (finder.evaluate().isEmpty) {
-      if (DateTime.now().isAfter(end)) fail('Never appeared: $finder');
+      if (DateTime.now().isAfter(end)) {
+        await failWithScreenshot(tester, 'Never appeared: $finder');
+      }
       await tester.pump(const Duration(milliseconds: 200));
     }
   }
@@ -62,7 +70,9 @@ void main() {
     // Pop every balloon, however many the hub was set to (at most 30).
     final end = DateTime.now().add(const Duration(minutes: 3));
     while (summary.evaluate().isEmpty) {
-      if (DateTime.now().isAfter(end)) fail('The run never ended');
+      if (DateTime.now().isAfter(end)) {
+        await failWithScreenshot(tester, 'The run never ended');
+      }
       if (balloon.evaluate().isNotEmpty) {
         await tester.tap(balloon);
         // Past the pop burst, before the next balloon or the summary.
