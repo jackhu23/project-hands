@@ -280,4 +280,122 @@ void main() {
     );
     expect(runAccuracy(record()), isNull);
   });
+
+  group('Run summary', () {
+    test('Accuracy and counts leave out Overlapping Touches', () {
+      final r = record(
+        trials: [trial('a')],
+        actions: [
+          action('a', miss, 100, 200),
+          action('a', overlapping, 300, 400),
+          action('a', pop, 500, 600),
+        ],
+      );
+      final s = summarizeRun(r, [r]);
+      expect((s.pops, s.misses, s.overlapping), (1, 1, 1));
+      expect(s.accuracy, 0.5);
+      expect(s.completed, isTrue);
+    });
+
+    test('Reaction Time and duration leave out paused time', () {
+      final r = record(
+        trials: [trial('a'), trial('b', number: 2, presented: 2000)],
+        actions: [action('a', pop, 1000, 1100), action('b', pop, 5000, 5100)],
+        pauses: [pause(1, 3000, 4000)],
+      );
+      final s = summarizeRun(r, [r]);
+      expect(s.trials.map((t) => t.reactionTime), [ms * 1000, ms * 2000, null]);
+      expect(s.reactionTime, ms * 1500);
+      expect(s.duration, const Duration(seconds: 59));
+    });
+
+    test(
+      'the fastest Trial is the lowest Reaction Time, ties to the first',
+      () {
+        final r = record(
+          trials: [
+            trial('a'),
+            trial('b', number: 2, presented: 2000, zone: 3),
+            trial('c', number: 3, presented: 4000),
+          ],
+          actions: [
+            action('a', pop, 900, 1000),
+            action('b', miss, 2100, 2200),
+            action('b', pop, 2500, 2600),
+            action('c', pop, 4500, 4600),
+          ],
+        );
+        final s = summarizeRun(r, [r]);
+        expect(s.fastest?.number, 2);
+        expect(s.fastest?.zone, 3);
+        expect(s.trials.map((t) => t.misses), [0, 1, 0]);
+      },
+    );
+
+    test('a stopped run lists every Trial, with unreached ones blank', () {
+      final r = record(
+        outcome: RunOutcome.stopped,
+        trials: [
+          trial('a'),
+          trial('b', number: 2, zone: 2, status: TrialStatus.unfinished),
+        ],
+        actions: [action('a', pop, 500, 600)],
+      );
+      final s = summarizeRun(r, [r]);
+      expect(s.completed, isFalse);
+      expect(s.pops, 1);
+      expect(s.trials.map((t) => t.number), [1, 2, 3]);
+      expect(s.trials.map((t) => t.zone), [1, 2, null]);
+      expect(s.trials.map((t) => t.reactionTime), [ms * 500, null, null]);
+    });
+
+    test('zero Pops has no Reaction Time and no fastest Trial', () {
+      final misses = record(
+        trials: [trial('a', status: TrialStatus.unfinished)],
+        actions: [action('a', miss, 100, 200)],
+      );
+      final none = record(outcome: RunOutcome.stopped);
+      expect(summarizeRun(misses, [misses]).accuracy, 0);
+      for (final r in [misses, none]) {
+        final s = summarizeRun(r, [r]);
+        expect(s.reactionTime, isNull);
+        expect(s.fastest, isNull);
+      }
+      expect(summarizeRun(none, [none]).accuracy, isNull);
+    });
+
+    test('level averages use earlier completed runs at the same level', () {
+      RunRecord popIn(String id, int start, int rtMs, {int level = 1}) =>
+          record(
+            id: id,
+            level: level,
+            start: start,
+            trials: [trial('$id-t', run: id, presented: start)],
+            actions: [
+              action('$id-t', miss, start + 10, start + 20),
+              action('$id-t', pop, start + rtMs, start + rtMs + 50),
+            ],
+          );
+      final earlier = popIn('e', 0, 1000);
+      final stopped = record(
+        id: 'x',
+        start: 1000,
+        outcome: RunOutcome.stopped,
+        trials: [trial('x-t', run: 'x', presented: 1000)],
+        actions: [action('x-t', pop, 1100, 1200)],
+      );
+      final otherLevel = popIn('o', 2000, 100, level: 2);
+      final current = popIn('c', 3000, 3000);
+      final later = popIn('l', 4000, 100);
+      final all = [later, current, otherLevel, stopped, earlier];
+
+      final s = summarizeRun(current, all);
+      expect(s.levelAccuracy, 0.5);
+      expect(s.levelReactionTime, ms * 1000);
+
+      final first = summarizeRun(earlier, all);
+      expect(first.levelAccuracy, isNull, reason: 'the first run at level 1');
+      expect(first.levelReactionTime, isNull);
+    });
+  });
 }

@@ -6,7 +6,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hands/balloon_touch/balloon_illustration.dart';
 import 'package:hands/balloon_touch/exercise_screen.dart';
-import 'package:hands/balloon_touch/run_complete_screen.dart';
 import 'package:hands/balloon_touch/session.dart';
 import 'package:hands/theme.dart';
 
@@ -634,81 +633,6 @@ void main() {
     expect(pressed(), isFalse);
   });
 
-  group('Run complete', () {
-    Future<void> finish(WidgetTester tester, {int balloons = 3}) async {
-      await startRun(tester, balloons: balloons);
-      for (var i = 0; i < balloons; i++) {
-        await touch(tester, bodyCenter(tester));
-      }
-    }
-
-    testWidgets('popping every balloon shows Well done', (tester) async {
-      await finish(tester);
-      for (final text in [
-        'RUN COMPLETE',
-        'Well done!',
-        'You popped all 3 balloons.',
-        "Back to today's plan",
-        'Go again',
-      ]) {
-        expect(find.text(text), findsOneWidget);
-      }
-      expect(find.bySemanticsLabel('Carle Health'), findsOneWidget);
-      expect(balloon, findsNothing);
-    });
-
-    testWidgets('one balloon reads naturally', (tester) async {
-      await finish(tester, balloons: 1);
-      expect(find.text('You popped the balloon.'), findsOneWidget);
-    });
-
-    testWidgets('Go again starts a run with the same level and count', (
-      tester,
-    ) async {
-      await pumpApp(tester);
-      await tester.tap(find.text('Balloon Touch'));
-      await settle(tester);
-      await tester.tap(find.byTooltip('More balloons'));
-      await tester.tap(find.bySemanticsLabel('Difficulty Level 3'));
-      await tester.tap(find.text('Start'));
-      await settle(tester);
-      final first = tester
-          .widget<ExerciseScreen>(find.byType(ExerciseScreen))
-          .session;
-      for (var i = 0; i < 2; i++) {
-        await touch(tester, bodyCenter(tester));
-      }
-
-      await tester.tap(find.text('Go again'));
-      await settle(tester);
-
-      final next = tester
-          .widget<ExerciseScreen>(find.byType(ExerciseScreen))
-          .session;
-      expect(next, isNot(same(first)));
-      expect(next.exerciseRun.difficultyLevel, 3);
-      expect(find.text('0 of 2'), findsOneWidget);
-      expect(balloon, findsOneWidget);
-      // Back from the new run returns to the hub, not to Run complete.
-      await tester.binding.handlePopRoute();
-      await settle(tester);
-      expect(find.text('Start'), findsOneWidget);
-    });
-
-    testWidgets("Back to today's plan goes Home", (tester) async {
-      await finish(tester);
-      await tester.tap(find.text("Back to today's plan"));
-      await settle(tester);
-      expect(find.text("Today's plan"), findsOneWidget);
-      expect(find.byType(RunCompleteScreen), findsNothing);
-    });
-
-    testWidgets('fits every tablet', (tester) async {
-      await expectFitsTablets(tester, () => finish(tester));
-      expect(find.text('Well done!'), findsOneWidget);
-    });
-  });
-
   // Portrait and landscape tablets, in logical pixels.
   for (final size in const [
     Size(1194, 834),
@@ -716,7 +640,7 @@ void main() {
     Size(1280, 800),
     Size(800, 1280),
   ]) {
-    testWidgets('the run and Run complete fit $size', (tester) async {
+    testWidgets('the run and its Run summary fit $size', (tester) async {
       await pumpApp(tester, null, size);
       await tester.tap(find.text('Balloon Touch'));
       await settle(tester);
@@ -738,7 +662,8 @@ void main() {
       expect(area.intersect(drawn), drawn);
 
       await touch(tester, bodyCenter(tester));
-      expect(find.text('Well done!'), findsOneWidget);
+      await settle(tester);
+      expect(find.text('RUN COMPLETE'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   }
@@ -794,7 +719,9 @@ void main() {
       expectPauseOverlay(tester);
     });
 
-    testWidgets('End this run lands on the Practice tab', (tester) async {
+    testWidgets('End this run lands on the stopped Run summary', (
+      tester,
+    ) async {
       await startRun(tester);
       await touch(tester, bodyCenter(tester));
       final session = tester
@@ -806,9 +733,7 @@ void main() {
 
       expect(session.status, SessionStatus.stopped);
       expect(find.byType(ExerciseScreen), findsNothing);
-      expect(find.text('STEP 2 · SET UP YOUR RUN'), findsOneWidget);
-      await tapAndSettle(tester, find.text('Start'));
-      expect(find.text('0 of 3'), findsOneWidget, reason: 'a new run');
+      expect(find.text('RUN STOPPED'), findsOneWidget);
     });
 
     testWidgets('Resume brings back the same balloon at the same spot', (

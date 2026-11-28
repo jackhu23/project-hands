@@ -30,6 +30,7 @@ abstract final class HandsColors {
   static const balloonString = Color(0xFF4C6A92);
   static const popLines = Color(0xFF2B2B3A); // the Pop's motion lines
   static const coral = Color(0xFFEF6F61); // Miss marker and Miss chip
+  static const missRing = Color(0xFF6B8490); // Misses on the Run summary map
 
   // Neutrals
   static const ink = Color(0xFF0B2D3C); // body text
@@ -219,16 +220,39 @@ abstract final class HandsSizes {
   static const missIcon = 22.0;
   static const missMarker = 80.0;
 
-  // Pause overlay and Run complete (run-stage mockup)
+  // Pause overlay (run-stage mockup)
   static const pauseButtonW = 460.0;
   static const keepGoingH = 88.0;
   static const pauseGap = 16.0;
-  static const completeGap = 18.0;
-  static const completeButtonW = 260.0;
-  static const completeButtonH = 80.0;
-  static const completePillH = 36.0;
-  static const completePillPadH = 18.0;
-  static const completeLogoBottom = 36.0;
+
+  // Run summary (run-summary mockup)
+  static const summaryPadTop = 12.0;
+  static const summaryPadBottom = 16.0;
+  static const summaryGap = 16.0;
+  static const bannerPadH = 28.0;
+  static const bannerPadV = 22.0;
+  static const summaryPillH = 34.0;
+  static const summaryPillPadH = 16.0;
+  static const summaryStatPadH = 22.0;
+  static const summaryStatPadV = 16.0;
+  static const summaryCardPadH = 18.0;
+  static const summaryCardPadV = 16.0;
+  static const summaryCardGap = 10.0; // title to content
+  static const barMaxW = 34.0;
+  static const barMinW = 12.0;
+  static const barMaxGap = 10.0;
+  static const barLabelMinW = 24.0; // narrower columns hide their value
+  static const barRadius = 6.0;
+  static const barValueH = 20.0;
+  static const mapMaxW = 400.0;
+  static const mapRadius = 10.0;
+  static const mapDot = 30.0;
+  static const mapDotTarget = 44.0;
+  static const missRing = 16.0;
+  static const legendSwatch = 14.0;
+  static const summaryPrimaryH = 72.0;
+  static const summaryGoAgainH = 60.0;
+  static const summaryButtonGap = 12.0;
 
   static const balloonW = 134.0;
   static const balloonH = 178.0; // includes string; hit area is the body only
@@ -250,6 +274,12 @@ abstract final class HandsMotion {
   static const tabFade = Duration(
     milliseconds: 300,
   ); // Practice and My progress
+  // Run summary: banner and cards rise in after a run; bars grow.
+  static const summaryRise = Duration(milliseconds: 250);
+  static const summaryStagger = Duration(milliseconds: 60);
+  static const barsGrow = Duration(milliseconds: 400);
+  static const select = Duration(milliseconds: 150);
+  static const lastPop = Duration(milliseconds: 500); // before the summary
   // Rapid Misses make one announcement, not one each.
   static const missAnnounce = Duration(milliseconds: 1200);
   // Whole cycles of every idle float layer (3.4, 6.2 and 4.6 s), so it loops seamlessly.
@@ -282,7 +312,7 @@ abstract final class HandsText {
     ls: -0.5,
     h: 1.05,
   );
-  static final screenTitle = _n(38, FontWeight.w900, HandsColors.white);
+  static final screenTitle = _n(38, FontWeight.w900, HandsColors.white, h: 1.1);
   static final cardTitle = _n(34, FontWeight.w800, HandsColors.tealHeading);
   static final sectionTitle = _n(24, FontWeight.w800, HandsColors.tealHeading);
   static final body = _n(19, FontWeight.w400, HandsColors.ink, h: 1.45);
@@ -295,6 +325,12 @@ abstract final class HandsText {
     ls: 1.5,
   );
   static final pill = _n(15, FontWeight.w800, HandsColors.redDeep, ls: 1.0);
+  static final summaryPill = _n(
+    14,
+    FontWeight.w800,
+    HandsColors.redDeep,
+    ls: 1.0,
+  );
   static final chip = _n(18, FontWeight.w800, HandsColors.white);
   static final button = _n(30, FontWeight.w900, HandsColors.white);
   static final buttonSmall = _n(20, FontWeight.w900, HandsColors.tealDeep);
@@ -323,8 +359,27 @@ abstract final class HandsText {
   static final pausedTitle = _n(52, FontWeight.w900, HandsColors.white);
   static final keepGoing = _n(28, FontWeight.w900, HandsColors.tealDeep);
   static final endRun = _n(21, FontWeight.w800, HandsColors.redDeep);
-  static final completeBody = _n(24, FontWeight.w400, HandsColors.onTealMuted);
   static final completeButton = _n(22, FontWeight.w900, HandsColors.white);
+  static final bannerValue = _n(54, FontWeight.w900, HandsColors.white, h: 1.1);
+  static final bannerMeta = _n(17, FontWeight.w700, HandsColors.onTealMuted);
+  static final summaryStat = _n(
+    44,
+    FontWeight.w900,
+    HandsColors.tealLink,
+    h: 1.15,
+  );
+  static final statSub = _n(15, FontWeight.w400, HandsColors.inkMuted);
+  static final summaryCardTitle = _n(
+    20,
+    FontWeight.w800,
+    HandsColors.tealHeading,
+  );
+  static final hint = _n(15, FontWeight.w400, HandsColors.inkMuted);
+  static final barValue = _n(13, FontWeight.w800, HandsColors.inkMuted);
+  static final barLabel = _n(13, FontWeight.w700, HandsColors.inkMuted);
+  static final dotNumber = _n(13, FontWeight.w900, HandsColors.white);
+  static final legend = _n(14, FontWeight.w700, HandsColors.inkMuted);
+  static final goAgain = _n(19, FontWeight.w800, HandsColors.tealDeep);
 }
 
 /// App-wide ThemeData. Screens still use the gradients and tokens above.

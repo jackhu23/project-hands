@@ -10,15 +10,27 @@ class GradientHeader extends StatelessWidget {
     super.key,
     required this.eyebrow,
     required this.title,
+    this.subtitle,
+    this.semanticsLabel,
     this.tabs = const [],
     this.selectedTab = 0,
     this.onTab,
+    this.backLabel = 'Back',
+    this.onBack,
   });
 
   final String eyebrow, title;
+  final String? subtitle;
+
+  /// Read for the title and subtitle together, in place of their text.
+  final String? semanticsLabel;
   final List<String> tabs;
   final int selectedTab;
   final ValueChanged<int>? onTab;
+  final String backLabel;
+
+  /// Pops when null.
+  final VoidCallback? onBack;
 
   @override
   Widget build(BuildContext context) => DecoratedBox(
@@ -40,8 +52,8 @@ class GradientHeader extends StatelessWidget {
               spacing: HandsSizes.headerGap,
               children: [
                 IconButton(
-                  onPressed: () => Navigator.of(context).maybePop(),
-                  tooltip: 'Back',
+                  onPressed: onBack ?? () => Navigator.of(context).maybePop(),
+                  tooltip: backLabel,
                   style: IconButton.styleFrom(
                     fixedSize: const Size.square(HandsSizes.backButton),
                     backgroundColor: HandsColors.onTealFill,
@@ -58,9 +70,21 @@ class GradientHeader extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(eyebrow, style: HandsText.eyebrowOnTeal),
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(title, style: HandsText.screenTitle),
+                      Semantics(
+                        header: true,
+                        label: semanticsLabel,
+                        excludeSemantics: semanticsLabel != null,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(title, style: HandsText.screenTitle),
+                            ),
+                            if (subtitle != null)
+                              Text(subtitle!, style: HandsText.bannerMeta),
+                          ],
+                        ),
                       ),
                     ],
                   ),

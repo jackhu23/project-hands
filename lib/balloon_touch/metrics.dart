@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import '../database.dart';
 import 'session.dart';
 
@@ -74,7 +76,7 @@ List<TrialDetail> trialDetails(RunRecord r) => [
 
 /// The history page's summary. Run counts include stopped runs; the metrics
 /// use completed runs only and are null when there's nothing to measure.
-typedef RunSummary = ({
+typedef ProgressStats = ({
   int runs,
   int completed,
   int stopped,
@@ -84,7 +86,7 @@ typedef RunSummary = ({
   Duration? popDuration,
 });
 
-RunSummary summarize(Iterable<RunRecord> runs) {
+ProgressStats summarize(Iterable<RunRecord> runs) {
   final done = runs.where((r) => r.run.outcome == RunOutcome.completed);
   final actions = [for (final r in done) ...r.actions];
   final counts = countOutcomes(actions);
@@ -107,7 +109,7 @@ RunSummary summarize(Iterable<RunRecord> runs) {
 }
 
 /// [summarize] for each Difficulty Level played, lowest first.
-Map<int, RunSummary> summarizeByLevel(Iterable<RunRecord> runs) => {
+Map<int, ProgressStats> summarizeByLevel(Iterable<RunRecord> runs) => {
   for (final level in {
     for (final r in runs) r.run.difficultyLevel,
   }.toList()..sort())
@@ -139,3 +141,84 @@ List<AccuracyPoint> accuracySeries(Iterable<RunRecord> runs) => [
       if (runAccuracy(r) case final a?)
         (startedAt: r.run.startedAt, level: r.run.difficultyLevel, accuracy: a),
 ]..sort((a, b) => a.startedAt.compareTo(b.startedAt));
+
+/// One Trial on the Run summary. [zone] and [position] (a share of the play
+/// area, 0 to 1) are null for a Trial the run stopped before showing, and
+/// [reactionTime] is null unless it was popped.
+typedef SummaryTrial = ({
+  int number,
+  int? zone,
+  Offset? position,
+  Duration? reactionTime,
+  int misses,
+});
+
+/// One Exercise Run's Run summary. The level averages are [summarize] over
+/// the completed runs at its Difficulty Level that started before it, so a
+/// summary stays the same over time; null when there are none.
+typedef RunSummary = ({
+  ExerciseRunRow run,
+  bool completed,
+  int pops,
+  int misses,
+  int overlapping,
+  double? accuracy,
+  Duration? reactionTime,
+  Duration duration,
+  List<SummaryTrial> trials,
+  SummaryTrial? fastest,
+  double? levelAccuracy,
+  Duration? levelReactionTime,
+});
+
+/// [r]'s Run summary, with level averages from [runs].
+RunSummary summarizeRun(RunRecord r, Iterable<RunRecord> runs) {
+  final run = r.run;
+  final counts = countOutcomes(r.actions);
+  final byNumber = {for (final t in r.trials) t.number: t};
+  final trials = <SummaryTrial>[
+    for (var n = 1; n <= run.balloonCount; n++)
+      if (byNumber[n] case final t?)
+        (
+          number: n,
+          zone: t.zone,
+          position: Offset(
+            t.centerX / run.areaWidth,
+            t.centerY / run.areaHeight,
+          ),
+          reactionTime: reactionTime(r, t),
+          misses: countOutcomes(_actionsOf(r, t)).misses,
+        )
+      else
+        (number: n, zone: null, position: null, reactionTime: null, misses: 0),
+  ];
+  SummaryTrial? fastest;
+  for (final t in trials) {
+    if (t.reactionTime case final rt?
+        when fastest == null || rt < fastest.reactionTime!) {
+      fastest = t;
+    }
+  }
+  final level = summarize(
+    runs.where(
+      (o) =>
+          o.run.id != run.id &&
+          o.run.difficultyLevel == run.difficultyLevel &&
+          o.run.startedAt.isBefore(run.startedAt),
+    ),
+  );
+  return (
+    run: run,
+    completed: run.outcome == RunOutcome.completed,
+    pops: counts.pops,
+    misses: counts.misses,
+    overlapping: counts.overlapping,
+    accuracy: accuracy(pops: counts.pops, misses: counts.misses),
+    reactionTime: mean([...trials.map((t) => t.reactionTime).nonNulls]),
+    duration: runDuration(r),
+    trials: trials,
+    fastest: fastest,
+    levelAccuracy: level.accuracy,
+    levelReactionTime: level.reactionTime,
+  );
+}

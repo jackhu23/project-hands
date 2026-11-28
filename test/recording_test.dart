@@ -2,6 +2,7 @@ import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart' hide Action;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hands/balloon_touch/run_summary_screen.dart';
 import 'package:hands/balloon_touch/history_screen.dart';
 import 'package:hands/balloon_touch/session.dart';
 import 'package:hands/database.dart';
@@ -148,6 +149,28 @@ void main() {
     );
   });
 
+  testWidgets('each Miss is mapped where it lifted off', (tester) async {
+    final db = await pumpApp(tester);
+    await startRun(tester, balloons: 1);
+    final area = playArea(tester);
+    final tap = tester.getTopLeft(balloon) - const Offset(10, 10);
+    final slideEnd = offBody(tester);
+    await touch(tester, tap);
+    await touch(tester, bodyCenter(tester), slideEnd);
+    await touch(tester, bodyCenter(tester));
+
+    final run = (await db.select(db.exerciseRuns).get()).single;
+    final misses = await db.missLiftOffs(run.id);
+    expect(misses.map((m) => m.trial), everyElement(1));
+    expect(
+      misses.map((m) => m.at),
+      unorderedEquals([
+        near(tap - area.topLeft),
+        near(slideEnd - area.topLeft),
+      ]),
+    );
+  });
+
   testWidgets('a second finger records an Overlapping Touch and never pops', (
     tester,
   ) async {
@@ -184,7 +207,7 @@ void main() {
     await first.up();
     await settle(tester);
 
-    expect(find.text('Well done!'), findsOneWidget);
+    expect(find.byType(RunSummaryScreen), findsOneWidget);
     expect(
       await outcomes(db),
       unorderedEquals([ActionOutcome.pop, ActionOutcome.overlappingTouch]),
@@ -286,7 +309,7 @@ void main() {
       find.text("Couldn't save this run. Please tell your therapist."),
       findsOneWidget,
     );
-    expect(find.text('Well done!'), findsOneWidget);
+    expect(find.byType(RunSummaryScreen), findsOneWidget);
   });
 
   testWidgets('each pause and resume time is saved on the Exercise Run', (
