@@ -824,7 +824,7 @@ class _MissCount extends StatelessWidget {
 /// A Miss's soft coral ripple, as in miss-marker-spec.md: two rings spread
 /// and fade, the second 120 ms behind, round a dot that pops in, then
 /// lingers (longer than the spec, at the project lead's request) and fades
-/// by 2 s. Under reduce motion a ring and the dot just fade over the 2 s.
+/// by 1.2 s. Under reduce motion a ring and the dot just fade over the 1.2 s.
 /// Each Miss gets its own, so quick Misses overlap.
 class MissMarker extends StatelessWidget {
   const MissMarker({super.key, required this.onDone});

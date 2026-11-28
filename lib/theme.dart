@@ -222,7 +222,7 @@ abstract final class HandsMotion {
     milliseconds: 500,
   ); // a new balloon springs in
   static const missMarker = Duration(
-    milliseconds: 2000,
+    milliseconds: 1200,
   ); // lingers to show where
   static const missBump = Duration(milliseconds: 380);
   // Rapid Misses make one announcement, not one each.

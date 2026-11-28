@@ -180,7 +180,7 @@ void main() {
     expect(balloon, findsOneWidget, reason: 'nothing waits on the marker');
     // Two rings and the dot.
     expect(markerPaint(tester), paintsExactlyCountTimes(#drawCircle, 3));
-    await tester.pump(const Duration(milliseconds: 1980));
+    await tester.pump(const Duration(milliseconds: 1180));
     expect(marker, findsOneWidget);
     await tester.pump(const Duration(milliseconds: 30));
     await tester.pump();
@@ -202,7 +202,7 @@ void main() {
     expect(tester.getCenter(marker.first), sameSpot(a));
     expect(tester.getCenter(marker.last), sameSpot(b));
     // The first ends on its own clock, not restarted by the second.
-    await tester.pump(const Duration(milliseconds: 1710));
+    await tester.pump(const Duration(milliseconds: 910));
     await tester.pump();
     expect(marker, findsOneWidget);
     expect(tester.getCenter(marker), sameSpot(b));
@@ -211,7 +211,7 @@ void main() {
     expect(marker, findsNothing);
   });
 
-  testWidgets('under reduce motion the marker only fades, over 2 s', (
+  testWidgets('under reduce motion the marker only fades, over 1.2 s', (
     tester,
   ) async {
     tester.platformDispatcher.accessibilityFeaturesTestValue =
@@ -223,7 +223,7 @@ void main() {
     final marker = find.byType(MissMarker);
     expect(marker, findsOneWidget);
     // One ring and the dot, at full size from the start and still midway.
-    for (final ms in [0, 1000]) {
+    for (final ms in [0, 600]) {
       await tester.pump(Duration(milliseconds: ms));
       expect(
         markerPaint(tester),
@@ -233,7 +233,7 @@ void main() {
       );
       expect(markerPaint(tester), paintsExactlyCountTimes(#drawCircle, 2));
     }
-    await tester.pump(const Duration(milliseconds: 1010));
+    await tester.pump(const Duration(milliseconds: 610));
     await tester.pump();
     expect(marker, findsNothing);
   });
