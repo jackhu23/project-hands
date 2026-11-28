@@ -227,10 +227,10 @@ void main() {
 
     await tapAndSettle(tester, find.text('See all runs →'));
     expect(find.text('All runs'), findsOneWidget);
-    expect(find.byType(ListTile), findsWidgets);
-
-    await tapAndSettle(tester, find.byType(ListTile).first);
-    expect(find.bySemanticsLabel('Trial 1, Zone: 1'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(RegExp(r'Opens run summary\.$')),
+      findsNWidgets(5),
+    );
   });
 
   testWidgets('numbers count up and columns grow in', (tester) async {
@@ -288,9 +288,7 @@ void main() {
     expect(find.text('No note from your therapist yet'), findsOneWidget);
   });
 
-  testWidgets('My progress, All runs and Run detail fit every tablet size', (
-    tester,
-  ) async {
+  testWidgets('My progress and All runs fit every tablet size', (tester) async {
     await expectFitsTablets(tester, () async {
       await openHub(tester);
       for (final level in [1, 2, 3, 4]) {
@@ -302,10 +300,6 @@ void main() {
     await expectFitsTablets(
       tester,
       () => tapAndSettle(tester, find.text('See all runs →')),
-    );
-    await expectFitsTablets(
-      tester,
-      () => tapAndSettle(tester, find.byType(ListTile).first),
     );
   });
 }

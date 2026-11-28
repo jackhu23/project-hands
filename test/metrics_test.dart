@@ -115,39 +115,29 @@ void main() {
     );
   });
 
-  test(
-    'run detail lists each Trial with its Zone, Reaction Time and counts',
-    () {
-      final r = record(
-        trials: [
-          trial('a', zone: 2),
-          trial(
-            'b',
-            number: 2,
-            zone: 1,
-            presented: 5000,
-            status: TrialStatus.unfinished,
-          ),
-        ],
-        actions: [
-          action('a', miss, 100, 200),
-          action('a', overlapping, 150, 300),
-          action('a', pop, 400, 500),
-          action('b', miss, 5100, 5200),
-        ],
-      );
+  test('counts each outcome across a run, Overlapping Touches apart', () {
+    final r = record(
+      trials: [
+        trial('a', zone: 2),
+        trial(
+          'b',
+          number: 2,
+          zone: 1,
+          presented: 5000,
+          status: TrialStatus.unfinished,
+        ),
+      ],
+      actions: [
+        action('a', miss, 100, 200),
+        action('a', overlapping, 150, 300),
+        action('a', pop, 400, 500),
+        action('b', miss, 5100, 5200),
+      ],
+    );
 
-      final details = trialDetails(r);
-
-      expect(details.map((d) => (d.number, d.zone)), [(1, 2), (2, 1)]);
-      expect(details.map((d) => d.reactionTime), [ms * 400, null]);
-      expect(details.map((d) => d.counts), [
-        (pops: 1, misses: 1, overlapping: 1),
-        (pops: 0, misses: 1, overlapping: 0),
-      ]);
-      expect(countOutcomes(r.actions), (pops: 1, misses: 2, overlapping: 1));
-    },
-  );
+    expect(r.trials.map((t) => reactionTime(r, t)), [ms * 400, null]);
+    expect(countOutcomes(r.actions), (pops: 1, misses: 2, overlapping: 1));
+  });
 
   test('the summary uses completed runs only but counts stopped ones', () {
     final runs = [
@@ -184,20 +174,30 @@ void main() {
     expect(s.popDuration, ms * 200);
   });
 
-  test('the summary groups by Difficulty Level', () {
+  test('All runs counts Overlapping Touches over every run, stopped too', () {
     final runs = [
-      record(id: 'a', level: 2),
-      record(id: 'b', level: 1),
-      record(id: 'c', level: 2, outcome: RunOutcome.stopped),
+      record(
+        id: 'a',
+        trials: [trial('a', run: 'a')],
+        actions: [action('a', overlapping, 0, 100)],
+      ),
+      record(
+        id: 'b',
+        outcome: RunOutcome.stopped,
+        trials: [trial('b', run: 'b')],
+        actions: [
+          action('b', overlapping, 0, 100),
+          action('b', overlapping, 200, 300),
+        ],
+      ),
+      record(id: 'c', outcome: RunOutcome.stopped),
     ];
 
-    final byLevel = summarizeByLevel(runs);
+    final c = countRuns(runs);
 
-    expect(byLevel.keys, [1, 2]);
-    expect(
-      byLevel.map((l, s) => MapEntry(l, (s.runs, s.completed, s.stopped))),
-      {1: (1, 1, 0), 2: (2, 1, 1)},
-    );
+    expect((c.runs, c.completed, c.stopped), (3, 1, 2));
+    expect(c.overlappingPerRun, 1.0);
+    expect(countRuns([]).overlappingPerRun, isNull);
   });
 
   test('an empty summary has no metrics', () {

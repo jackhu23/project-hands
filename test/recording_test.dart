@@ -349,12 +349,11 @@ void main() {
     await settle(tester);
 
     expect(
-      find.descendant(
-        of: find.byType(ListTile),
-        matching: find.text('Level 2'),
+      find.bySemanticsLabel(
+        RegExp(r', level 2, 1 of 1 popped, accuracy 50 percent, '),
       ),
       findsOneWidget,
     );
-    expect(find.text('Accuracy 50%'), findsOneWidget);
+    expect(find.text('50%'), findsOneWidget);
   });
 }

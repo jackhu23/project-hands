@@ -14,9 +14,12 @@ import 'run_summary_screen.dart';
 /// The hub's My progress tab: level chips, stat cards, the Accuracy chart,
 /// the therapist note and recent runs, for the selected Difficulty Level.
 class MyProgressTab extends StatefulWidget {
-  const MyProgressTab({super.key, required this.database});
+  const MyProgressTab({super.key, required this.database, this.onPractice});
 
   final HandsDatabase database;
+
+  /// Shows the Practice tab, for All runs' Go to Practice.
+  final VoidCallback? onPractice;
 
   @override
   State<MyProgressTab> createState() => _MyProgressTabState();
@@ -74,12 +77,15 @@ class _MyProgressTabState extends State<MyProgressTab> {
                   ),
                   title: 'Recent runs',
                   action: TextButton(
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) =>
-                            AllRunsScreen(database: widget.database),
-                      ),
-                    ),
+                    onPressed: () async {
+                      final practice = await Navigator.of(context).push<bool>(
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              AllRunsScreen(database: widget.database),
+                        ),
+                      );
+                      if (practice ?? false) widget.onPractice?.call();
+                    },
                     style: TextButton.styleFrom(
                       minimumSize: const Size(0, HandsSizes.minTouch),
                     ),
