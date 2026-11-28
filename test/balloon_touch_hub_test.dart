@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:animations/animations.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -311,5 +312,59 @@ void main() {
 
   testWidgets('the Practice tab fits every tablet size', (tester) async {
     await expectFitsTablets(tester, () => openHub(tester));
+  });
+
+  group('transitions', () {
+    void reduceMotion(WidgetTester tester) {
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(disableAnimations: true);
+      addTearDown(
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
+    }
+
+    double tabFade(WidgetTester tester) => tester
+        .widget<FadeThroughTransition>(find.byType(FadeThroughTransition))
+        .animation
+        .value;
+
+    testWidgets('pages move on a shared axis, under 400 ms', (tester) async {
+      await pumpApp(tester);
+      await tester.tap(find.text('Balloon Touch'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.byType(SharedAxisTransition), findsWidgets);
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Balloon Touch'), findsOneWidget, reason: 'Home gone');
+    });
+
+    testWidgets('pages change at once under reduce motion', (tester) async {
+      reduceMotion(tester);
+      await pumpApp(tester);
+      await tester.tap(find.text('Balloon Touch'));
+      await tester.pump();
+      expect(find.byType(SharedAxisTransition), findsNothing);
+      await tester.pump(const Duration(milliseconds: 20));
+      expect(find.text('Balloon Touch'), findsOneWidget, reason: 'Home gone');
+    });
+
+    testWidgets('tabs fade through, under 400 ms', (tester) async {
+      await openHub(tester);
+      expect(tabFade(tester), 1);
+      await tester.tap(find.text('My progress'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(tabFade(tester), inExclusiveRange(0, 1));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(tabFade(tester), 1);
+    });
+
+    testWidgets('tabs change at once under reduce motion', (tester) async {
+      reduceMotion(tester);
+      await openHub(tester);
+      await tester.tap(find.text('My progress'));
+      await tester.pump();
+      expect(tabFade(tester), 1);
+    });
   });
 }

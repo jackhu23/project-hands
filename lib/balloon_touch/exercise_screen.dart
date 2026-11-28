@@ -10,7 +10,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import '../database.dart';
 import '../theme.dart';
 import 'balloon_illustration.dart';
-import 'progress_screen.dart';
+import 'run_complete_screen.dart';
 import 'session.dart';
 
 /// The Balloon Touch Exercise Run, on the branded stage.
@@ -96,23 +96,10 @@ class _ExerciseScreenState extends State<ExerciseScreen>
 
   void _resume() => setState(_session.resume);
 
-  /// Home and Finish: pause and open the progress page. Quirk carried over:
-  /// Finish doesn't end the Session.
-  Future<void> _leave() async {
-    _pause();
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) =>
-            ProgressScreen(session: _session, database: widget.database),
-      ),
-    );
-    if (!mounted) return;
-    // Start New Session stopped it: carry on back to setup.
-    if (_session.status == SessionStatus.stopped) {
-      Navigator.of(context).pop();
-    } else {
-      setState(() {});
-    }
+  /// Saves the run as stopped and goes back to the hub's Practice tab.
+  void _end() {
+    _session.stop();
+    Navigator.of(context).pop();
   }
 
   bool _onBody(Offset global) {
@@ -185,7 +172,7 @@ class _ExerciseScreenState extends State<ExerciseScreen>
       Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(
           builder: (_) =>
-              ProgressScreen(session: _session, database: widget.database),
+              RunCompleteScreen(session: _session, database: widget.database),
         ),
       );
     }
@@ -201,56 +188,67 @@ class _ExerciseScreenState extends State<ExerciseScreen>
         if (didPop) _session.stop();
       },
       child: Scaffold(
-        body: DecoratedBox(
-          decoration: const BoxDecoration(gradient: HandsGradients.brand),
-          child: SafeArea(
-            child: Column(
-              children: [
-                _band(_session.exerciseRun),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      HandsSizes.stageInset,
-                      0,
-                      HandsSizes.stageInset,
-                      HandsSizes.stageInset,
-                    ),
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: HandsGradients.stage,
-                        borderRadius: radius,
-                      ),
-                      child: ClipRRect(
-                        borderRadius: radius,
-                        // Only touches in the play area are Actions, and their
-                        // positions are relative to its top-left.
-                        child: Listener(
-                          onPointerDown: _down,
-                          onPointerMove: _move,
-                          onPointerUp: _up,
-                          onPointerCancel: (event) => setState(
-                            () => _session.touchCancel(event.pointer),
-                          ),
-                          behavior: HitTestBehavior.translucent,
-                          child: LayoutBuilder(
-                            builder: (context, constraints) =>
-                                _play(constraints.biggest, pressed),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+        body: Stack(
+          children: [
+            // The overlay hides the run from screen readers too.
+            ExcludeSemantics(
+              excluding: _paused,
+              child: _stage(pressed, radius),
             ),
-          ),
+            if (_paused) _pauseOverlay(),
+          ],
         ),
       ),
     );
   }
 
+  Widget _stage(bool pressed, BorderRadius radius) => DecoratedBox(
+    decoration: const BoxDecoration(gradient: HandsGradients.brand),
+    child: SafeArea(
+      child: Column(
+        children: [
+          _band(_session.exerciseRun),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                HandsSizes.stageInset,
+                0,
+                HandsSizes.stageInset,
+                HandsSizes.stageInset,
+              ),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: HandsGradients.stage,
+                  borderRadius: radius,
+                ),
+                child: ClipRRect(
+                  borderRadius: radius,
+                  // Only touches in the play area are Actions, and their
+                  // positions are relative to its top-left.
+                  child: Listener(
+                    onPointerDown: _down,
+                    onPointerMove: _move,
+                    onPointerUp: _up,
+                    onPointerCancel: (event) =>
+                        setState(() => _session.touchCancel(event.pointer)),
+                    behavior: HitTestBehavior.translucent,
+                    child: LayoutBuilder(
+                      builder: (context, constraints) =>
+                          _play(constraints.biggest, pressed),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+
   Widget _play(Size area, bool pressed) {
-    if (_paused) return _pausedPanel();
+    // Like the demo, pausing drops the balloon until the run resumes.
+    if (_paused) return const SizedBox.expand();
     // Like the demo, a balloon appears once the area has a size.
     if (_burst == null) _session.presentNextTrial(area);
     final trial = _session.exerciseRun.activeTrial;
@@ -316,37 +314,58 @@ class _ExerciseScreenState extends State<ExerciseScreen>
     );
   }
 
-  Widget _pausedPanel() => Container(
-    padding: const EdgeInsets.all(32),
-    decoration: BoxDecoration(
-      color: HandsColors.panel,
-      borderRadius: BorderRadius.circular(28),
-    ),
-    child: Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        spacing: 24,
-        children: [
-          Text('Paused', style: HandsText.sectionTitle),
-          FilledButton(
-            onPressed: _resume,
-            style: FilledButton.styleFrom(
-              backgroundColor: HandsColors.tealMid,
-              minimumSize: const Size(140, 56),
-            ),
-            child: Text(
-              'Resume',
-              style: HandsText.buttonSmall.copyWith(color: HandsColors.white),
+  /// Covers the whole run, band and all.
+  Widget _pauseOverlay() {
+    final radius = BorderRadius.circular(HandsSizes.radiusCard);
+    return Positioned.fill(
+      child: DecoratedBox(
+        decoration: const BoxDecoration(gradient: HandsGradients.pause),
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                spacing: HandsSizes.pauseGap,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Text('Paused', style: HandsText.pausedTitle),
+                  ),
+                  FilledButton(
+                    onPressed: _resume,
+                    style: FilledButton.styleFrom(
+                      fixedSize: const Size(
+                        HandsSizes.pauseButtonW,
+                        HandsSizes.keepGoingH,
+                      ),
+                      backgroundColor: HandsColors.white,
+                      shape: RoundedRectangleBorder(borderRadius: radius),
+                    ),
+                    child: Text('Keep going', style: HandsText.keepGoing),
+                  ),
+                  FilledButton(
+                    onPressed: _end,
+                    style: FilledButton.styleFrom(
+                      fixedSize: const Size(
+                        HandsSizes.pauseButtonW,
+                        HandsSizes.buttonSecondaryH,
+                      ),
+                      backgroundColor: HandsColors.pinkPill,
+                      shape: RoundedRectangleBorder(borderRadius: radius),
+                    ),
+                    child: Text('End this run', style: HandsText.endRun),
+                  ),
+                ],
+              ),
             ),
           ),
-        ],
+        ),
       ),
-    ),
-  );
+    );
+  }
 
-  /// The logo, the progress pill with the Miss chip, and Pause. Home and
-  /// Finish stay until the Pause overlay replaces them. The band grows when
-  /// the chip drops below the pill.
+  /// The logo, the progress pill with the Miss chip, and Pause. The band
+  /// grows when the chip drops below the pill.
   Widget _band(ExerciseRun run) => Padding(
     padding: const EdgeInsets.symmetric(
       horizontal: HandsSizes.runBandPadH,
@@ -412,7 +431,7 @@ class _ExerciseScreenState extends State<ExerciseScreen>
               child: FittedBox(
                 fit: BoxFit.scaleDown,
                 alignment: Alignment.centerRight,
-                child: _controls(),
+                child: _pauseButton(),
               ),
             ),
           ],
@@ -454,42 +473,23 @@ class _ExerciseScreenState extends State<ExerciseScreen>
     ),
   );
 
-  Widget _controls() => Row(
-    mainAxisSize: MainAxisSize.min,
-    spacing: HandsSizes.gapXS,
-    children: [
-      for (final (tooltip, icon) in [
-        ('Home', Icons.home),
-        ('Finish', Icons.flag),
-      ])
-        IconButton(
-          onPressed: _leave,
-          tooltip: tooltip,
-          color: HandsColors.white,
-          style: IconButton.styleFrom(
-            fixedSize: const Size.square(HandsSizes.minTouch),
-          ),
-          icon: Icon(icon),
-        ),
-      FilledButton(
-        onPressed: _paused ? null : _pause,
-        style: FilledButton.styleFrom(
-          backgroundColor: HandsColors.white,
-          foregroundColor: HandsColors.tealDeep,
-          disabledBackgroundColor: HandsColors.onTealLine,
-          minimumSize: const Size(0, HandsSizes.runPillH),
-          padding: const EdgeInsets.symmetric(horizontal: HandsSizes.pausePadH),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          spacing: HandsSizes.controlGap,
-          children: [
-            const Icon(Icons.pause, size: HandsSizes.pauseIcon),
-            Text('Pause', style: HandsText.buttonSmall),
-          ],
-        ),
-      ),
-    ],
+  Widget _pauseButton() => FilledButton(
+    onPressed: _paused ? null : _pause,
+    style: FilledButton.styleFrom(
+      backgroundColor: HandsColors.white,
+      foregroundColor: HandsColors.tealDeep,
+      disabledBackgroundColor: HandsColors.onTealLine,
+      minimumSize: const Size(0, HandsSizes.runPillH),
+      padding: const EdgeInsets.symmetric(horizontal: HandsSizes.pausePadH),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      spacing: HandsSizes.controlGap,
+      children: [
+        const Icon(Icons.pause, size: HandsSizes.pauseIcon),
+        Text('Pause', style: HandsText.buttonSmall),
+      ],
+    ),
   );
 
   Widget _progressPill(ExerciseRun run) => Container(

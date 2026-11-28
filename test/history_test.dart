@@ -33,6 +33,12 @@ Future<void> popBalloon(WidgetTester tester) async {
   await settle(tester);
 }
 
+/// Pauses the run and ends it, back on the hub.
+Future<void> endRun(WidgetTester tester) async {
+  await tapAndSettle(tester, find.text('Pause'));
+  await tapAndSettle(tester, find.text('End this run'));
+}
+
 /// Opens All runs over the current screen; my_progress_test covers the way
 /// there through My progress.
 Future<void> openHistory(WidgetTester tester) async {
@@ -62,14 +68,12 @@ void main() {
     expect(row, findsNothing);
   });
 
-  testWidgets('View history on the progress page lists the completed run', (
-    tester,
-  ) async {
+  testWidgets('history lists the completed run', (tester) async {
     await pumpApp(tester);
     await startRun(tester);
     await popBalloon(tester);
 
-    await tapAndSettle(tester, find.text('View history'));
+    await openHistory(tester);
 
     expect(row, findsOneWidget);
     expect(find.text('1 of 1 balloons popped'), findsOneWidget);
@@ -80,13 +84,10 @@ void main() {
     );
   });
 
-  testWidgets('Start New Session on a paused run lists it as Stopped', (
-    tester,
-  ) async {
+  testWidgets('End this run lists it as Stopped', (tester) async {
     await pumpApp(tester);
     await startRun(tester);
-    await tapAndSettle(tester, find.byTooltip('Home'));
-    await tapAndSettle(tester, find.text('Start New Session'));
+    await endRun(tester);
     await tapAndSettle(tester, find.byTooltip('Back'));
 
     await openHistory(tester);
@@ -132,7 +133,7 @@ void main() {
     await startRun(tester);
     await popBalloon(tester);
 
-    await tapAndSettle(tester, find.text('View history'));
+    await openHistory(tester);
 
     expect(row, findsOneWidget);
     expect(find.text('Clear all data'), findsNothing);
@@ -144,8 +145,7 @@ void main() {
     await pumpApp(tester);
     await startRun(tester);
     await popBalloon(tester);
-    await tapAndSettle(tester, find.text('Start New Session'));
-    await tapAndSettle(tester, find.byTooltip('Back'));
+    await tapAndSettle(tester, find.text("Back to today's plan"));
 
     await tapAndSettle(tester, find.text('Therapist'));
     await tapAndSettle(tester, find.text('Clear all data'));
@@ -161,10 +161,8 @@ void main() {
     await pumpApp(tester);
     await startRun(tester);
     await popBalloon(tester);
-    await tapAndSettle(tester, find.text('Start New Session'));
-    await tapAndSettle(tester, find.text('Start'));
-    await tapAndSettle(tester, find.byTooltip('Home'));
-    await tapAndSettle(tester, find.text('Start New Session'));
+    await tapAndSettle(tester, find.text('Go again'));
+    await endRun(tester);
     await tapAndSettle(tester, find.byTooltip('Back'));
 
     await openHistory(tester);
@@ -206,7 +204,7 @@ void main() {
     );
     await settle(tester);
     await popBalloon(tester);
-    await tapAndSettle(tester, find.text('View history'));
+    await openHistory(tester);
 
     await tapAndSettle(tester, row);
 
