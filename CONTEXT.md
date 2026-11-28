@@ -36,6 +36,14 @@ _Avoid_: Round, level, game
 The list of Exercise Runs an OT sets for a Patient for one day, each with an Exercise, a Difficulty Level and a number of Trials. The Patient sees it as "Today's plan".
 _Avoid_: Prescription (Patients read it as medication), program, schedule
 
+**Plan item**:
+One Exercise Run in a Plan. It is done by the first completed Exercise Run with the same Exercise, Difficulty Level and number of Trials, however that run was started; a stopped run never completes it.
+_Avoid_: Quota, assignment
+
+**Extra run**:
+A completed Exercise Run that completes no Plan item, because none with its settings is left undone. It is recorded and shown like any other.
+_Avoid_: Bonus run, free play
+
 **Exercise Demo**:
 A short animation, shown before or during an Exercise Run, of how to do the Exercise correctly, such as a finger popping a balloon and a lift-off that misses.
 _Avoid_: Tutorial, video, demo (alone, which also names the original prototype)
