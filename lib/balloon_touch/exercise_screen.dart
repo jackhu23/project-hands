@@ -856,6 +856,7 @@ class _MarkerPainter extends CustomPainter {
   final bool reduce;
 
   static const _spread = Cubic(0.2, 0.7, 0.3, 1);
+  static final _life = HandsMotion.missMarker.inMilliseconds.toDouble();
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -875,7 +876,7 @@ class _MarkerPainter extends CustomPainter {
     );
 
     if (reduce) {
-      final opacity = 0.9 * (1 - ms / 2000).clamp(0, 1);
+      final opacity = 0.9 * (1 - ms / _life).clamp(0, 1);
       ring(1, opacity);
       dot(1, opacity);
       return;
@@ -888,14 +889,14 @@ class _MarkerPainter extends CustomPainter {
     const out = Curves.easeOut;
     // The spec's pop-in and its last 750 ms of fade, with a hold between.
     dot(
-      _keys(ms, const [
+      _keys(ms, [
         (0, 0, out),
         (150, 1.25, out),
         (250, 1, out),
-        (1250, 1, out),
-        (2000, 0.5, out),
+        (_life - 750, 1, out),
+        (_life, 0.5, out),
       ]),
-      _keys(ms, const [(1250, 1, out), (2000, 0, out)]),
+      _keys(ms, [(_life - 750, 1, out), (_life, 0, out)]),
     );
   }
 
