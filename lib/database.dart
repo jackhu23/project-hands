@@ -356,10 +356,10 @@ class HandsDatabase extends _$HandsDatabase {
   }
 
   /// Where each Miss in the run lifted off: its last Touch Sample, in
-  /// logical pixels from the play area's top-left.
-  Future<List<Offset>> missLiftOffs(String runId) async {
+  /// logical pixels from the play area's top-left, with its Trial's number.
+  Future<List<({int trial, Offset at})>> missLiftOffs(String runId) async {
     final rows = await customSelect(
-      'SELECT s.x, s.y FROM touch_samples s '
+      'SELECT t.number, s.x, s.y FROM touch_samples s '
       'JOIN actions a ON a.id = s.action_id '
       'JOIN trials t ON t.id = a.trial_id '
       "WHERE t.exercise_run_id = ? AND a.outcome = 'miss' AND s.sequence = "
@@ -368,7 +368,11 @@ class HandsDatabase extends _$HandsDatabase {
       readsFrom: {touchSamples, actions, trials},
     ).get();
     return [
-      for (final r in rows) Offset(r.read<double>('x'), r.read<double>('y')),
+      for (final r in rows)
+        (
+          trial: r.read<int>('number'),
+          at: Offset(r.read<double>('x'), r.read<double>('y')),
+        ),
     ];
   }
 

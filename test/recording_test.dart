@@ -160,8 +160,10 @@ void main() {
     await touch(tester, bodyCenter(tester));
 
     final run = (await db.select(db.exerciseRuns).get()).single;
+    final misses = await db.missLiftOffs(run.id);
+    expect(misses.map((m) => m.trial), everyElement(1));
     expect(
-      await db.missLiftOffs(run.id),
+      misses.map((m) => m.at),
       unorderedEquals([
         near(tap - area.topLeft),
         near(slideEnd - area.topLeft),

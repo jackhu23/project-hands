@@ -477,7 +477,46 @@ void main() {
       );
       expect(ring.dx, closeTo(stage.left + stage.width * 0.1, 0.5));
       expect(ring.dy, closeTo(stage.top + stage.height * 0.1, 0.5));
-      expect(find.text('Miss (where the finger lifted)'), findsOneWidget);
+      expect(find.text('Miss'), findsOneWidget);
+    });
+
+    testWidgets('selecting a balloon highlights its own Misses', (
+      tester,
+    ) async {
+      final db = await pumpApp(tester);
+      await openSummary(
+        tester,
+        await seedRun(db, [
+          seed(1, const Offset(500, 300), 2000, [const Offset(100, 60)]),
+          seed(3, const Offset(800, 450), 1000, [
+            const Offset(700, 400),
+            const Offset(720, 420),
+          ]),
+          seed(2, const Offset(300, 200), 1500),
+        ]),
+      );
+      int highlighted() => tester
+          .widgetList<MissRing>(
+            find.descendant(
+              of: find.byType(BalloonMap),
+              matching: find.byType(MissRing),
+            ),
+          )
+          .where((r) => r.highlighted)
+          .length;
+      expect(highlighted(), 0);
+
+      await tapAndSettle(
+        tester,
+        find.bySemanticsLabel(RegExp(r'^Balloon 2, .*2 misses$')).last,
+      );
+      expect(highlighted(), 2);
+
+      await tapAndSettle(
+        tester,
+        find.bySemanticsLabel(RegExp(r'^Balloon 3, .*first try$')).last,
+      );
+      expect(highlighted(), 0);
     });
 
     testWidgets('selecting a bar or a dot updates the detail card', (

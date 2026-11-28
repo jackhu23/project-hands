@@ -16,7 +16,7 @@ import 'session.dart';
 
 /// A Run summary and where each Miss lifted off, as a share of the play
 /// area's width and height.
-typedef _Loaded = ({RunSummary summary, List<Offset> misses});
+typedef _Loaded = ({RunSummary summary, List<({int trial, Offset at})> misses});
 
 /// Shown while the run loads, in the shape of a real one.
 final _placeholder = (
@@ -54,7 +54,7 @@ final _placeholder = (
     levelAccuracy: null,
     levelReactionTime: null,
   ),
-  misses: const <Offset>[],
+  misses: const <({int trial, Offset at})>[],
 );
 
 String _plural(int n, String one, [String? many]) =>
@@ -116,7 +116,10 @@ class _RunSummaryScreenState extends State<RunSummaryScreen>
       summary: summarizeRun(r, runs),
       misses: [
         for (final m in await widget.database.missLiftOffs(r.run.id))
-          Offset(m.dx / area.width, m.dy / area.height),
+          (
+            trial: m.trial,
+            at: Offset(m.at.dx / area.width, m.at.dy / area.height),
+          ),
       ],
     );
   }
@@ -654,7 +657,7 @@ class _RunSummaryScreenState extends State<RunSummaryScreen>
     );
   }
 
-  Widget _map(RunSummary s, List<Offset> misses) => _card(
+  Widget _map(RunSummary s, List<({int trial, Offset at})> misses) => _card(
     title: 'Where the balloons were',
     child: Column(
       spacing: HandsSizes.gapXS,
@@ -671,7 +674,19 @@ class _RunSummaryScreenState extends State<RunSummaryScreen>
               return Center(
                 child: BalloonMap(
                   size: Size(width, width / aspect),
-                  misses: misses,
+                  misses: [
+                    for (final m in misses)
+                      (
+                        at: m.at,
+                        // The selected balloon's Misses stand out; others dim.
+                        child: Opacity(
+                          opacity: _selected == null || _selected == m.trial
+                              ? 1
+                              : 0.5,
+                          child: MissRing(highlighted: _selected == m.trial),
+                        ),
+                      ),
+                  ],
                   dots: [
                     for (final t in s.trials)
                       if (t.position case final at?)
@@ -695,7 +710,7 @@ class _RunSummaryScreenState extends State<RunSummaryScreen>
               ),
               'Pop',
             ),
-            _legend(const MissRing(), 'Miss (where the finger lifted)'),
+            _legend(const MissRing(), 'Miss'),
           ],
         ),
       ],
@@ -867,8 +882,7 @@ class BalloonMap extends StatelessWidget {
   });
 
   final Size size;
-  final List<({Offset at, Widget child})> dots;
-  final List<Offset> misses;
+  final List<({Offset at, Widget child})> dots, misses;
 
   @override
   Widget build(BuildContext context) {
@@ -889,11 +903,11 @@ class BalloonMap extends StatelessWidget {
           ),
           for (final m in misses)
             Positioned(
-              left: place(m).dx - HandsSizes.missRing / 2,
-              top: place(m).dy - HandsSizes.missRing / 2,
+              left: place(m.at).dx - HandsSizes.missRing / 2,
+              top: place(m.at).dy - HandsSizes.missRing / 2,
               width: HandsSizes.missRing,
               height: HandsSizes.missRing,
-              child: const MissRing(),
+              child: m.child,
             ),
           for (final d in dots)
             Positioned(
@@ -910,15 +924,20 @@ class BalloonMap extends StatelessWidget {
 }
 
 /// Where a Miss lifted off: grey, not red, since a Miss is information.
+/// [highlighted] marks the selected balloon's Misses in the selection red.
 class MissRing extends StatelessWidget {
-  const MissRing({super.key});
+  const MissRing({super.key, this.highlighted = false});
+
+  final bool highlighted;
 
   @override
-  Widget build(BuildContext context) => const DecoratedBox(
+  Widget build(BuildContext context) => DecoratedBox(
     decoration: BoxDecoration(
       shape: BoxShape.circle,
       border: Border.fromBorderSide(
-        BorderSide(color: HandsColors.missRing, width: 2),
+        highlighted
+            ? const BorderSide(color: HandsColors.red, width: 3)
+            : const BorderSide(color: HandsColors.missRing, width: 2),
       ),
     ),
   );
