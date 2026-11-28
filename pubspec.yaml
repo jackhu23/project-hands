@@ -25,6 +25,7 @@ dev_dependencies:
   path: ^1.9.1
   drift_dev: ^2.35.3
   build_runner: ^2.17.1
+  wakelock_plus_platform_interface: ^1.7.0
 
 flutter:
   uses-material-design: true

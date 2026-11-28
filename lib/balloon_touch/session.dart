@@ -44,7 +44,8 @@ int zoneOf(Offset point, Size area) {
 }
 
 /// Where a balloon's centre may go in [area] so that, at full pulse plus the
-/// edge margin, it isn't clipped; null when the area is too small.
+/// edge margin, it isn't clipped; null when the area is too small. The string
+/// isn't reserved: it is paint-only, so it may be cut off at the bottom edge.
 Rect? usableArea(Size area) {
   const w = balloonBodyWidth, knot = w * 0.085;
   const dx = w / 2 * maxPulseScale + edgeMargin;
@@ -234,10 +235,15 @@ class Session {
       _touches[pointer]?._add(input);
 
   /// Ends an Action: a Pop if it started and ends on the body and isn't an
-  /// Overlapping Touch, which completes its Trial; otherwise a Miss.
-  void touchUp(int pointer, TouchInput input, {required bool onBody}) {
+  /// Overlapping Touch, which completes its Trial; otherwise a Miss. Returns
+  /// the outcome, or null when no Action was in progress.
+  ActionOutcome? touchUp(
+    int pointer,
+    TouchInput input, {
+    required bool onBody,
+  }) {
     final action = _touches.remove(pointer);
-    if (action == null) return;
+    if (action == null) return null;
     action._add(input);
     _finish(
       action,
@@ -249,6 +255,7 @@ class Session {
           : ActionOutcome.miss,
     );
     if (action.outcome == ActionOutcome.pop) completeTrial(action.trial);
+    return action.outcome;
   }
 
   void _finish(Action action, DateTime liftOffAt, ActionOutcome outcome) {

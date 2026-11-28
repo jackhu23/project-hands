@@ -10,6 +10,8 @@ import 'test_app.dart';
 /// The balloon pulses forever, so pumpAndSettle would never return.
 Future<void> settle(WidgetTester tester) async {
   await tester.pump();
+  // Past a Pop's 1.2 s burst, then the next balloon's inflate.
+  await tester.pump(const Duration(seconds: 2));
   await tester.pump(const Duration(seconds: 1));
 }
 
@@ -89,7 +91,7 @@ void main() {
     await gesture.up();
     await settle(tester);
 
-    expect(find.text('1 / 3'), findsOneWidget);
+    expect(find.text('1 of 3'), findsOneWidget);
     final action = (await actionsOf(db)).single;
     expect(action.outcome, ActionOutcome.pop);
     final trial = await (db.select(
@@ -118,7 +120,7 @@ void main() {
 
     await touch(tester, tester.getTopLeft(balloon) - const Offset(10, 10));
     await touch(tester, bodyCenter(tester), offBody(tester));
-    expect(find.text('0 / 3'), findsOneWidget);
+    expect(find.text('0 of 3'), findsOneWidget);
     // Popping ends the Trial, which flushes its Actions.
     await touch(tester, bodyCenter(tester));
 
@@ -157,7 +159,7 @@ void main() {
     // Ends on the body after the first finger has lifted.
     await second.up();
     await settle(tester);
-    expect(find.text('0 / 3'), findsOneWidget);
+    expect(find.text('0 of 3'), findsOneWidget);
     await touch(tester, bodyCenter(tester));
 
     expect(
@@ -194,7 +196,7 @@ void main() {
     await startRun(tester);
 
     await touch(tester, tester.getTopLeft(balloon) - const Offset(10, 10));
-    await tapAndSettle(tester, find.byTooltip('Pause'));
+    await tapAndSettle(tester, find.text('Pause'));
 
     expect(await outcomes(db), [ActionOutcome.miss]);
   });
@@ -207,7 +209,7 @@ void main() {
 
     final slide = await tester.startGesture(bodyCenter(tester));
     await slide.moveBy(const Offset(5, 5));
-    await tapAndSettle(tester, find.byTooltip('Pause'));
+    await tapAndSettle(tester, find.text('Pause'));
     await slide.up();
 
     expect(await outcomes(db), [ActionOutcome.miss]);
@@ -239,6 +241,18 @@ void main() {
     });
   }
 
+  testWidgets('a touch during the Pop burst records no Action', (tester) async {
+    final db = await pumpApp(tester);
+    await startRun(tester);
+    final spot = bodyCenter(tester);
+    await tester.tapAt(spot);
+    await tester.pump();
+    await tester.tapAt(spot);
+    await settle(tester);
+
+    expect(await outcomes(db), [ActionOutcome.pop]);
+  });
+
   testWidgets('controls, touches while paused and cancels record no Action', (
     tester,
   ) async {
@@ -246,8 +260,8 @@ void main() {
     await startRun(tester);
     final corner = playArea(tester).topLeft + const Offset(20, 20);
 
-    await tapAndSettle(tester, find.byTooltip('Settings'));
-    await tapAndSettle(tester, find.byTooltip('Pause'));
+    await tapAndSettle(tester, find.text('0 of 3'));
+    await tapAndSettle(tester, find.text('Pause'));
     await touch(tester, corner);
     await tapAndSettle(tester, find.text('Resume'));
     final cancelled = await tester.startGesture(bodyCenter(tester));
@@ -264,7 +278,7 @@ void main() {
     final db = await pumpApp(tester);
     await startRun(tester);
 
-    await tapAndSettle(tester, find.byTooltip('Pause'));
+    await tapAndSettle(tester, find.text('Pause'));
     await tapAndSettle(tester, find.text('Resume'));
     await tapAndSettle(tester, find.byTooltip('Home'));
 
