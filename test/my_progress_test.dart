@@ -50,7 +50,7 @@ Future<void> oneRun(
     await settle(tester);
   }
   await tapAndSettle(tester, find.bySemanticsLabel('Balloon'));
-  // Back from Run complete returns to the hub.
+  // Back from the Run summary returns to the hub.
   await tester.binding.handlePopRoute();
   await settle(tester);
 }

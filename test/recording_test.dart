@@ -2,6 +2,7 @@ import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart' hide Action;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hands/balloon_touch/run_summary_screen.dart';
 import 'package:hands/balloon_touch/history_screen.dart';
 import 'package:hands/balloon_touch/session.dart';
 import 'package:hands/database.dart';
@@ -204,7 +205,7 @@ void main() {
     await first.up();
     await settle(tester);
 
-    expect(find.text('Well done!'), findsOneWidget);
+    expect(find.byType(RunSummaryScreen), findsOneWidget);
     expect(
       await outcomes(db),
       unorderedEquals([ActionOutcome.pop, ActionOutcome.overlappingTouch]),
@@ -306,7 +307,7 @@ void main() {
       find.text("Couldn't save this run. Please tell your therapist."),
       findsOneWidget,
     );
-    expect(find.text('Well done!'), findsOneWidget);
+    expect(find.byType(RunSummaryScreen), findsOneWidget);
   });
 
   testWidgets('each pause and resume time is saved on the Exercise Run', (

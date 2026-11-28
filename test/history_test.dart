@@ -27,13 +27,14 @@ Future<void> startRun(WidgetTester tester) async {
   await tapAndSettle(tester, find.text('Start'));
 }
 
-/// Pops the only balloon, which completes the run.
+/// Pops the only balloon, which completes the run, on to its Run summary.
 Future<void> popBalloon(WidgetTester tester) async {
   await tester.tap(find.bySemanticsLabel('Balloon'));
   await settle(tester);
+  await settle(tester);
 }
 
-/// Pauses the run and ends it, back on the hub.
+/// Pauses the run and ends it, on its Run summary.
 Future<void> endRun(WidgetTester tester) async {
   await tapAndSettle(tester, find.text('Pause'));
   await tapAndSettle(tester, find.text('End this run'));
@@ -88,7 +89,7 @@ void main() {
     await pumpApp(tester);
     await startRun(tester);
     await endRun(tester);
-    await tapAndSettle(tester, find.byTooltip('Back'));
+    await tapAndSettle(tester, find.byTooltip('Back to my progress'));
 
     await openHistory(tester);
 
@@ -163,7 +164,7 @@ void main() {
     await popBalloon(tester);
     await tapAndSettle(tester, find.text('Go again'));
     await endRun(tester);
-    await tapAndSettle(tester, find.byTooltip('Back'));
+    await tapAndSettle(tester, find.byTooltip('Back to my progress'));
 
     await openHistory(tester);
 

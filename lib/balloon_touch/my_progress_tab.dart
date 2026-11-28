@@ -9,6 +9,7 @@ import '../widgets/line_icon.dart';
 import '../widgets/loading_section.dart';
 import 'history_screen.dart';
 import 'metrics.dart';
+import 'run_summary_screen.dart';
 
 /// The hub's My progress tab: level chips, stat cards, the Accuracy chart,
 /// the therapist note and recent runs, for the selected Difficulty Level.
@@ -221,37 +222,69 @@ class _MyProgressTabState extends State<MyProgressTab> {
       child: Column(
         children: [
           for (final r in runs.take(4))
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: HandsSizes.rowPadV),
-              decoration: const BoxDecoration(
-                border: Border(bottom: BorderSide(color: HandsColors.panel)),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          DateFormat('d MMM, HH:mm').format(r.run.startedAt),
-                          style: HandsText.rowTitle,
-                        ),
-                        Text(
-                          [
-                            'Level ${r.run.difficultyLevel}',
-                            formatDuration(runDuration(r)),
-                            if (r.run.outcome == RunOutcome.stopped) 'Stopped',
-                          ].join(' · '),
-                          style: HandsText.caption,
-                        ),
-                      ],
+            Semantics(
+              label:
+                  'Open run summary, '
+                  '${DateFormat('d MMM, HH:mm').format(r.run.startedAt)}, '
+                  'level ${r.run.difficultyLevel}, '
+                  '${formatAccuracy(runAccuracy(r))}',
+              button: true,
+              excludeSemantics: true,
+              child: InkWell(
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => RunSummaryScreen(
+                      database: widget.database,
+                      runId: r.run.id,
                     ),
                   ),
-                  Text(
-                    formatAccuracy(runAccuracy(r)),
-                    style: HandsText.rowValue,
+                ),
+                child: Container(
+                  constraints: const BoxConstraints(
+                    minHeight: HandsSizes.minTouch,
                   ),
-                ],
+                  padding: const EdgeInsets.symmetric(
+                    vertical: HandsSizes.rowPadV,
+                  ),
+                  decoration: const BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(color: HandsColors.panel),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              DateFormat('d MMM, HH:mm')
+                                  .format(r.run.startedAt),
+                              style: HandsText.rowTitle,
+                            ),
+                            Text(
+                              [
+                                'Level ${r.run.difficultyLevel}',
+                                formatDuration(runDuration(r)),
+                                if (r.run.outcome == RunOutcome.stopped)
+                                  'Stopped',
+                              ].join(' · '),
+                              style: HandsText.caption,
+                            ),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        formatAccuracy(runAccuracy(r)),
+                        style: HandsText.rowValue,
+                      ),
+                      const Icon(
+                        Icons.chevron_right,
+                        color: HandsColors.inkMuted,
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
         ],

@@ -10,7 +10,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import '../database.dart';
 import '../theme.dart';
 import 'balloon_illustration.dart';
-import 'run_complete_screen.dart';
+import 'run_summary_screen.dart';
 import 'session.dart';
 
 /// The Balloon Touch Exercise Run, on the branded stage.
@@ -53,6 +53,9 @@ class _ExerciseScreenState extends State<ExerciseScreen>
   var _markerIds = 0;
   Timer? _announce;
 
+  /// Holds the summary back for the last Pop's burst.
+  Timer? _toSummary;
+
   @override
   void initState() {
     super.initState();
@@ -77,6 +80,7 @@ class _ExerciseScreenState extends State<ExerciseScreen>
   @override
   void dispose() {
     _announce?.cancel();
+    _toSummary?.cancel();
     WakelockPlus.disable();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     _life.dispose();
@@ -96,11 +100,23 @@ class _ExerciseScreenState extends State<ExerciseScreen>
 
   void _resume() => setState(_session.resume);
 
-  /// Saves the run as stopped and goes back to the hub's Practice tab.
+  /// Saves the run as stopped and shows its summary.
   void _end() {
     _session.stop();
-    Navigator.of(context).pop();
+    _showSummary();
   }
+
+  // Replaced, so Back never returns into the ended run. The summary's read
+  // is queued after the run's last save, so it finds the run saved.
+  void _showSummary() => Navigator.of(context).pushReplacement(
+    MaterialPageRoute<void>(
+      builder: (_) => RunSummaryScreen(
+        database: widget.database,
+        runId: _session.exerciseRun.id,
+        from: _session,
+      ),
+    ),
+  );
 
   bool _onBody(Offset global) {
     final box = _balloonKey.currentContext?.findRenderObject() as RenderBox?;
@@ -169,12 +185,7 @@ class _ExerciseScreenState extends State<ExerciseScreen>
       }
     });
     if (_session.status == SessionStatus.completed) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute<void>(
-          builder: (_) =>
-              RunCompleteScreen(session: _session, database: widget.database),
-        ),
-      );
+      _toSummary = Timer(HandsMotion.lastPop, _showSummary);
     }
   }
 
