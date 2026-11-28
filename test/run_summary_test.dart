@@ -463,10 +463,7 @@ void main() {
         find.text('2.00 s to pop · Zone 1 · 1 miss before the pop'),
         findsOneWidget,
       );
-      expect(
-        tester.getSemantics(first.first),
-        containsSemantics(isSelected: true),
-      );
+      expect(tester.getSemantics(first.first), isSemantics(isSelected: true));
 
       // Its dot, tapped again, clears it.
       await tapAndSettle(tester, first.last);
