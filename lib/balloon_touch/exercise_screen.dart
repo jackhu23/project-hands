@@ -304,10 +304,12 @@ class _ExerciseScreenState extends State<ExerciseScreen>
           at(
             c,
             HandsSizes.missMarker,
-            MissMarker(
+            IgnorePointer(
               key: ValueKey(id),
-              onDone: () =>
-                  setState(() => _markers.removeWhere((m) => m.$1 == id)),
+              child: MissMarker(
+                onDone: () =>
+                    setState(() => _markers.removeWhere((m) => m.$1 == id)),
+              ),
             ),
           ),
       ],
@@ -350,31 +352,35 @@ class _ExerciseScreenState extends State<ExerciseScreen>
       horizontal: HandsSizes.runBandPadH,
       vertical: (HandsSizes.runBandH - HandsSizes.runPillH) / 2,
     ),
-    child: Row(
-      children: [
-        Expanded(
-          flex: 2,
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Image.asset(
-              'assets/logos/carle-health-white.png',
-              height: HandsSizes.runLogoH,
-              semanticLabel: 'Carle Health',
+    child: LayoutBuilder(
+      builder: (context, constraints) {
+        // A wider centre fits the chip beside the pill. If even that is too
+        // narrow, the chip drops below rather than squeezing either, and the
+        // columns stay equal so the controls keep their size.
+        final oneLine =
+            constraints.maxWidth * 3 / 7 >=
+            HandsSizes.runPillMinW +
+                HandsSizes.runGroupGap +
+                HandsSizes.missChipW;
+        final side = oneLine ? 2 : 1, centre = oneLine ? 3 : 1;
+        const pill = BoxConstraints(maxWidth: HandsSizes.runPillW);
+        final chip = _missChip(run.misses);
+        return Row(
+          children: [
+            Expanded(
+              flex: side,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Image.asset(
+                  'assets/logos/carle-health-white.png',
+                  height: HandsSizes.runLogoH,
+                  semanticLabel: 'Carle Health',
+                ),
+              ),
             ),
-          ),
-        ),
-        Expanded(
-          flex: 3,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              const pill = BoxConstraints(maxWidth: HandsSizes.runPillW);
-              final chip = _missChip(run.misses);
-              // Below the pill when they don't fit side by side, rather
-              // than squeezing either.
-              return constraints.maxWidth >=
-                      HandsSizes.runPillMinW +
-                          HandsSizes.runGroupGap +
-                          HandsSizes.missChipW
+            Expanded(
+              flex: centre,
+              child: oneLine
                   ? Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       spacing: HandsSizes.runGroupGap,
@@ -397,21 +403,21 @@ class _ExerciseScreenState extends State<ExerciseScreen>
                         ),
                         chip,
                       ],
-                    );
-            },
-          ),
-        ),
-        // The app is landscape only; this keeps a portrait window from
-        // overflowing.
-        Expanded(
-          flex: 2,
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerRight,
-            child: _controls(),
-          ),
-        ),
-      ],
+                    ),
+            ),
+            // The app is landscape only; this keeps a portrait window from
+            // overflowing.
+            Expanded(
+              flex: side,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerRight,
+                child: _controls(),
+              ),
+            ),
+          ],
+        );
+      },
     ),
   );
 
@@ -441,7 +447,7 @@ class _ExerciseScreenState extends State<ExerciseScreen>
             size: const Size.square(HandsSizes.missIcon),
             painter: _MissIconPainter(),
           ),
-          _MissCount(misses, bump: !_reduceMotion),
+          _MissCount(misses, bump: _reduceMotion ? 0 : _markerIds),
           Text(misses == 1 ? 'miss' : 'misses', style: HandsText.missWord),
         ],
       ),
@@ -539,9 +545,13 @@ class _Once extends StatefulWidget {
     required this.duration,
     required this.onDone,
     required this.builder,
+    this.behavior = AnimationBehavior.normal,
   });
 
   final Duration duration;
+
+  /// Normal plays 20 times faster under reduce motion; preserve doesn't.
+  final AnimationBehavior behavior;
   final VoidCallback onDone;
   final Widget Function(BuildContext, double) builder;
 
@@ -553,6 +563,7 @@ class _OnceState extends State<_Once> with SingleTickerProviderStateMixin {
   late final _clock = AnimationController(
     vsync: this,
     duration: widget.duration,
+    animationBehavior: widget.behavior,
   );
 
   @override
@@ -778,7 +789,9 @@ class _MissCount extends StatelessWidget {
   const _MissCount(this.misses, {required this.bump});
 
   final int misses;
-  final bool bump;
+
+  /// Lift-off Misses so far; each new one replays the bump, and 0 shows none.
+  final int bump;
 
   Widget _text(Color color) => ConstrainedBox(
     constraints: const BoxConstraints(minWidth: 14),
@@ -790,10 +803,10 @@ class _MissCount extends StatelessWidget {
   );
 
   @override
-  Widget build(BuildContext context) => !bump || misses == 0
+  Widget build(BuildContext context) => bump == 0
       ? _text(HandsColors.ink)
       : _Once(
-          key: ValueKey(misses),
+          key: ValueKey(bump),
           duration: HandsMotion.missBump,
           onDone: () {},
           builder: (context, t) {
@@ -809,9 +822,10 @@ class _MissCount extends StatelessWidget {
 }
 
 /// A Miss's soft coral ripple, as in miss-marker-spec.md: two rings spread
-/// and fade, the second 120 ms behind, round a dot that pops in and fades.
-/// Under reduce motion a ring and the dot just fade over 600 ms. Each Miss
-/// gets its own, so quick Misses overlap.
+/// and fade, the second 120 ms behind, round a dot that pops in, then
+/// lingers (longer than the spec, at the project lead's request) and fades
+/// by 2 s. Under reduce motion a ring and the dot just fade over the 2 s.
+/// Each Miss gets its own, so quick Misses overlap.
 class MissMarker extends StatelessWidget {
   const MissMarker({super.key, required this.onDone});
 
@@ -820,11 +834,11 @@ class MissMarker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final reduce = MediaQuery.disableAnimationsOf(context);
-    final life = reduce
-        ? HandsMotion.missMarkerReduced
-        : HandsMotion.missMarker;
+    const life = HandsMotion.missMarker;
     return _Once(
       duration: life,
+      // It already only fades under reduce motion, and must stay to show where.
+      behavior: AnimationBehavior.preserve,
       onDone: onDone,
       builder: (context, t) => CustomPaint(
         size: const Size.square(HandsSizes.missMarker),
@@ -861,7 +875,7 @@ class _MarkerPainter extends CustomPainter {
     );
 
     if (reduce) {
-      final opacity = 0.9 * (1 - ms / 600).clamp(0, 1);
+      final opacity = 0.9 * (1 - ms / 2000).clamp(0, 1);
       ring(1, opacity);
       dot(1, opacity);
       return;
@@ -871,16 +885,17 @@ class _MarkerPainter extends CustomPainter {
       final k = _spread.transform(((ms - delay) / 900).clamp(0, 1));
       ring(0.3 + 1.3 * k, 0.9 * (1 - k));
     }
-    final p = ms / 1000;
     const out = Curves.easeOut;
+    // The spec's pop-in and its last 750 ms of fade, with a hold between.
     dot(
-      _keys(p, const [
+      _keys(ms, const [
         (0, 0, out),
-        (0.15, 1.25, out),
-        (0.25, 1, out),
-        (1, 0.5, out),
+        (150, 1.25, out),
+        (250, 1, out),
+        (1250, 1, out),
+        (2000, 0.5, out),
       ]),
-      _keys(p, const [(0.25, 1, out), (1, 0, out)]),
+      _keys(ms, const [(1250, 1, out), (2000, 0, out)]),
     );
   }
 

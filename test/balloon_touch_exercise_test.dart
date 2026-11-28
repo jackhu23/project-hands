@@ -92,6 +92,14 @@ Rect playArea(WidgetTester tester) => tester.getRect(
   find.ancestor(of: balloon, matching: find.byType(DecoratedBox)).first,
 );
 
+/// The first Miss marker's painting.
+RenderObject markerPaint(WidgetTester tester) => tester.renderObject(
+  find.descendant(
+    of: find.byType(MissMarker).first,
+    matching: find.byType(CustomPaint),
+  ),
+);
+
 Animation<double>? motion(WidgetTester tester) =>
     tester.widget<BalloonIllustration>(find.byType(BalloonIllustration)).motion;
 
@@ -170,7 +178,9 @@ void main() {
     expect(marker, findsOneWidget);
     expect(tester.getCenter(marker), sameSpot(off));
     expect(balloon, findsOneWidget, reason: 'nothing waits on the marker');
-    await tester.pump(const Duration(milliseconds: 1100));
+    // Two rings and the dot.
+    expect(markerPaint(tester), paintsExactlyCountTimes(#drawCircle, 3));
+    await tester.pump(const Duration(milliseconds: 1980));
     expect(marker, findsOneWidget);
     await tester.pump(const Duration(milliseconds: 30));
     await tester.pump();
@@ -192,7 +202,7 @@ void main() {
     expect(tester.getCenter(marker.first), sameSpot(a));
     expect(tester.getCenter(marker.last), sameSpot(b));
     // The first ends on its own clock, not restarted by the second.
-    await tester.pump(const Duration(milliseconds: 830));
+    await tester.pump(const Duration(milliseconds: 1710));
     await tester.pump();
     expect(marker, findsOneWidget);
     expect(tester.getCenter(marker), sameSpot(b));
@@ -201,7 +211,7 @@ void main() {
     expect(marker, findsNothing);
   });
 
-  testWidgets('under reduce motion the marker only fades, over 600 ms', (
+  testWidgets('under reduce motion the marker only fades, over 2 s', (
     tester,
   ) async {
     tester.platformDispatcher.accessibilityFeaturesTestValue =
@@ -212,7 +222,18 @@ void main() {
     await tester.pump();
     final marker = find.byType(MissMarker);
     expect(marker, findsOneWidget);
-    await tester.pump(const Duration(milliseconds: 610));
+    // One ring and the dot, at full size from the start and still midway.
+    for (final ms in [0, 1000]) {
+      await tester.pump(Duration(milliseconds: ms));
+      expect(
+        markerPaint(tester),
+        paints
+          ..circle(radius: 22)
+          ..circle(radius: 6),
+      );
+      expect(markerPaint(tester), paintsExactlyCountTimes(#drawCircle, 2));
+    }
+    await tester.pump(const Duration(milliseconds: 1010));
     await tester.pump();
     expect(marker, findsNothing);
   });
@@ -332,6 +353,36 @@ void main() {
       final chip = tester.getRect(find.text('misses'));
       expect(chip.top, greaterThan(pill.bottom));
       expect(tester.takeException(), isNull);
+      // Neither is squeezed, and the controls keep their size.
+      expect(
+        tester
+            .getSize(
+              find
+                  .ancestor(
+                    of: find.text('0 of 3'),
+                    matching: find.byType(Container),
+                  )
+                  .first,
+            )
+            .width,
+        greaterThanOrEqualTo(HandsSizes.runPillMinW),
+      );
+      expect(
+        tester.getSize(find.widgetWithText(FilledButton, 'Pause')).height,
+        HandsSizes.runPillH,
+      );
+    });
+
+    testWidgets('a touch a pause cuts off counts but bumps nothing', (
+      tester,
+    ) async {
+      await startRun(tester);
+      final held = await tester.startGesture(offBody(tester));
+      await tester.tap(find.widgetWithText(FilledButton, 'Pause'));
+      await tester.pump();
+      expect(find.text('1'), findsOneWidget);
+      expect(number(tester, '1').scale, 1);
+      await held.up();
     });
   });
 
