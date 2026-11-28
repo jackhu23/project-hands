@@ -182,36 +182,43 @@ class _RunSummaryScreenState extends State<RunSummaryScreen>
       setState(() => _selected = _selected == number ? null : number);
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    body: Column(
-      children: [
-        GradientHeader(
-          eyebrow: 'BALLOON TOUCH · RUN SUMMARY',
-          title: _title,
-          backLabel: 'Back to my progress',
-          onBack: _back,
-        ),
-        Expanded(
-          child: SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(
-                HandsSizes.pagePadH,
-                HandsSizes.summaryPadTop,
-                HandsSizes.pagePadH,
-                HandsSizes.summaryPadBottom,
-              ),
-              child: LoadingSection<_Loaded?>(
-                load: _load,
-                placeholder: _placeholder,
-                onLoaded: _onLoaded,
-                builder: (_, loaded) =>
-                    loaded == null ? _notFound() : _body(loaded),
+  Widget build(BuildContext context) => PopScope(
+    // The system back goes where the header's Back does.
+    canPop: widget.from == null,
+    onPopInvokedWithResult: (didPop, _) {
+      if (!didPop) _back();
+    },
+    child: Scaffold(
+      body: Column(
+        children: [
+          GradientHeader(
+            eyebrow: 'BALLOON TOUCH · RUN SUMMARY',
+            title: _title,
+            backLabel: 'Back to my progress',
+            onBack: _back,
+          ),
+          Expanded(
+            child: SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  HandsSizes.pagePadH,
+                  HandsSizes.summaryPadTop,
+                  HandsSizes.pagePadH,
+                  HandsSizes.summaryPadBottom,
+                ),
+                child: LoadingSection<_Loaded?>(
+                  load: _load,
+                  placeholder: _placeholder,
+                  onLoaded: _onLoaded,
+                  builder: (_, loaded) =>
+                      loaded == null ? _notFound() : _body(loaded),
+                ),
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     ),
   );
 

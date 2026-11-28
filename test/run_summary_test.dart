@@ -214,10 +214,12 @@ void main() {
       expect(find.text('100%'), findsOneWidget);
       expect(find.text('Go again'), findsOneWidget);
 
+      // The system back agrees with the header's: My progress.
       await tester.binding.handlePopRoute();
       await settle(tester);
       expect(find.byType(ExerciseScreen), findsNothing);
-      expect(find.text('Start'), findsOneWidget);
+      expect(find.byType(RunSummaryScreen), findsNothing);
+      expect(find.text('Recent runs'), findsOneWidget);
     });
 
     testWidgets('the final pop bursts before the summary', (tester) async {

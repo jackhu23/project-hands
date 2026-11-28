@@ -227,7 +227,7 @@ class _MyProgressTabState extends State<MyProgressTab> {
                   'Open run summary, '
                   '${DateFormat('d MMM, HH:mm').format(r.run.startedAt)}, '
                   'level ${r.run.difficultyLevel}, '
-                  '${formatAccuracy(runAccuracy(r))}',
+                  '${runAccuracy(r) == null ? 'no accuracy' : formatAccuracy(runAccuracy(r))}',
               button: true,
               excludeSemantics: true,
               child: InkWell(

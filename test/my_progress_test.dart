@@ -50,9 +50,10 @@ Future<void> oneRun(
     await settle(tester);
   }
   await tapAndSettle(tester, find.bySemanticsLabel('Balloon'));
-  // Back from the Run summary returns to the hub.
+  // Back from the Run summary lands on My progress.
   await tester.binding.handlePopRoute();
   await settle(tester);
+  await tapAndSettle(tester, find.text('Practice'));
 }
 
 Future<void> openProgress(WidgetTester tester) =>
