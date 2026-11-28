@@ -19,10 +19,14 @@ class BalloonTouchHub extends StatefulWidget {
     super.key,
     required this.database,
     required this.patientId,
+    this.initialTab = 0,
   });
 
   final HandsDatabase database;
   final String patientId;
+
+  /// 0 for Practice, 1 for My progress.
+  final int initialTab;
 
   @override
   State<BalloonTouchHub> createState() => _BalloonTouchHubState();
@@ -34,7 +38,7 @@ class _BalloonTouchHubState extends State<BalloonTouchHub>
   /// a run never starts at a level the Patient can't see.
   int? _level;
   int _balloons = _minBalloons;
-  int _tab = 0;
+  late int _tab = widget.initialTab;
 
   /// Fades the tab shown in; it starts shown.
   late final _tabFade = AnimationController(

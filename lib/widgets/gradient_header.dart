@@ -13,12 +13,18 @@ class GradientHeader extends StatelessWidget {
     this.tabs = const [],
     this.selectedTab = 0,
     this.onTab,
+    this.backLabel = 'Back',
+    this.onBack,
   });
 
   final String eyebrow, title;
   final List<String> tabs;
   final int selectedTab;
   final ValueChanged<int>? onTab;
+  final String backLabel;
+
+  /// Pops when null.
+  final VoidCallback? onBack;
 
   @override
   Widget build(BuildContext context) => DecoratedBox(
@@ -40,8 +46,8 @@ class GradientHeader extends StatelessWidget {
               spacing: HandsSizes.headerGap,
               children: [
                 IconButton(
-                  onPressed: () => Navigator.of(context).maybePop(),
-                  tooltip: 'Back',
+                  onPressed: onBack ?? () => Navigator.of(context).maybePop(),
+                  tooltip: backLabel,
                   style: IconButton.styleFrom(
                     fixedSize: const Size.square(HandsSizes.backButton),
                     backgroundColor: HandsColors.onTealFill,
