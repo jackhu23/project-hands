@@ -80,7 +80,7 @@ Parts that depend on future work (the Plan, Therapist mode, the therapist note, 
 50. As a Patient, I want a "From your therapist" card that says when there's no note yet, so that I know where notes will appear.
 51. As a Patient, I want an empty state before my first run, so that a blank page isn't confusing.
 52. As an OT, I want "See all runs" to open the full list of runs, including stopped runs marked "Stopped", so that the record is complete.
-53. As an OT, I want the all-runs page to keep the detailed summary (Overlapping Touches per run, touch duration of popping Actions, run counts, per-level breakdown), so that nothing built in history is lost.
+53. As a Patient, I want the all-runs page to summarise only run counts (total, completed, stopped) and Overlapping Touches per run, overall and per Difficulty Level, so that it doesn't repeat the Accuracy and Reaction Time My progress already shows. Overlapping Touches per run counts every run, stopped ones included. (Changed in #46: touch duration of popping Actions is no longer shown.)
 54. As an OT, I want each run to still open its run detail view, so that I can see how each Trial went.
 55. As an OT, I want metrics to follow the glossary (Accuracy = Pops / (Pops + Misses); Reaction Time minus paused time), so that numbers mean the same everywhere.
 
@@ -147,7 +147,7 @@ Parts that depend on future work (the Plan, Therapist mode, the therapist note, 
   - The stat cards show Accuracy, Reaction Time and Runs completed, filtered by the selected level chip.
   - The chart has one column per completed run, in time order, labelled "17 Nov · L2". It uses the teal gradient, with the latest run in red and a value label on each column.
   - Recent runs lists the latest four, followed by "See all runs →".
-  - All runs is the current history list and summary, restyled, with stopped runs marked. Run detail is the current per-Trial view, restyled.
+  - All runs is a count summary and runs-by-level bars beside a level-filtered table of every run, with stopped runs marked (`docs/design/specs/all-runs/`). Each row opens the run's Run summary, which replaces the old per-Trial run detail.
   - New derived data, such as per-level filtering and the chart series, are pure functions next to the existing metrics.
 - **Glossary.** CONTEXT.md now defines **Plan** and **Exercise Demo**. UI copy says "Today's plan" and never "prescription".
 
