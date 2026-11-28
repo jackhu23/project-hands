@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/widgets.dart' show Text;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hands/main.dart' as app;
 import 'package:integration_test/integration_test.dart';
@@ -58,7 +59,14 @@ void main() {
 
     await tapWhenShown(tester, find.text('Balloon Touch'));
     await tapWhenShown(tester, find.bySemanticsLabel('Difficulty Level 1'));
-    // Let the Watch how demo reach its Pop.
+    await waitFor(tester, find.bySemanticsLabel(RegExp('^Demonstration')));
+    // The demo holds a still frame under reduce motion, so it must be off.
+    expect(
+      binding.platformDispatcher.accessibilityFeatures.disableAnimations,
+      isFalse,
+      reason: 'the Watch how demo should be playing',
+    );
+    // Let the demo reach its Pop.
     await tester.pump(const Duration(seconds: 3));
     await screenshot(tester, 'hub');
 
@@ -85,6 +93,9 @@ void main() {
     // Past the summary's entry motion: the banner, cards and bars come in.
     await tester.pump(const Duration(seconds: 2));
     await screenshot(tester, 'run-summary');
+    // This run's date and time, to find the same run again from My progress.
+    final startedAt = find.textContaining(RegExp(r'^\d{1,2} \w{3} \d{4} · '));
+    final runTime = tester.widget<Text>(startedAt).data!;
 
     await tapWhenShown(tester, find.byTooltip('Back to my progress'));
     final row = find.bySemanticsLabel(RegExp('^Open run summary'));
@@ -92,8 +103,9 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
     await screenshot(tester, 'my-progress');
 
+    // Newest first, so the top row is the run just played.
     await tapWhenShown(tester, row);
-    await waitFor(tester, summary);
+    await waitFor(tester, find.text(runTime));
     await tester.pump(const Duration(seconds: 1));
     await screenshot(tester, 'run-summary-from-my-progress');
   });
