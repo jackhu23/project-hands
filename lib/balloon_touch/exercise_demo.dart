@@ -17,9 +17,15 @@ class ExerciseDemo extends StatefulWidget {
   final VoidCallback? onDone;
 
   static const handKey = ValueKey('demo hand');
-  static const popAt = Duration(milliseconds: 2160);
-  static const missAt = Duration(milliseconds: 7190);
-  static const length = Duration(milliseconds: 10600);
+  // The spec's timeline (Pop 2160, Miss 7190, end 10600 ms), played 25%
+  // slower at the project lead's request.
+  static const _pace = 1.25;
+  static const popAt = Duration(milliseconds: 2700);
+  static const missAt = Duration(microseconds: 8987500);
+  static const length = Duration(milliseconds: 13250);
+
+  /// [d] on the spec's timeline, in milliseconds.
+  static double _spec(Duration d) => d.inMicroseconds / 1000 / _pace;
 
   @override
   State<ExerciseDemo> createState() => _ExerciseDemoState();
@@ -79,7 +85,7 @@ class _ExerciseDemoState extends State<ExerciseDemo>
                 // The hand on the Miss, beside the balloon.
                 still
                     ? 7800
-                    : _clock.value * ExerciseDemo.length.inMilliseconds,
+                    : _clock.value * ExerciseDemo._spec(ExerciseDemo.length),
                 still: still,
               ),
             ),
@@ -98,9 +104,10 @@ class _ExerciseDemoState extends State<ExerciseDemo>
     final missPoint = at(450, 225);
     final away = at(840, 625);
     final bodyWidth = 103 * u;
-    final pop = ExerciseDemo.popAt.inMilliseconds.toDouble();
-    final miss = ExerciseDemo.missAt.inMilliseconds.toDouble();
-    final burst = HandsMotion.burst.inMilliseconds;
+    final pop = ExerciseDemo._spec(ExerciseDemo.popAt);
+    final miss = ExerciseDemo._spec(ExerciseDemo.missAt);
+    // The burst keeps its real length.
+    final burst = ExerciseDemo._spec(HandsMotion.burst);
 
     double seg(double a, double b) => ((ms - a) / (b - a)).clamp(0.0, 1.0);
     // Keyframes (ms, value), eased between.

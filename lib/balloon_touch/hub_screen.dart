@@ -195,8 +195,6 @@ class _BalloonTouchHubState extends State<BalloonTouchHub>
             ),
           ],
         ),
-        // Read-only: the therapist sets it.
-        Text('Finger: Index · set by your therapist', style: HandsText.caption),
         const Spacer(),
         _StartButton(onPressed: _level == null ? null : _start),
       ],

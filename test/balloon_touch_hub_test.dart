@@ -220,15 +220,9 @@ void main() {
     expect(count(tester), '29');
   });
 
-  testWidgets('the finger is shown read-only', (tester) async {
+  testWidgets('the hub does not name a finger', (tester) async {
     await openHub(tester);
-
-    final finger = find.text('Finger: Index · set by your therapist');
-    expect(finger, findsOneWidget);
-    expect(
-      find.ancestor(of: finger, matching: find.byType(InkWell)),
-      findsNothing,
-    );
+    expect(find.textContaining('Finger'), findsNothing);
   });
 
   testWidgets('Start begins an Exercise Run at the chosen level and count', (
