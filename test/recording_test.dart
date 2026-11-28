@@ -148,6 +148,26 @@ void main() {
     );
   });
 
+  testWidgets('each Miss is mapped where it lifted off', (tester) async {
+    final db = await pumpApp(tester);
+    await startRun(tester, balloons: 1);
+    final area = playArea(tester);
+    final tap = tester.getTopLeft(balloon) - const Offset(10, 10);
+    final slideEnd = offBody(tester);
+    await touch(tester, tap);
+    await touch(tester, bodyCenter(tester), slideEnd);
+    await touch(tester, bodyCenter(tester));
+
+    final run = (await db.select(db.exerciseRuns).get()).single;
+    expect(
+      await db.missLiftOffs(run.id),
+      unorderedEquals([
+        near(tap - area.topLeft),
+        near(slideEnd - area.topLeft),
+      ]),
+    );
+  });
+
   testWidgets('a second finger records an Overlapping Touch and never pops', (
     tester,
   ) async {

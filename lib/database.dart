@@ -1,3 +1,5 @@
+import 'dart:ui' show Offset;
+
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 
@@ -351,6 +353,23 @@ class HandsDatabase extends _$HandsDatabase {
       // Sorted in Dart, which compares instants; the stored text follows the
       // wall clock, so a daylight-saving change could misorder it in SQL.
       ..sort((a, b) => b.run.startedAt.compareTo(a.run.startedAt));
+  }
+
+  /// Where each Miss in the run lifted off: its last Touch Sample, in
+  /// logical pixels from the play area's top-left.
+  Future<List<Offset>> missLiftOffs(String runId) async {
+    final rows = await customSelect(
+      'SELECT s.x, s.y FROM touch_samples s '
+      'JOIN actions a ON a.id = s.action_id '
+      'JOIN trials t ON t.id = a.trial_id '
+      "WHERE t.exercise_run_id = ? AND a.outcome = 'miss' AND s.sequence = "
+      '(SELECT MAX(sequence) FROM touch_samples WHERE action_id = a.id)',
+      variables: [Variable(runId)],
+      readsFrom: {touchSamples, actions, trials},
+    ).get();
+    return [
+      for (final r in rows) Offset(r.read<double>('x'), r.read<double>('y')),
+    ];
   }
 
   /// Deletes every row, including the Patient. Debug builds only.
